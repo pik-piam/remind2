@@ -33,7 +33,7 @@ check_eqs <- function(dt, eqs, scope="all", sens=1e-10){
 test_that("Test if REMIND reporting is produced as it should and check data integrity", {
 
   ## uncomment to skip test
-  ## success("Skip GDX test")
+  ## succeed("Skip GDX test")
 
   testgdx_folder <- "../testgdxs/"
 
