@@ -47,6 +47,13 @@ reportTax <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,21
     Electricity = "feels"
   )
 
+  sector_map <- c(
+    Transportation = "trans",
+    Buildings      = "build",
+    Industry       = "indst",
+    CDR            = "CDR"
+  )
+
   entyFe_map <- list(
     CDR            = commonFinalEnergyVariables,
     Buildings      = commonFinalEnergyVariables,
@@ -60,12 +67,12 @@ reportTax <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,21
     )
   )
 
-  sector_map <- c(
-    Transportation = "trans",
-    Buildings      = "build",
-    Industry       = "indst",
-    CDR            = "CDR"
-  )
+  # TODO rewrite without for loop
+  for (sector in names(entyFe_map)) {
+    entyFe_map[[sector]] <- entyFe_map[[sector]] %>%
+      Filter(f = function(finalEnergy)
+        finalEnergy %in% getNames(mselect(vm_demFeSector, emi_sectors = sector_map[sector]), dim = 2))
+  }
 
   out <- mbind(
     out,
@@ -77,9 +84,7 @@ reportTax <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,21
           do.call(
             "mbind",
             lapply(
-              names(entyFe_map[[sector]][
-                entyFe_map[[sector]] %in%
-                  getNames(mselect(vm_demFeSector, emi_sectors = sector_map[sector]), dim = 2)]),
+              names(entyFe_map[[sector]]),
               function(FinalEnergy){
                 mbind(
                   setNames(dimSums(mselect(fe_tax,emi_sectors = sector_map[sector],
