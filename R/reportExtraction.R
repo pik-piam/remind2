@@ -66,7 +66,7 @@ reportExtraction <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(
   costfu_ex  <- costfu_ex[,t,petyex]
   pebiolc_demandmag <- pebiolc_demandmag[,t,]
   p_cint          <- collapseNames(mselect(p_cint,emiTe="co2"))
-  getSets(p_cint) <- gsub("all_enty1","all_enty",getSets(p_cint))
+  #getSets(p_cint) <- gsub("all_enty1","all_enty",getSets(p_cint))
   p_cint          <- p_cint[,,mappegrad]
   if (!is.null(fuExtrOwnCons)) {
     fuExtrOwnCons <- mselect(fuExtrOwnCons, 

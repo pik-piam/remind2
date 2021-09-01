@@ -70,7 +70,7 @@ reportMOFEX <- function(gdx,gdx_ref=NULL,file=NULL,scenario='default') {
   budget.m <- budget.m[,t,]
   tradebal.m <- tradebal.m[,t,]
   p_cint          <- collapseNames(mselect(p_cint,emiTe="co2"))
-  getSets(p_cint) <- gsub("all_enty1","all_enty",getSets(p_cint))
+  #getSets(p_cint) <- gsub("all_enty1","all_enty",getSets(p_cint))
   mappegrad <- dimnames(grades[,,"xi1",drop=TRUE])$all_enty.rlf
   cost_per_GJ <- (costFuEx / dimSums(fuExtr,dim=3))*1e3
   if (!is.null(pm_fuExtrOwnCons)) {
