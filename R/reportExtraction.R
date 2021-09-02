@@ -65,8 +65,12 @@ reportExtraction <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(
   if(!is.null(grades)) { grades     <- grades[,t,mappegrad[which(mappegrad != "peur.1")]] }
   costfu_ex  <- costfu_ex[,t,petyex]
   pebiolc_demandmag <- pebiolc_demandmag[,t,]
-  p_cint          <- collapseNames(mselect(p_cint,emiTe="co2"))
-  #getSets(p_cint) <- gsub("all_enty1","all_enty",getSets(p_cint))
+  if(getSets(p_cint)[[3]] == "emiTe"){
+      p_cint          <- collapseNames(mselect(p_cint,emiTe="co2"))
+  } else {
+      p_cint          <- collapseNames(mselect(p_cint,all_enty="co2"))
+      getSets(p_cint) <- gsub("all_enty1","all_enty",getSets(p_cint))
+  }
   p_cint          <- p_cint[,,mappegrad]
   if (!is.null(fuExtrOwnCons)) {
     fuExtrOwnCons <- mselect(fuExtrOwnCons, 
