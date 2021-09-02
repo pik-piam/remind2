@@ -9,7 +9,7 @@
 #' @return A [`MAgPIE`][magclass::magclass] object.
 #' @author Michaja Pehl
 #' 
-#' @importFrom magclass mbind getRegions<- dimSums
+#' @importFrom magclass mbind dimSums getCells
 #' 
 #'
 #' @examples
@@ -23,10 +23,10 @@ calc_regionSubset_sums <- function(data, regionSubsetList) {
   mbind(
     lapply(
       names(regionSubsetList),
-      
       function(subset_name) {
-        `getRegions<-`(dimSums(data[regionSubsetList[[subset_name]],,], dim = 1),
-                       subset_name)
+        x <- dimSums(data[regionSubsetList[[subset_name]],,], dim = 1)
+        getCells(x) <- subset_name
+        return(x)
       }
     )
   )
