@@ -7,7 +7,7 @@
 ## should be checked for regions ("regional"), only globally ("world") or
 ## both ("all"). Sensitivity determines the allowed offset when comparing
 ## LHS to RHS
-check_eqs <- function(dt, eqs, scope = "all", sens = 1e-8) {
+checkEqs <- function(dt, eqs, scope = "all", sens = 1e-8) {
   if (scope == "regional") {
     dt <- dt[all_regi != "World"]
   } else if (scope == "world") {
@@ -30,8 +30,8 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
   dir.create("test-convGDX2mif-data", showWarnings = FALSE)
 
   ## add GDXs for comparison here:
-  my_gdxs <- NULL
-  if (length(my_gdxs) == 0) {
+  myGdxs <- NULL
+  if (length(myGdxs) == 0) {
     if (!file.exists(file.path("test-convGDX2mif-data", "fulldata.gdx"))) {
       utils::download.file(
         "https://rse.pik-potsdam.de/data/example/fulldata_REMIND21.gdx",
@@ -40,10 +40,9 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
       )
     }
   }
-  my_gdxs <- list.files("test-convGDX2mif-data", "*.gdx", full.names = TRUE)
 
   ## please add variable tests below
-  check_integrity <- function(out) {
+  checkIntegrity <- function(out) {
     dt <- rmndt::magpie2dt(out)
     stopifnot(!(c("total", "diff") %in% unique(dt[["variable"]])))
     dt_wide <- data.table::dcast(dt, ... ~ variable)
@@ -60,39 +59,40 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
     }
     mylist <- mylist[grep(" \\(.*.\\)$", names(mylist))]
 
-    check_eqs(dt_wide, mylist)
+    checkEqs(dt_wide, mylist)
   }
 
+  myGdxs <- list.files("test-convGDX2mif-data", "*.gdx", full.names = TRUE)
   n <- 0
-  for (i in my_gdxs) {
+  for (i in myGdxs) {
     n <- n + 1
     cat(paste0(i, "\n"))
     a <- convGDX2MIF(i)
     print("Check integrity.")
-    check_integrity(a)
+    checkIntegrity(a)
     magclass::write.report2(
       x = magclass::collapseNames(a),
-      file = file.path("test-convGDX2mif-data", sprintf("%s.mif", stringi::stri_rand_strings(1, 5))),
-      scenario = paste0(getItems(a, dim = "scenario"), n),
+      file = file.path(tempdir(), sprintf("%s.mif", stringi::stri_rand_strings(1, 5))),
+      scenario = paste0(magclass::getItems(a, dim = "scenario"), n),
       model = "REMIND"
     )
     cat("\n")
   }
-  if (length(my_gdxs) == 1) {
+  if (length(myGdxs) == 1) {
     magclass::write.report2(
       x = magclass::collapseNames(a),
-      file = file.path("test-convGDX2mif-data", sprintf("%s.mif", stringi::stri_rand_strings(1, 5))),
+      file = file.path(tempdir(), sprintf("%s.mif", stringi::stri_rand_strings(1, 5))),
       scenario = paste0(magclass::getItems(a, dim = "scenario"), 2),
       model = "REMIND"
     )
   }
 
   print("Check compareScenarios.")
-  my_mifs <- list.files("test-convGDX2mif-data", "*.mif", full.names = TRUE)
+  myMifs <- list.files("test-convGDX2mif-data", "*.mif", full.names = TRUE)
   histmif <- file.path("test-convGDX2mif-data", "historical.mif")
-  my_mifs <- my_mifs[my_mifs != histmif]
+  myMifs <- myMifs[myMifs != histmif]
   if (!file.exists(histmif)) {
     utils::download.file("https://rse.pik-potsdam.de/data/example/historical.mif", histmif)
   }
-  compareScenarios(my_mifs, histmif, fileName = file.path("test-convGDX2mif-data", "scenarioComparison.pdf"))
+  compareScenarios(myMifs, histmif, fileName = file.path("test-convGDX2mif-data", "scenarioComparison.pdf"))
 })
