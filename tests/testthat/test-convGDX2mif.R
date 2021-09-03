@@ -89,10 +89,10 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
 
   print("Check compareScenarios.")
   myMifs <- list.files("test-convGDX2mif-data", "*.mif", full.names = TRUE)
-  histmif <- file.path("test-convGDX2mif-data", "historical.mif")
-  myMifs <- myMifs[myMifs != histmif]
-  if (!file.exists(histmif)) {
-    utils::download.file("https://rse.pik-potsdam.de/data/example/historical.mif", histmif)
+  histMif <- file.path("test-convGDX2mif-data", "historical.mif")
+  myMifs <- myMifs[myMifs != histMif]
+  if (!file.exists(histMif)) {
+    utils::download.file("https://rse.pik-potsdam.de/data/example/historical.mif", histMif)
   }
-  compareScenarios(myMifs, histmif, fileName = file.path("test-convGDX2mif-data", "scenarioComparison.pdf"))
+  compareScenarios(myMifs, histMif, fileName = file.path("test-convGDX2mif-data", "scenarioComparison.pdf"))
 })
