@@ -517,15 +517,15 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
   # following e.g. "Emi|CO2|Energy|Demand|Transport|Passenger|+|Liquids" etc.
   
   #### Total energy CO2 emissions
-  selection <- if(getSets(vm_emiTeMkt)[[3]] == "emiTe"){
-                  mselect(vm_emiTeMkt, emiTe="co2")
-                } else {
-                  mselect(vm_emiTeMkt, all_enty="co2")
-                }
+  sel_vm_emiTeMkt <- if(getSets(vm_emiTeMkt)[[3]] == "emiTe"){
+                        mselect(vm_emiTeMkt, emiTe="co2")
+                      } else {
+                        mselect(vm_emiTeMkt, all_enty="co2")
+                      }
   out <- mbind(out,
               setNames(
               # vm_emiTeMkt is variable in REMIND closest to energy co2 emissions
-              (dimSums(selection, dim=3) 
+              (dimSums(sel_vm_emiTeMkt, dim=3) 
               # deduce vm_emiTeMkt by CCU CO2 from vm_emiCdr 
               # (which is only deduced from vm_emiAll, the total CO2 emissions, in REMIND)
               - (1-p_share_CCS)*mselect(-vm_emiCdr, all_enty="co2"))*GtC_2_MtCO2,
@@ -559,13 +559,13 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
                         "Emi|CO2|Energy and Industrial Processes (Mt CO2/yr)"))
   
   #### total CO2 emissions
-  selection <- if(getSets(vm_emiAllMkt)[[3]] == "emiTe"){
+  sel_vm_emiAllMkt <- if(getSets(vm_emiAllMkt)[[3]] == "emiTe"){
     mselect(vm_emiAllMkt, emiTe="co2")
   } else {
     mselect(vm_emiAllMkt, all_enty="co2")
   }
   out <- mbind(out,
-          setNames(dimSums(selection, dim=3)*GtC_2_MtCO2,
+          setNames(dimSums(sel_vm_emiAllMkt, dim=3)*GtC_2_MtCO2,
                   "Emi|CO2 (Mt CO2/yr)"))
   
   ## 3. Carbon Management ----
@@ -1237,64 +1237,64 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
   
   
   ## 6. Emissions across markets ----
-  selection1 <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="ETS")
-  selection2 <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="ETS")
-  selection3 <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="ETS")
-  selection4 <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="ES")
-  selection5 <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="ES")
-  selection6 <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="ES")
-  selection7 <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="other")
-  selection8 <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="other")
-  selection9 <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="other")
+  sel_vm_emiAllMkt_CO2_ETS <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="ETS")
+  sel_vm_emiAllMkt_CH4_ETS <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="ETS")
+  sel_vm_emiAllMkt_N2O_ETS <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="ETS")
+  sel_vm_emiAllMkt_CO2_ES <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="ES")
+  sel_vm_emiAllMkt_CH4_ES <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="ES")
+  sel_vm_emiAllMkt_N2O_ES <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="ES")
+  sel_vm_emiAllMkt_CO2_other <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="other")
+  sel_vm_emiAllMkt_CH4_other <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="other")
+  sel_vm_emiAllMkt_N2O_other <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="other")
   if(getSets(vm_emiAllMkt)[[3]] == "emiTe"){
-    selection1 <- mselect(vm_emiAllMkt, emiTe="co2",all_emiMkt="ETS")
-    selection2 <- mselect(vm_emiAllMkt, emiTe="ch4",all_emiMkt="ETS")
-    selection3 <- mselect(vm_emiAllMkt, emiTe="n2o",all_emiMkt="ETS")
-    selection4 <- mselect(vm_emiAllMkt, emiTe="co2",all_emiMkt="ES")
-    selection5 <- mselect(vm_emiAllMkt, emiTe="ch4",all_emiMkt="ES")
-    selection6 <- mselect(vm_emiAllMkt, emiTe="n2o",all_emiMkt="ES")
-    selection7 <- mselect(vm_emiAllMkt, emiTe="co2",all_emiMkt="other")
-    selection8 <- mselect(vm_emiAllMkt, emiTe="ch4",all_emiMkt="other")
-    selection9 <- mselect(vm_emiAllMkt, emiTe="n2o",all_emiMkt="other")
+    sel_vm_emiAllMkt_CO2_ETS <- mselect(vm_emiAllMkt, emiTe="co2",all_emiMkt="ETS")
+    sel_vm_emiAllMkt_CH4_ETS <- mselect(vm_emiAllMkt, emiTe="ch4",all_emiMkt="ETS")
+    sel_vm_emiAllMkt_N2O_ETS <- mselect(vm_emiAllMkt, emiTe="n2o",all_emiMkt="ETS")
+    sel_vm_emiAllMkt_CO2_ES <- mselect(vm_emiAllMkt, emiTe="co2",all_emiMkt="ES")
+    sel_vm_emiAllMkt_CH4_ES <- mselect(vm_emiAllMkt, emiTe="ch4",all_emiMkt="ES")
+    sel_vm_emiAllMkt_N2O_ES <- mselect(vm_emiAllMkt, emiTe="n2o",all_emiMkt="ES")
+    sel_vm_emiAllMkt_CO2_other <- mselect(vm_emiAllMkt, emiTe="co2",all_emiMkt="other")
+    sel_vm_emiAllMkt_CH4_other <- mselect(vm_emiAllMkt, emiTe="ch4",all_emiMkt="other")
+    sel_vm_emiAllMkt_N2O_other <- mselect(vm_emiAllMkt, emiTe="n2o",all_emiMkt="other")
   }
 
   out <- mbind(out,
-      setNames( dimSums(selection1, dim=3) * GtC_2_MtCO2
-                + dimSums(selection2, dim=3) * sm_tgch4_2_pgc * GtC_2_MtCO2
-                + dimSums(selection3, dim=3) * sm_tgn_2_pgc * GtC_2_MtCO2,
+      setNames( dimSums(sel_vm_emiAllMkt_CO2_ETS, dim=3) * GtC_2_MtCO2
+                + dimSums(sel_vm_emiAllMkt_CH4_ETS, dim=3) * sm_tgch4_2_pgc * GtC_2_MtCO2
+                + dimSums(sel_vm_emiAllMkt_N2O_ETS, dim=3) * sm_tgn_2_pgc * GtC_2_MtCO2,
                 "Emi|GHG|++|ETS (Mt CO2eq/yr)"),
-      setNames( dimSums(selection4, dim=3) * GtC_2_MtCO2
-                + dimSums(selection5, dim=3) * sm_tgch4_2_pgc * GtC_2_MtCO2
-                + dimSums(selection6, dim=3) * sm_tgn_2_pgc * GtC_2_MtCO2,
+      setNames( dimSums(sel_vm_emiAllMkt_CO2_ES, dim=3) * GtC_2_MtCO2
+                + dimSums(sel_vm_emiAllMkt_CH4_ES, dim=3) * sm_tgch4_2_pgc * GtC_2_MtCO2
+                + dimSums(sel_vm_emiAllMkt_N2O_ES, dim=3) * sm_tgn_2_pgc * GtC_2_MtCO2,
                 "Emi|GHG|++|ESR (Mt CO2eq/yr)"),
-      setNames( dimSums(selection7, dim=3) * GtC_2_MtCO2
-                + dimSums(selection8, dim=3) * sm_tgch4_2_pgc * GtC_2_MtCO2
-                + dimSums(selection9, dim=3) * sm_tgn_2_pgc * GtC_2_MtCO2
+      setNames( dimSums(sel_vm_emiAllMkt_CO2_other, dim=3) * GtC_2_MtCO2
+                + dimSums(sel_vm_emiAllMkt_CH4_other, dim=3) * sm_tgch4_2_pgc * GtC_2_MtCO2
+                + dimSums(sel_vm_emiAllMkt_N2O_other, dim=3) * sm_tgn_2_pgc * GtC_2_MtCO2
                 + dimSums(vm_emiFgas[,,"emiFgasTotal"], dim=3),
                 "Emi|GHG|++|Outside ETS and ESR (Mt CO2eq/yr)"))
 
   # market emissions across gases
   out <- mbind(out,
             # CO2
-            setNames( dimSums(selection1, dim=3) * GtC_2_MtCO2,
+            setNames( dimSums(sel_vm_emiAllMkt_CO2_ETS, dim=3) * GtC_2_MtCO2,
                       "Emi|CO2|++|ETS (Mt CO2/yr)"),
-            setNames( dimSums(selection4, dim=3) * GtC_2_MtCO2,
+            setNames( dimSums(sel_vm_emiAllMkt_CO2_ES, dim=3) * GtC_2_MtCO2,
                       "Emi|CO2|++|ESR (Mt CO2/yr)"),
-            setNames( dimSums(selection7, dim=3) * GtC_2_MtCO2,
+            setNames( dimSums(sel_vm_emiAllMkt_CO2_other, dim=3) * GtC_2_MtCO2,
                       "Emi|CO2|++|Outside ETS and ESR (Mt CO2/yr)"),
             # CH4
-            setNames( dimSums(selection2, dim=3),
+            setNames( dimSums(sel_vm_emiAllMkt_CH4_ETS, dim=3),
                       "Emi|CH4|++|ETS (Mt CH4/yr)"),
-            setNames( dimSums(selection5, dim=3),
+            setNames( dimSums(sel_vm_emiAllMkt_CH4_ES, dim=3),
                       "Emi|CH4|++|ESR (Mt CH4/yr)"),
-            setNames( dimSums(selection8, dim=3),
+            setNames( dimSums(sel_vm_emiAllMkt_CH4_other, dim=3),
                       "Emi|CH4|++|Outside ETS and ESR (Mt CH4/yr)"),
             # N2O
-            setNames( dimSums(selection3, dim=3) * MtN2_to_ktN2O,
+            setNames( dimSums(sel_vm_emiAllMkt_N2O_ETS, dim=3) * MtN2_to_ktN2O,
                       "Emi|N2O|++|ETS (kt N2O/yr)"),
-            setNames( dimSums(selection6, dim=3) * MtN2_to_ktN2O,
+            setNames( dimSums(sel_vm_emiAllMkt_N2O_ES, dim=3) * MtN2_to_ktN2O,
                       "Emi|N2O|++|ESR (kt N2O/yr)"),
-            setNames( dimSums(selection9, dim=3) * MtN2_to_ktN2O,
+            setNames( dimSums(sel_vm_emiAllMkt_N2O_other, dim=3) * MtN2_to_ktN2O,
                       "Emi|N2O|++|Outside ETS and ESR (kt N2O/yr)"))
   
   # market GHG emissions across sectors
