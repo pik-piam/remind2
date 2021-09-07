@@ -1237,15 +1237,6 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
   
   
   ## 6. Emissions across markets ----
-  sel_vm_emiAllMkt_CO2_ETS <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="ETS")
-  sel_vm_emiAllMkt_CH4_ETS <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="ETS")
-  sel_vm_emiAllMkt_N2O_ETS <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="ETS")
-  sel_vm_emiAllMkt_CO2_ES <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="ES")
-  sel_vm_emiAllMkt_CH4_ES <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="ES")
-  sel_vm_emiAllMkt_N2O_ES <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="ES")
-  sel_vm_emiAllMkt_CO2_other <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="other")
-  sel_vm_emiAllMkt_CH4_other <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="other")
-  sel_vm_emiAllMkt_N2O_other <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="other")
   if(getSets(vm_emiAllMkt)[[3]] == "emiTe"){
     sel_vm_emiAllMkt_CO2_ETS <- mselect(vm_emiAllMkt, emiTe="co2",all_emiMkt="ETS")
     sel_vm_emiAllMkt_CH4_ETS <- mselect(vm_emiAllMkt, emiTe="ch4",all_emiMkt="ETS")
@@ -1256,6 +1247,16 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
     sel_vm_emiAllMkt_CO2_other <- mselect(vm_emiAllMkt, emiTe="co2",all_emiMkt="other")
     sel_vm_emiAllMkt_CH4_other <- mselect(vm_emiAllMkt, emiTe="ch4",all_emiMkt="other")
     sel_vm_emiAllMkt_N2O_other <- mselect(vm_emiAllMkt, emiTe="n2o",all_emiMkt="other")
+  } else {
+    sel_vm_emiAllMkt_CO2_ETS <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="ETS")
+    sel_vm_emiAllMkt_CH4_ETS <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="ETS")
+    sel_vm_emiAllMkt_N2O_ETS <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="ETS")
+    sel_vm_emiAllMkt_CO2_ES <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="ES")
+    sel_vm_emiAllMkt_CH4_ES <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="ES")
+    sel_vm_emiAllMkt_N2O_ES <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="ES")
+    sel_vm_emiAllMkt_CO2_other <- mselect(vm_emiAllMkt, all_enty="co2",all_emiMkt="other")
+    sel_vm_emiAllMkt_CH4_other <- mselect(vm_emiAllMkt, all_enty="ch4",all_emiMkt="other")
+    sel_vm_emiAllMkt_N2O_other <- mselect(vm_emiAllMkt, all_enty="n2o",all_emiMkt="other")
   }
 
   out <- mbind(out,
