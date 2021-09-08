@@ -1,12 +1,12 @@
-## uncomment to skip test
+# uncomment to skip test
 # skip("Skip GDX test")
 
-## Check REMIND output. dt is a data.table in *wide* format,
-## i.e., variables are columns. `eqs` is a list of equations of the form
-## list(LHS = "RHS", ...). The scope determines if the equations
-## should be checked for regions ("regional"), only globally ("world") or
-## both ("all"). Sensitivity determines the allowed offset when comparing
-## LHS to RHS
+# Check REMIND output. dt is a data.table in *wide* format,
+# i.e., variables are columns. `eqs` is a list of equations of the form
+# list(LHS = "RHS", ...). The scope determines if the equations
+# should be checked for regions ("regional"), only globally ("world") or
+# both ("all"). Sensitivity determines the allowed offset when comparing
+# LHS to RHS
 checkEqs <- function(dt, eqs, scope = "all", sens = 1e-8) {
   if (scope == "regional") {
     dt <- dt[all_regi != "World"]
@@ -20,79 +20,76 @@ checkEqs <- function(dt, eqs, scope = "all", sens = 1e-8) {
 
     dt[, diff := total - get(names(eqs)[LHS])]
     if (nrow(dt[abs(diff) > sens]) > 0) {
-      fail(sprintf("Check on data integrity failed for %s", names(eqs)[LHS]))
+      fail(paste("Check on data integrity failed for", names(eqs)[LHS]))
     }
   }
 }
 
+# please add variable tests below
+checkIntegrity <- function(out) {
+  dt <- rmndt::magpie2dt(out)
+  stopifnot(!(c("total", "diff") %in% unique(dt[["variable"]])))
+  dtWide <- data.table::dcast(dt, ... ~ variable)
+  myList <- mip::extractVariableGroups(unique(dt[["variable"]]), keepOrigNames = TRUE)
+  myList <- lapply(myList, FUN = function(x) paste0("`", x, "`"))
+  myList <- lapply(myList, paste, collapse = "+")
+  # remove from the tests the variables whose totals cannot be found
+  chck <- grep(" \\(.*.\\)$", names(myList), invert = T)
+  if (length(chck) > 0) {
+    warning(paste0("For this group the corresponding total could not be found and the summation check ",
+                   "will not be performed: \n", myList[chck], "\n\n"))
+  }
+  myList <- myList[grep(" \\(.*.\\)$", names(myList))]
+
+  checkEqs(dtWide, myList)
+}
+
 test_that("Test if REMIND reporting is produced as it should and check data integrity", {
-  skip_if_not(as.logical(gdxrrw::igdx(silent = TRUE)))
-  dir.create("test-convGDX2mif-data", showWarnings = FALSE)
+  skip_if_not(as.logical(gdxrrw::igdx(silent = TRUE)), "gdxrrw is not initialized properly")
 
-  ## add GDXs for comparison here:
-  myGdxs <- NULL
-  if (length(myGdxs) == 0) {
-    if (!file.exists(file.path("test-convGDX2mif-data", "fulldata.gdx"))) {
-      utils::download.file(
-        "https://rse.pik-potsdam.de/data/example/fulldata_REMIND21.gdx",
-        file.path("test-convGDX2mif-data", "fulldata.gdx"),
-        mode = "wb"
-      )
+  # add GDXs for comparison here:
+  gdxPaths <- NULL
+
+  if (length(gdxPaths) == 0) {
+    defaultGdxPath <- file.path(tempdir(), "fulldata.gdx")
+    if (!file.exists(defaultGdxPath)) {
+      utils::download.file("https://rse.pik-potsdam.de/data/example/fulldata_REMIND21.gdx", defaultGdxPath,
+                           mode = "wb", quiet = TRUE)
     }
+    gdxPaths <- defaultGdxPath
   }
 
-  ## please add variable tests below
-  checkIntegrity <- function(out) {
-    dt <- rmndt::magpie2dt(out)
-    stopifnot(!(c("total", "diff") %in% unique(dt[["variable"]])))
-    dt_wide <- data.table::dcast(dt, ... ~ variable)
-    mylist <- mip::extractVariableGroups(unique(dt[["variable"]]), keepOrigNames = TRUE)
-    mylist <- lapply(mylist, FUN = function(x) {
-      return(paste0("`", x, "`"))
-    })
-    mylist <- lapply(mylist, paste, collapse = "+")
-    # remove from the tests the variables whose totals cannot be found
-    chck <- grep(" \\(.*.\\)$", names(mylist), invert = T)
-    if (length(chck) > 0) {
-      warning(paste0("For this group the corresponding total could not be found and the summation check ",
-                     "will not be performed: \n", mylist[chck], "\n\n"))
-    }
-    mylist <- mylist[grep(" \\(.*.\\)$", names(mylist))]
-
-    checkEqs(dt_wide, mylist)
-  }
-
-  myGdxs <- list.files("test-convGDX2mif-data", "*.gdx", full.names = TRUE)
   n <- 0
-  for (i in myGdxs) {
+  for (gdxPath in gdxPaths) {
     n <- n + 1
-    cat(paste0(i, "\n"))
-    a <- convGDX2MIF(i)
-    print("Check integrity.")
-    checkIntegrity(a)
-    magclass::write.report2(
-      x = magclass::collapseNames(a),
-      file = file.path(tempdir(), sprintf("%s.mif", stringi::stri_rand_strings(1, 5))),
-      scenario = paste0(magclass::getItems(a, dim = "scenario"), n),
+    message("Running convGDX2MIF(", gdxPath, ")...")
+    mifContent <- convGDX2MIF(gdxPath)
+    message("Checking integrity of created MIF...")
+    checkIntegrity(mifContent)
+    magclass::write.report(
+      x = magclass::collapseNames(mifContent),
+      file = file.path(tempdir(), paste0(stringi::stri_rand_strings(1, 5), ".mif")),
+      scenario = paste0(magclass::getItems(mifContent, dim = "scenario"), n),
       model = "REMIND"
     )
-    cat("\n")
   }
-  if (length(myGdxs) == 1) {
-    magclass::write.report2(
-      x = magclass::collapseNames(a),
-      file = file.path(tempdir(), sprintf("%s.mif", stringi::stri_rand_strings(1, 5))),
-      scenario = paste0(magclass::getItems(a, dim = "scenario"), 2),
+  # create a second file, so we can actually check the comparison code
+  if (length(gdxPaths) == 1) {
+    magclass::write.report(
+      x = magclass::collapseNames(mifContent),
+      file = file.path(tempdir(), paste0(stringi::stri_rand_strings(1, 5), ".mif")),
+      scenario = paste0(magclass::getItems(mifContent, dim = "scenario"), 2),
       model = "REMIND"
     )
   }
 
-  print("Check compareScenarios.")
-  myMifs <- list.files("test-convGDX2mif-data", "*.mif", full.names = TRUE)
-  histMif <- file.path("test-convGDX2mif-data", "historical.mif")
-  myMifs <- myMifs[myMifs != histMif]
+  message("Checking compareScenarios...")
+  myMifs <- list.files(tempdir(), "*.mif", full.names = TRUE)
+  histMif <- file.path(tempdir(), "historical.mif")
   if (!file.exists(histMif)) {
-    utils::download.file("https://rse.pik-potsdam.de/data/example/historical.mif", histMif)
+    utils::download.file("https://rse.pik-potsdam.de/data/example/historical.mif", histMif, quiet = TRUE)
   }
-  compareScenarios(myMifs, histMif, fileName = file.path("test-convGDX2mif-data", "scenarioComparison.pdf"))
+  scenarioComparisonPath <- file.path(tempdir(), "scenarioComparison.pdf")
+  suppressWarnings(compareScenarios(myMifs, histMif, fileName = scenarioComparisonPath))
+  expect_true(file.exists(scenarioComparisonPath))
 })
