@@ -45,11 +45,13 @@ reportFE <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,211
   entyFe2Sector <- readGDX(gdx, "entyFe2Sector")
   sector2emiMkt <- readGDX(gdx, "sector2emiMkt")
   
-  demFemapping <- full_join(entyFe2Sector, sector2emiMkt) %>% 
-                  # rename such that all_enty1 always signifies the FE carrier like in vm_demFeSector
-                    rename(all_enty1 = all_enty) %>% 
-                    left_join(se2fe) %>% 
-                    select(-all_te)
+  demFemapping <- entyFe2Sector %>% 
+    full_join(sector2emiMkt, by = 'emi_sectors') %>% 
+    # rename such that all_enty1 always signifies the FE carrier like in 
+    # vm_demFeSector
+    rename(all_enty1 = all_enty) %>% 
+    left_join(se2fe, by = 'all_enty1') %>% 
+    select(-all_te)
   
   #sety <- readGDX(gdx,c("entySe","sety"),format="first_found")
   
