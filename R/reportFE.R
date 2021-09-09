@@ -71,8 +71,8 @@ reportFE <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,211
   vm_prodFe <- vm_prodFe[se2fe]
   
   # FE demand per industry subsector
-  o37_demFeIndSub <- readGDX(gdx, "o37_demFeIndSub", restore_zeros = F, 
-                             format = "first_found")
+  o37_demFeIndSub <- readGDX(gdx, "o37_demFeIndSub", restore_zeros = FALSE,
+                             format = "first_found", react = 'silent')
   if (!(is.null(o37_demFeIndSub) | 0 == length(o37_demFeIndSub))) {
     o37_demFeIndSub <- o37_demFeIndSub[,t,]
     o37_demFeIndSub[is.na(o37_demFeIndSub)] <- 0
