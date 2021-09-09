@@ -73,7 +73,7 @@ reportFE <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,211
   # FE demand per industry subsector
   o37_demFeIndSub <- readGDX(gdx, "o37_demFeIndSub", restore_zeros = F, 
                              format = "first_found")
-  if (!is.null(o37_demFeIndSub)) {
+  if (!(is.null(o37_demFeIndSub) | 0 == length(o37_demFeIndSub))) {
     o37_demFeIndSub <- o37_demFeIndSub[,t,]
     o37_demFeIndSub[is.na(o37_demFeIndSub)] <- 0
     # convert to EJ
@@ -673,7 +673,7 @@ reportFE <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,211
   
   # FE demand per industry subsector
   # this reporting is only available for GDXs which have the reporting parameter o37_demFeIndSub
-  if (!is.null(o37_demFeIndSub)) {
+  if (!(is.null(o37_demFeIndSub) | 0 == length(o37_demFeIndSub))) {
     # total FE per industry subsector
     out <- mbind(out,
                  setNames(dimSums(mselect(o37_demFeIndSub, secInd37 = "steel"), dim=3),
