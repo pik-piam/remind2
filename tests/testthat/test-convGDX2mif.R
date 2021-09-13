@@ -53,8 +53,8 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
   if (length(gdxPaths) == 0) {
     defaultGdxPath <- file.path(tempdir(), "fulldata.gdx")
     if (!file.exists(defaultGdxPath)) {
-      utils::download.file("https://rse.pik-potsdam.de/data/example/fulldata_REMIND21.gdx", defaultGdxPath,
-                           mode = "wb", quiet = TRUE)
+      utils::download.file("https://rse.pik-potsdam.de/data/example/remind2_test-convGDX2MIF_fulldata.gdx",
+                           defaultGdxPath, mode = "wb", quiet = TRUE)
     }
     gdxPaths <- defaultGdxPath
   }
