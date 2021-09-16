@@ -59,32 +59,33 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
     gdxPaths <- defaultGdxPath
   }
 
-  n <- 0
+  numberOfMifs <- 0
   for (gdxPath in gdxPaths) {
-    n <- n + 1
+    numberOfMifs <- numberOfMifs + 1
     message("Running convGDX2MIF(", gdxPath, ")...")
     mifContent <- convGDX2MIF(gdxPath)
     message("Checking integrity of created MIF...")
     checkIntegrity(mifContent)
     magclass::write.report(
       x = magclass::collapseNames(mifContent),
-      file = file.path(tempdir(), paste0(stringi::stri_rand_strings(1, 5), ".mif")),
-      scenario = paste0(magclass::getItems(mifContent, dim = "scenario"), n),
+      file = file.path(tempdir(), paste0(numberOfMifs, ".mif")),
+      scenario = paste0(magclass::getItems(mifContent, dim = "scenario"), numberOfMifs),
       model = "REMIND"
     )
   }
   # create a second file, so we can actually check the comparison code
-  if (length(gdxPaths) == 1) {
+  if (numberOfMifs == 1) {
+    numberOfMifs <- numberOfMifs + 1
     magclass::write.report(
       x = magclass::collapseNames(mifContent),
-      file = file.path(tempdir(), paste0(stringi::stri_rand_strings(1, 5), ".mif")),
-      scenario = paste0(magclass::getItems(mifContent, dim = "scenario"), 2),
+      file = file.path(tempdir(), paste0(numberOfMifs, ".mif")),
+      scenario = paste0(magclass::getItems(mifContent, dim = "scenario"), numberOfMifs),
       model = "REMIND"
     )
   }
 
   message("Checking compareScenarios...")
-  myMifs <- list.files(tempdir(), "*.mif", full.names = TRUE)
+  myMifs <- file.path(tempdir(), paste0(seq_len(numberOfMifs), ".mif"))
   histMif <- file.path(tempdir(), "historical.mif")
   if (!file.exists(histMif)) {
     utils::download.file("https://rse.pik-potsdam.de/data/example/historical.mif", histMif, quiet = TRUE)
@@ -92,4 +93,6 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
   scenarioComparisonPath <- file.path(tempdir(), "scenarioComparison.pdf")
   suppressWarnings(compareScenarios(myMifs, histMif, fileName = scenarioComparisonPath))
   expect_true(file.exists(scenarioComparisonPath))
+  unlink(tempdir(), recursive = TRUE)
+  tempdir(TRUE)
 })

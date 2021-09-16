@@ -43,7 +43,6 @@ License: LGPL-3
 RoxygenNote: 7.1.2
 Suggests:
     testthat,
-    stringi,
     sr15data,
     covr
 VignetteBuilder: knitr
