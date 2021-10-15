@@ -537,10 +537,15 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
   # following e.g. "Emi|CO2|Energy|Demand|Transport|Passenger|+|Liquids" etc.
   
   #### Total energy CO2 emissions
+  if(getSets(vm_emiTeMkt)[[3]] == "emiTe"){
+      sel_vm_emiTeMkt_co2  <- mselect(vm_emiTeMkt, emiTe="co2")
+  } else {
+      sel_vm_emiTeMkt_co2  <- mselect(vm_emiTeMkt, all_enty="co2")
+  }
   out <- mbind(out,
                setNames(
                # vm_emiTeMkt is variable in REMIND closest to energy co2 emissions
-               (dimSums(mselect(vm_emiTeMkt, all_enty="co2"), dim=3) 
+               (dimSums(sel_vm_emiTeMkt_co2, dim=3) 
                # deduce vm_emiTeMkt by CCU CO2 from vm_emiCdr 
                # (which is only deduced from vm_emiAll, the total CO2 emissions, in REMIND)
                - (1-p_share_CCS)*mselect(-vm_emiCdr, all_enty="co2"))*GtC_2_MtCO2,
