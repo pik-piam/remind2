@@ -214,11 +214,21 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
   emi2te.pe2se.co2 <- emi2te %>% 
     filter(all_enty2 == "co2") %>% 
     filter(all_te %in% pe2se$all_te)
-  
+
+  sel_pm_emifac_pe2se <- if(getSets(pm_emifac)[[6]] == "emiAll"){
+                        mselect(pm_emifac, all_te=pe2se$all_te, emiAll="co2")
+                      } else {
+                        mselect(pm_emifac, all_te=pe2se$all_te, all_enty2="co2")
+                      }
+  sel_pm_emifac_se2fe <- if(getSets(pm_emifac)[[6]] == "emiAll"){
+                        mselect(pm_emifac, all_te=se2fe$all_te, emiAll="co2")
+                      } else {
+                        mselect(pm_emifac, all_te=se2fe$all_te, all_enty2="co2")
+                      }
   # co2 emissions factor of pe2se technologies
-  pm_emifac.co2.pe <- dimSums(mselect(pm_emifac, all_te=pe2se$all_te, all_enty2="co2"), dim=c(3.4)) 
+  pm_emifac.co2.pe <- dimSums(sel_pm_emifac_pe2se, dim=c(3.4)) 
   # co2 emissions factor of fe carriers
-  pm_emifac.co2.fe <- dimSums(mselect(pm_emifac, all_te=se2fe$all_te, all_enty2="co2"), dim=c(3.3,3.4)) 
+  pm_emifac.co2.fe <- dimSums(sel_pm_emifac_se2fe, dim=c(3.3,3.4)) 
   
   
   
@@ -436,7 +446,12 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
     
     
     # calculate industry emissions by subsector (before industry CO2 Capture) 
-    pm_emifac.fe.indst <- dimSums(mselect(pm_emifac, all_enty1 = getNames(vm_demFeIndSub, dim = 2), all_enty2="co2"), dim=c(3.3,3.4))
+    sel_pm_emifac_feIndst <- if(getSets(pm_emifac)[[6]] == "emiAll"){
+                              mselect(pm_emifac, all_enty1 = getNames(vm_demFeIndSub, dim = 2), emiAll="co2")
+                            } else {
+                              mselect(pm_emifac, all_enty1 = getNames(vm_demFeIndSub, dim = 2), all_enty2="co2")
+                            }
+    pm_emifac.fe.indst <- dimSums(sel_pm_emifac_feIndst, dim=c(3.3,3.4))
     EmiIndSubSec <- pm_emifac.fe.indst * vm_demFeIndSub[,,getNames(pm_emifac.fe.indst)]
     
 
@@ -571,7 +586,12 @@ reportEmi <- function(gdx, output=NULL, regionSubsetList=NULL,t=c(seq(2005,2060,
   
   
   # calculate captured CO2 per pe2se technology
-  pm_emifac.cco2.pe <- dimSums(mselect(pm_emifac, all_te=pe2se$all_te, all_enty2="cco2"), dim=c(3.4)) 
+  sel_pm_emifac_pe2seCCO2 <- if(getSets(pm_emifac)[[6]] == "emiAll"){
+                              mselect(pm_emifac, all_te=pe2se$all_te, emiAll="cco2")
+                            } else {
+                              mselect(pm_emifac, all_te=pe2se$all_te, all_enty2="cco2")
+                            }
+  pm_emifac.cco2.pe <- dimSums(sel_pm_emifac_pe2seCCO2, dim=c(3.4)) 
   CCO2Pe2Se <- pm_emifac.cco2.pe * vm_demPE[,,getNames(pm_emifac.cco2.pe)]
   
   # calculate weights of emissions distribution for coupled production
