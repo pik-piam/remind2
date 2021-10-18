@@ -452,22 +452,27 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
 
 
     # calculate industry emissions by subsector (before industry CO2 Capture)
-    pm_emifac.fe.indst <- dimSums(mselect(pm_emifac, all_enty1 = getNames(o37_demFeIndSub, dim = 2), all_enty2 = "co2"), dim = c(3.3, 3.4))
+    sel_pm_emifac_co2 <- if(getSets(pm_emifac)[[6]] == "emiAll"){
+                            mselect(pm_emifac, all_enty1 = getNames(o37_demFeIndSub, dim = 2), emiAll = "co2")
+                          } else {
+                            mselect(pm_emifac, all_enty1 = getNames(o37_demFeIndSub, dim = 2), all_enty2 = "co2")
+                          }
+    pm_emifac.fe.indst <- dimSums(sel_pm_emifac_co2, dim = c(3.3, 3.4))
     EmiIndSubSec <- pm_emifac.fe.indst * o37_demFeIndSub[, , getNames(pm_emifac.fe.indst)]
 
 
-    
-    
-    
+
+
+
     # calculate industry emissions by subsector (before industry CO2 Capture) 
-    sel_pm_emifac_feIndst <- if(getSets(pm_emifac)[[6]] == "emiAll"){
-                              mselect(pm_emifac, all_enty1 = getNames(vm_demFeIndSub, dim = 2), emiAll = "co2")
-                            } else {
-                              mselect(pm_emifac, all_enty1 = getNames(vm_demFeIndSub, dim = 2), all_enty2 = "co2")
-                            }
-    pm_emifac.fe.indst <- dimSums(sel_pm_emifac_feIndst, dim = c(3.3,3.4))
+    sel_pm_emifac_feIndst_co2 <- if(getSets(pm_emifac)[[6]] == "emiAll"){
+                                  mselect(pm_emifac, all_enty1 = getNames(vm_demFeIndSub, dim = 2), emiAll = "co2")
+                                } else {
+                                  mselect(pm_emifac, all_enty1 = getNames(vm_demFeIndSub, dim = 2), all_enty2 = "co2")
+                                }
+    pm_emifac.fe.indst <- dimSums(sel_pm_emifac_feIndst_co2, dim = c(3.3,3.4))
     EmiIndSubSec <- pm_emifac.fe.indst * vm_demFeIndSub[,,getNames(pm_emifac.fe.indst)]
-    
+
 
 
 
@@ -580,7 +585,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
 
 
       # calculate industry emissions by subsector (before industry CO2 Capture)
-      pm_emifac.fe.indst <- dimSums(mselect(pm_emifac, all_enty1 = getNames(vm_demFeIndSub, dim = 2), all_enty2 = "co2"), dim = c(3.3, 3.4))
+      pm_emifac.fe.indst <- dimSums(sel_pm_emifac_feIndst_co2, dim = c(3.3, 3.4))
       EmiIndSubSec <- pm_emifac.fe.indst * vm_demFeIndSub[, , getNames(pm_emifac.fe.indst)]
 
 
