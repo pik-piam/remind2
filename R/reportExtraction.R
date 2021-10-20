@@ -71,8 +71,8 @@ grades[is.na(grades)] <- 0
   if (getSets(p_cint)[[3]] == "emiTe") {
     p_cint          <- collapseNames(mselect(p_cint, emiTe = "co2"))
   } else {
-      p_cint          <- collapseNames(mselect(p_cint, all_enty = "co2"))
-      getSets(p_cint) <- gsub("all_enty1", "all_enty", getSets(p_cint))
+    p_cint          <- collapseNames(mselect(p_cint, all_enty = "co2"))
+    getSets(p_cint) <- gsub("all_enty1", "all_enty", getSets(p_cint))
   }
   p_cint          <- p_cint[, , mappegrad]
   if (!is.null(fuExtrOwnCons)) {
