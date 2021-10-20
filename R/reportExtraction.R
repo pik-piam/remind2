@@ -71,24 +71,10 @@ grades[is.na(grades)] <- 0
   if (getSets(p_cint)[[3]] == "emiTe") {
     p_cint          <- collapseNames(mselect(p_cint, emiTe = "co2"))
   } else {
-    mappegrad <- enty2rlf[enty2rlf$all_enty %in% petyex,]
-    mappegrad <- paste(mappegrad$all_enty,mappegrad$rlf,sep=".")
-  }  
-  
-  fuelex_bio <- fuelex[,t,c("pebiolc","pebios","pebioil")]
-  fuelex     <- fuelex[,t,mappegrad]
-  fuelex_cum <- fuelex_cum[,,mappegrad]
-  if(!is.null(grades)) { grades     <- grades[,t,mappegrad[which(mappegrad != "peur.1")]] }
-  costfu_ex  <- costfu_ex[,t,petyex]
-  pebiolc_demandmag <- pebiolc_demandmag[,t,]
-
-  if(getSets(p_cint)[[3]] == "emiTe"){
-      p_cint          <- collapseNames(mselect(p_cint, emiTe = "co2"))
-  } else {
       p_cint          <- collapseNames(mselect(p_cint, all_enty = "co2"))
       getSets(p_cint) <- gsub("all_enty1", "all_enty", getSets(p_cint))
   }
-  p_cint          <- p_cint[,,mappegrad]
+  p_cint          <- p_cint[, , mappegrad]
   if (!is.null(fuExtrOwnCons)) {
     fuExtrOwnCons <- mselect(fuExtrOwnCons,
                              all_enty  = gsub("\\.[0-9]", "", mappegrad),

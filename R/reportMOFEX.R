@@ -61,9 +61,9 @@ reportMOFEX <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default") 
   tradebal.m <- readGDX(gdx, name = "q31_MOFEX_tradebal", types = "equations", field = "m")
 
   ## Filter time period and fossil fuels
-  fuExtr <- fuExtr[, t, c("pegas","pecoal","peoil")]
-  costFuEx <- costFuEx[, t, c("pegas","pecoal","peoil")]
-  fuExtrCum <- fuExtrCum[, , c("pegas","pecoal","peoil")]
+  fuExtr <- fuExtr[, t, c("pegas", "pecoal", "peoil")]
+  costFuEx <- costFuEx[, t, c("pegas", "pecoal", "peoil")]
+  fuExtrCum <- fuExtrCum[, , c("pegas", "pecoal", "peoil")]
   Xport <- Xport[, t, ]
   Mport <- Mport[, t, ]
   pm_pvp <- pm_pvp[, t, ]
@@ -72,13 +72,13 @@ reportMOFEX <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default") 
   fuel2pe.m <- fuel2pe.m[, t, ]
   budget.m <- budget.m[, t, ]
   tradebal.m <- tradebal.m[, t, ]
-  if(getSets(p_cint)[[3]] == "emiTe"){
-      p_cint          <- collapseNames(mselect(p_cint, emiTe = "co2"))
+  if (getSets(p_cint)[[3]] == "emiTe") {
+    p_cint          <- collapseNames(mselect(p_cint, emiTe = "co2"))
   } else {
-      p_cint          <- collapseNames(mselect(p_cint, all_enty = "co2"))
-      getSets(p_cint) <- gsub("all_enty1", "all_enty", getSets(p_cint))
+    p_cint          <- collapseNames(mselect(p_cint, all_enty = "co2"))
+    getSets(p_cint) <- gsub("all_enty1", "all_enty", getSets(p_cint))
   }
-  mappegrad <- dimnames(grades[, , "xi1", drop=TRUE])$all_enty.rlf
+  mappegrad <- dimnames(grades[, , "xi1", drop = TRUE])$all_enty.rlf
   cost_per_GJ <- (costFuEx / dimSums(fuExtr, dim = 3)) * 1e3
   if (!is.null(pm_fuExtrOwnCons)) {
     pm_fuExtrOwnCons <- mselect(pm_fuExtrOwnCons,
