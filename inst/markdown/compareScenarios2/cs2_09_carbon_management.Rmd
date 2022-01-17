@@ -1,0 +1,110 @@
+# Carbon Management
+
+## Overview
+
+```{r}
+showLinePlots(data, "Carbon Management|Carbon Capture")
+showLinePlots(data, "Carbon Management|Carbon Sinks")
+showLinePlots(data, "Carbon Management|Carbon Sources")
+showLinePlots(data, "Carbon Management|Share of Stored CO2 from Captured CO2")
+```
+
+## Carbon Sinks
+
+```{r}
+tot <- "Carbon Management|Carbon Sinks"
+items <- c(
+  "Carbon Management|Carbon Sinks|CCU",
+  "Carbon Management|Carbon Sinks|Storage")
+showAreaAndBarPlots(data, items, tot)
+```
+
+### CCU
+
+```{r}
+tot <- "Carbon Management|Carbon Sinks|CCU"
+items <- c(
+  "Carbon Management|Carbon Sinks|CCU|Synthetic Gases",
+  "Carbon Management|Carbon Sinks|CCU|Synthetic Liquids")
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Storage
+
+```{r}
+tot <- "Carbon Management|Carbon Sinks|Storage"
+items <- c(
+  "Carbon Management|Carbon Sinks|Storage|Biomass|Pe2Se",
+  "Carbon Management|Carbon Sinks|Storage|DAC",
+  "Carbon Management|Carbon Sinks|Storage|EW",
+  "Carbon Management|Carbon Sinks|Storage|Fossil|Pe2Se",
+  "Carbon Management|Carbon Sinks|Storage|Industry Energy",
+  "Carbon Management|Carbon Sinks|Storage|Industry Process")
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Storage|Industry Energy
+
+```{r}
+tot <- "Carbon Management|Carbon Sinks|Storage|Industry Energy"
+items <- c(
+  "Carbon Management|Carbon Sinks|Storage|Industry Energy|Biomass",
+  "Carbon Management|Carbon Sinks|Storage|Industry Energy|Fossil",
+  "Carbon Management|Carbon Sinks|Storage|Industry Energy|Synfuel")
+showAreaAndBarPlots(data, items, tot)
+```
+
+
+## Carbon Sources
+
+```{r}
+tot <- "Carbon Management|Carbon Sources"
+items <- c(
+  "Carbon Management|Carbon Sources|Biomass|Pe2Se",
+  "Carbon Management|Carbon Sources|DAC",
+  "Carbon Management|Carbon Sources|EW",
+  "Carbon Management|Carbon Sources|Fossil|Pe2Se",
+  "Carbon Management|Carbon Sources|Industry Energy",
+  "Carbon Management|Carbon Sources|Industry Process")
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Biomass|Pe2Se
+
+```{r}
+tot <- "Carbon Management|Carbon Sources|Biomass|Pe2Se"
+items <- c(
+  "Carbon Management|Carbon Sources|Biomass|Pe2Se|Electricity w/ couple prod",
+  "Carbon Management|Carbon Sources|Biomass|Pe2Se|Gases w/ couple prod",
+  "Carbon Management|Carbon Sources|Biomass|Pe2Se|Heat w/ couple prod",
+  "Carbon Management|Carbon Sources|Biomass|Pe2Se|Hydrogen w/ couple prod",
+  "Carbon Management|Carbon Sources|Biomass|Pe2Se|Liquids w/ couple prod",
+  "Carbon Management|Carbon Sources|Biomass|Pe2Se|Solids w/ couple prod")
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Fossil|Pe2Se
+
+```{r}
+tot <- "Carbon Management|Carbon Sources|Fossil|Pe2Se"
+items <- c(
+  "Carbon Management|Carbon Sources|Fossil|Pe2Se|Electricity w/ couple prod",
+  "Carbon Management|Carbon Sources|Fossil|Pe2Se|Gases w/ couple prod",
+  "Carbon Management|Carbon Sources|Fossil|Pe2Se|Heat w/ couple prod",
+  "Carbon Management|Carbon Sources|Fossil|Pe2Se|Hydrogen w/ couple prod",
+  "Carbon Management|Carbon Sources|Fossil|Pe2Se|Liquids w/ couple prod",
+  "Carbon Management|Carbon Sources|Fossil|Pe2Se|Solids w/ couple prod")
+showAreaAndBarPlots(data, items, tot)
+```
+
+### Industry Energy
+
+```{r}
+tot <- "Carbon Management|Carbon Sources|Industry Energy"
+items <- c(
+  "Carbon Management|Carbon Sources|Industry Energy|Biomass",
+  "Carbon Management|Carbon Sources|Industry Energy|Fossil",
+  "Carbon Management|Carbon Sources|Industry Energy|Synfuel")
+showAreaAndBarPlots(data, items, tot)
+```
+

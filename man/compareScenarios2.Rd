@@ -64,7 +64,8 @@ choose Rmd as output format and obtain a copy of the *.Rmd-files.
     Default: \code{"all"}.
     Names of sections to include. A subset of
     \code{c("01_summary", "02_macro", "03_emissions", "04_energy_supply",
-    "05_energy_demand", "06_energy_services", "07_climate", "08_sdp")}
+    "05_energy_demand", "06_energy_services", "07_climate", "08_sdp",
+    "09_carbon_management")}
     or \code{"all"} for all available sections.}
   \item{\code{userSectionPath}}{
     \code{NULL} or \code{character(n)}.
