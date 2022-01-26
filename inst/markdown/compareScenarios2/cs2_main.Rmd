@@ -105,6 +105,40 @@ dataHist %>%
   filter(period %in% params$yearsHist, !is.na(value)) ->
   dataHist
 
+# filter faulty historic data 
+# (see e.g. https://github.com/pik-piam/mrremind/issues/194)
+# TODO: can be removed once it is being dealt with on the mrremind end
+dataHist <- dataHist %>% 
+  # filter regional cement and steel production data from IEA ETP
+  anti_join(
+    expand_grid(
+      model = grep('^IEA ETP', getModels(dataHist), value = TRUE),
+      region = setdiff(getRegs(dataScen), 'World'),
+      variable = c('Production|Industry|Cement', 
+                   'Production|Industry|Steel')),
+    
+    c('model', 'region', 'variable')
+  ) %>% 
+  # remove regional and global data from IEA WEO 2021
+  anti_join(
+    bind_rows(
+      expand_grid(
+        model = c('IEA WEO 2021 APS GLO', 
+                  'IEA WEO 2021 Net2050 GLO', 
+                  'IEA WEO 2021 SDS GLO', 
+                  'IEA WEO 2021 SPS GLO'),
+        region = setdiff(getRegs(dataScen), 'World')),
+      
+      expand_grid(
+        model = c('IEA WEO 2021 APS regional', 
+                  'IEA WEO 2021 SDS regional', 
+                  'IEA WEO 2021 SPS regional'),
+        region = 'World')
+    ),
+    
+    c('model', 'region')
+  )
+
 # Combine into one data frame and remove old.
 data <- bind_rows(dataScen, dataHist)
 rm(dataScen, dataHist)
