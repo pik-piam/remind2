@@ -174,7 +174,7 @@ reportSDPVariables <- function(gdx,output=NULL) {
   
   addUEperCapForBuildings <- function(output){
     
-    p36_uedemand_build <- readGDX(gdx, "p36_uedemand_build", react = "silent")[, t, ]
+    p36_uedemand_build <- readGDX(gdx, "p36_uedemand_build", react = "silent")[,getYears(output),]
     if (buil_mod == "simple" & is.null(p36_uedemand_build)) #UE|Buildings var does not exist in this case 
       return()
       
