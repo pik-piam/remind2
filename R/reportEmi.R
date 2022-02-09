@@ -728,7 +728,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
 
   ## 3. Carbon Management ----
 
-  # all carbon management variables are defined positive (both carbon sources and sinks)
+  # all carbon management variables are defined positive (carbon capture, storage and usage)
 
   # same calculation as for supply emissions per SE, only for captured CO2 ("cco2")
   # (also adding first and second product emissions of coupled production technologies)
@@ -1143,7 +1143,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
 
 
   #### calculate corresponding negative emissions variables by CDR for bar plots with gross emissions
-  # same as "Carbon Management|Carbon Sinks|Storage|+|DAC (Mt CO2/yr)" etc. but negative
+  # same as "Carbon Management|Storage|+|DAC (Mt CO2/yr)" etc. but negative
 
   # only negative land-use change emissions
   EmiCDR.LUC <- dimSums(vm_emiMacSector[, , "co2luc"], dim = 3) * GtC_2_MtCO2
