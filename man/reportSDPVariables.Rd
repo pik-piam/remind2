@@ -4,7 +4,7 @@
 \alias{reportSDPVariables}
 \title{Add SDP variables to mif, used in convGDX2MIF.R for the reporting}
 \usage{
-reportSDPVariables(gdx, output = NULL)
+reportSDPVariables(gdx, output)
 }
 \arguments{
 \item{gdx}{a GDX as created by readGDX, or the file name of a gdx}
