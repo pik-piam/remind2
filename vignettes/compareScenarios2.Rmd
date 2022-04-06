@@ -210,6 +210,25 @@ Or, if two scenarios have the same name, they are renamed automatically.
 
 Furthermore, this section displays a description of each scenario. This requires the YAML-parameter `cfgScen` to be set (see also [99 Further Info]). The description can be set in the `secenario_config*.csv`-file via a column `description`.
 
+### 98 Auto Plot
+
+This is a section in which plots are created purely in an automated way.
+
+It is deactivated by default as `autoPlotPattern` is set to `NULL`. To activate it, the section file `cs2_98_auto_plot.Rmd` must be included in the main file, which it is by default (as the defualt is `sections = "all"`) or by including `98` in the `sections` parameter. Furthermore, `autoPlotPattern` must be a regular expression (or a vector of such).
+
+Variable names in the mif-files have a structure defined by the use of `|` and `+`. CompareScenarios2 can parse this structure and automatically create plots from it. As it takes very long to make create a plot for every variable in a typical mif-file, the variables to be included are restricted by the YAML-parameter `autoPlotPattern`. `autoPlotPattern` is a character vector. Its entries are interpreted as regular expressions, which are used to filter the variable names.
+
+Here is an example that will only use automatically created plots (and none of the other sections) to show all variables which start with `Emi|GHG|` or `FE|CDR|`.
+
+```{r}
+compareScenarios2(
+  mifScen = c("path/to/scen1.mif", "path/to/scen2.mif"),
+  mifHist = "path/to/historical.mif",
+  outputFile = format(Sys.time(), "cs2_auto_%Y%m%d-%H%M%S"),
+  sections = 98, # section file cs2_98_auto_plot.Rmd
+  autoPlotPattern = c("^Emi\\|GHG\\|", "^FE\\|CDR\\|"))
+```
+
 
 ### 99 Further Info
 

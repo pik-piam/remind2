@@ -1,0 +1,36 @@
+```{r}
+autoCreatePlots <- function(data, prefix, lst, depth) {
+  for (i in seq_along(lst)) {
+    nm <- names(lst)[i]
+    val <- lst[[i]]
+    if (is.na(nm) || nchar(nm) == 0 || str_detect(nm, "^\\++$")) next
+    cat(paste0("\n\n", str_dup("#", depth), " ", nm, "\n\n"))
+    variableName <- paste0(prefix, nm)
+    nms <- names(val)
+    cntPlus <- sum(str_detect(nms, "^\\++$"))
+    if (variableName %in% data$variable) {
+      if (cntPlus == 0) {
+        showLinePlots(data, variableName)
+      } else {
+        for (i in seq_len(cntPlus)) showAreaAndBarPlotsPlus(data, variableName, plusNum = i)
+      }
+    }
+    if (is.list(val)) autoCreatePlots(data, paste0(variableName, "|"), val, depth = depth+1)
+  }
+}
+```
+
+```{r results='asis'}
+data %>% 
+  filter(scenario != "historical") %>% 
+  pull(varplus) %>% 
+  unique() ->
+  varNamesPlus
+for (pattern in params$autoPlotPattern) {
+  vn <- str_subset(varNamesPlus, pattern)
+  varList <- variablesAsList(vn)
+  autoCreatePlots(data, "", varList, depth = 1)
+}
+```
+
+

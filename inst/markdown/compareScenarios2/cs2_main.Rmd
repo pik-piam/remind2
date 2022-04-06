@@ -29,6 +29,7 @@ params:
   reg: null
   sections: "all"
   userSectionPath: null
+  autoPlotPattern: null
   mainReg: "World"
   figWidth: 15 
   figHeight: 10
