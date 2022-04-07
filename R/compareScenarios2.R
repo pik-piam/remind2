@@ -15,10 +15,26 @@
 #'   and intermediary files are created.
 #' @param outputFormat \code{character(1)}, not case-sensitive. \code{"html"},
 #'   \code{"pdf"}, or \code{"rmd"}.
+#' @param envir \code{environment}. The environment in which the code chunks are
+#'   to be evaluated. See the argument of the same name in
+#'   \code{\link[rmarkdown:render]{rmarkdown::render()}}.
+#'   Set this to \code{globalenv()} and \code{sections} to \code{NULL} to load
+#'   an preprocess data in your global environment during development.
 #' @param ... YAML parameters, see below.
 #' @return The value returned by \code{\link[rmarkdown:render]{rmarkdown::render()}}.
 #' @section YAML Parameters:
 #' \describe{
+#'   \item{\code{cfgScen}}{
+#'     \code{character(n) or NULL}.
+#'     Paths to config.Rdata files containing the \code{cfg} object for each
+#'     scenario. The paths must be provided in the same order as \code{mifScen}.
+#'     If provided, some information gathered from these files is
+#'     shown at the beginning of the output document.}
+#'   \item{\code{cfgDefault}}{
+#'     \code{character(1) or NULL}.
+#'     Path to default.cfg, which creates a \code{cfg} object with default
+#'     values. If provided, some information gathered from this file is
+#'     shown at the beginning of the output document.}
 #'   \item{\code{yearsScen}}{
 #'     \code{numeric(n)}.
 #'     Default: \code{c(seq(2005, 2060, 5), seq(2070, 2100, 10))}.
@@ -31,17 +47,24 @@
 #'     \code{numeric(n)}.
 #'     Default: \code{c(2010, 2030, 2050, 2100)}.
 #'     Years to show in bar plots of scenario data.}
+#'   \item{\code{yearRef}}{
+#'     \code{numeric(1)}.
+#'     Default: \code{2020}.
+#'     A reference year used to show relative values in Kaya decomposition.}
 #'   \item{\code{reg}}{
 #'     \code{NULL} or \code{character(n)}.
 #'     Default: \code{NULL}.
 #'     Regions to show. \code{NULL} means all.}
 #'   \item{\code{sections}}{
-#'     \code{character(n)}.
+#'     \code{character(n) or numeric(n) or NULL}.
 #'     Default: \code{"all"}.
-#'     Names of sections to include. A subset of
-#'     \code{c("01_summary", "02_macro", "03_emissions", "04_energy_supply",
-#'     "05_energy_demand", "06_energy_services", "07_climate", "08_sdp")}
-#'     or \code{"all"} for all available sections.}
+#'     Names or numbers of sections to include. For names subset of
+#'     \code{c("00_info", "01_summary", "02_macro", "03_emissions",
+#'     "04_energy_supply", "05_energy_demand", "06_energy_services",
+#'     "07_climate", "08_sdp", "09_carbon_management", "99_further_info")}.
+#'     Use \code{"all"} to include all available sections.
+#'     Use \code{NULL} to not include any section
+#'     (useful in combination with parameter \code{envir}).}
 #'   \item{\code{userSectionPath}}{
 #'     \code{NULL} or \code{character(n)}.
 #'     Default: \code{NULL}.
@@ -62,16 +85,30 @@
 #' @author Christof Schoetz
 #' @examples
 #' \dontrun{
+#' # Simple use. Creates PDF:
 #' compareScenarios2(
 #'   mifScen = c("path/to/Base.mif", "path/to/NDC.mif"),
 #'   mifHist = "path/to/historical.mif",
-#'   outputFile = "CompareScenarios2Example1",
-#'   userSectionPath = "path/to/myPlots.Rmd")
+#'   outputFile = "CompareScenarios2Example")
+#' # More complex use. Creates folder with Rmds:
 #' compareScenarios2(
-#'   mifScen = c(ScenarioName1="path/to/scen1.mif", ScenarioName2="path/to/scen2.mif"),
+#'   mifScen = c(ScenarioName1 = "path/to/scen1.mif", ScenarioName2 = "path/to/scen2.mif"),
 #'   mifHist = "path/to/historical.mif",
-#'   outputFile = "CompareScenarios2Example2",
-#'   figWidth = 18, figHeight = 10)
+#'   cfgScen = c("path/to/scen1/config.RData", "path/to/scen2/config.RData"),
+#'   cfgDefault = "path/to/default.cfg",
+#'   outputDir = "path/to/output",
+#'   outputFormat = "Rmd",
+#'   outputFile = format(Sys.time(), "compScen_%Y%m%d-%H%M%S"),
+#'   warning = FALSE,
+#'   sections = c(0, 2, 3, 99),
+#'   userSectionPath = "path/to/myPlots.Rmd")
+#' # Use in development. Load data into global environment:
+#' compareScenarios2(
+#'   mifScen = c("path/to/scen1.mif", "path/to/scen2.mif"),
+#'   mifHist = "path/to/historical.mif",
+#'   outputFile = format(Sys.time(), "cs2_load_%Y%m%d-%H%M%S"),
+#'   sections = NULL,
+#'   envir = globalenv())
 #' }
 #' @export
 compareScenarios2 <- function(
@@ -79,25 +116,32 @@ compareScenarios2 <- function(
   outputDir = getwd(),
   outputFile = "CompareScenarios2",
   outputFormat = "PDF",
+  envir = new.env(),
   ...
   ) {
+  # Set yaml parameters and convert relative to absolute paths.
   yamlParams <- c(
     list(
       mifScen = normalizePath(mifScen, mustWork = TRUE),
       mifScenNames = names(mifScen),
       mifHist = normalizePath(mifHist, mustWork = TRUE)),
     list(...))
-
-  # convert relative to absolute paths
-  if ('userSectionPath' %in% names(yamlParams)) {
-    yamlParams$userSectionPath <- normalizePath(yamlParams$userSectionPath,
-                                                mustWork = TRUE)
+  if (!is.null(yamlParams[["cfgScen"]])) {
+    yamlParams$cfgScen <- normalizePath(yamlParams$cfgScen, mustWork = TRUE)
+  }
+  if (!is.null(yamlParams[["cfgDefault"]])) {
+    yamlParams$cfgDefault <- normalizePath(yamlParams$cfgDefault, mustWork = TRUE)
+  }
+  if (!is.null(yamlParams[["userSectionPath"]])) {
+    yamlParams$userSectionPath <- normalizePath(yamlParams$userSectionPath, mustWork = TRUE)
   }
 
-  outputFormat <- tolower(outputFormat)
-  if (outputFormat == "pdf") outputFormat <- "pdf_document"
-  if (outputFormat == "html") outputFormat <- "html_document"
-  if (identical(tolower(outputFormat), "rmd")) {
+  outputFormat <- tolower(outputFormat)[[1]]
+  if (outputFormat == "pdf") {
+    outputFormat <- "pdf_document"
+  } else if (outputFormat == "html") {
+    outputFormat <- "html_document"
+  } else if (outputFormat == "rmd") {
     return(.compareScenarios2Rmd(yamlParams, outputDir, outputFile))
   }
   rmarkdown::render(
@@ -107,18 +151,18 @@ compareScenarios2 <- function(
     output_file = outputFile,
     output_format = outputFormat,
     params = yamlParams,
-    envir = new.env())
+    envir = envir)
 }
 
 # Copies the CompareScenarios2-Rmds to the specified location and modifies
 # their YAML header according to \code{yamlParams}.
 .compareScenarios2Rmd <- function(yamlParams, outputDir, outputFile) {
-  # TODO: read_rmd() is not exported from ymlthis.
-  readRmd <- utils::getFromNamespace("read_rmd", "ymlthis")
-  rmd <- readRmd(
-    system.file("markdown/compareScenarios2/cs2_main.Rmd", package = "remind2"))
+  pathMain <- system.file("markdown/compareScenarios2/cs2_main.Rmd", package = "remind2")
+  linesMain <- readLines(pathMain)
+  delimiters <- grep("^(---|\\.\\.\\.)\\s*$", linesMain)
+  headerMain <- linesMain[(delimiters[1]):(delimiters[2])]
   yml <- yaml::yaml.load(
-    rmd,
+    headerMain,
     handlers = list(r = function(x) ymlthis::yml_params_code(!!rlang::parse_expr(x))))
   baseYaml <- ymlthis::as_yml(yml)
   newYamlParams <- baseYaml$params
@@ -136,7 +180,7 @@ compareScenarios2 <- function(
     system.file("markdown/compareScenarios2", package = "remind2"),
     full.names = TRUE)
   rmdDirFiles <- grep(
-    dirFiles, 
+    dirFiles,
     pattern = "cs2_main\\.Rmd$",
     invert = TRUE, value = TRUE)
   file.copy(rmdDirFiles, pathDir)

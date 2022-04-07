@@ -39,11 +39,6 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
   ## Check realisations
   module2realisation <- readGDX(gdx, "module2realisation", react = "silent")
   tran_mod <- module2realisation[module2realisation$modules == "transport", 2]
-  if ("CCU" %in% module2realisation[, 1]) {
-    CCU_mod <- module2realisation[module2realisation$modules == "CCU", 2]
-  } else {
-    CCU_mod <- "off"
-  }
 
   CDR_mod <- module2realisation[module2realisation$modules == "CDR", 2]
 
@@ -157,10 +152,10 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
     carmap <- c()
   }
 
-  if (CCU_mod == "on") {
-    techmap <- append(techmap, c("MeOH" = "Liquids|Hydrogen",
-      "h22ch4" = "Gases|Hydrogen"))
-  }
+  # add synfuel technologies
+  techmap <- append(techmap, c("MeOH" = "Liquids|Hydrogen",
+                               "h22ch4" = "Gases|Hydrogen"))
+  
 
   if (CDR_mod != "off") {
     cdrmap <- c("dac" = "DAC",
@@ -241,8 +236,8 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
     } else if (all(map %in% cdrmap)) {
       # CDR technologies need special mapping
       # for global avgs we use CO2 flows as weights
-      int2ext[[report_str("DAC", category, unit)]] <- report_str("DAC", unit = "Mt CO2/yr", predicate = "Carbon Management|Carbon Sources")
-      int2ext[[report_str("CO2 Storage", category, unit)]] <- report_str("Storage", unit = "Mt CO2/yr", predicate = "Carbon Management|Carbon Sinks")
+      int2ext[[report_str("DAC", category, unit)]] <- report_str("DAC", unit = "Mt CO2/yr", predicate = "Carbon Management|Carbon Capture")
+      int2ext[[report_str("CO2 Storage", category, unit)]] <- report_str("Storage", unit = "Mt CO2/yr", predicate = "Carbon Management")
     }
     return(int2ext)
   }
