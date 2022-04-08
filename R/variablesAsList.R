@@ -16,13 +16,14 @@
 #' varList <- variablesAsList(vars)
 #' \dontrun{View(varList)}
 variablesAsList <- function(v) {
-  splitList <- strsplit(v, "|", fixed=TRUE)
+  v <- unique(as.character(v))
+  splitList <- strsplit(v, "|", fixed = TRUE)
   maxLen <- max(sapply(splitList, length))
   mat <- t(sapply(splitList, function(x) x[seq_len(maxLen)]))
   splitMatrixAsList <- function(mat) {
     if (length(mat) == 0 || all(is.na(mat))) return(NULL)
-    lst <- split(mat[,-1,drop=FALSE], mat[,1])
-    lst <- lapply(lst, matrix, ncol = NCOL(mat)-1)
+    lst <- split(mat[, -1, drop = FALSE], mat[, 1])
+    lst <- lapply(lst, matrix, ncol = NCOL(mat) - 1)
     return(lapply(lst, splitMatrixAsList))
   }
   res <- splitMatrixAsList(mat)
