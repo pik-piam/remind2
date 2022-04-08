@@ -32,5 +32,3 @@ for (pattern in params$autoPlotPattern) {
   autoCreatePlots(data, "", varList, depth = 1)
 }
 ```
-
-
