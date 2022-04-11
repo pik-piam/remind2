@@ -87,7 +87,8 @@ choose Rmd as output format and obtain a copy of the *.Rmd-files.
     Names or numbers of sections to include. For names subset of
     \code{c("00_info", "01_summary", "02_macro", "03_emissions",
     "04_energy_supply", "05_energy_demand", "06_energy_services",
-    "07_climate", "08_sdp", "09_carbon_management", "99_further_info")}.
+    "07_climate", "08_sdp", "09_carbon_management", "98_auto_plot",
+    "99_further_info")}.
     Use \code{"all"} to include all available sections.
     Use \code{NULL} to not include any section
     (useful in combination with parameter \code{envir}).}
@@ -95,6 +96,16 @@ choose Rmd as output format and obtain a copy of the *.Rmd-files.
     \code{NULL} or \code{character(n)}.
     Default: \code{NULL}.
     Path to a *.Rmd-file that may be included as additional section.}
+  \item{\code{autoPlotPattern}}{
+    \code{NULL} or \code{character(n)}.
+    Activates the auto-plot functions.
+    For each entry, the variable names without \code{+} are filtered by the
+    entry interpreted as a regular expression. Then the structure induced by
+    the variable names with \code{+} is used to create a (sub-)section
+    structure with line plot for individual variables and bar plots for
+    aggregated variables as indicated by the use of \code{+} in the variable
+    names.
+  }
   \item{\code{mainReg}}{
     \code{character(1)}.
     Default: \code{"World"}.
@@ -136,6 +147,14 @@ compareScenarios2(
   outputFile = format(Sys.time(), "cs2_load_\%Y\%m\%d-\%H\%M\%S"),
   sections = NULL,
   envir = globalenv())
+# Use only auto-plot. Show every variable starting with Emi|GHG| and then
+# every variable starting with FR|CDR|.
+compareScenarios2(
+  mifScen = c("path/to/scen1.mif", "path/to/scen2.mif"),
+  mifHist = "path/to/historical.mif",
+  outputFile = format(Sys.time(), "cs2_auto_\%Y\%m\%d-\%H\%M\%S"),
+  sections = 98, # section file cs2_98_auto_plot.Rmd
+  autoPlotPattern = c("^Emi\\\\|GHG\\\\|", "^FE\\\\|CDR\\\\|"))
 }
 }
 \author{
