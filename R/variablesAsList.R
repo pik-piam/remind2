@@ -71,7 +71,7 @@ variablesAsList <- function(
     data <- quitte::read.quitte(vars)
     vars <- data$variable
   } else if (!missing(data)) {
-    stopifnot(quitte::is.quitte(data))
+    data <- quitte::as.quitte(data)
     vars <- data$variable
   }
 
