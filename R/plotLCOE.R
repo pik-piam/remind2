@@ -233,8 +233,8 @@ plotLCOE <- function(LCOEfile, gdx, y=c(2015,2020,2030,2040,2050,2060),reg="all_
                       filter( type == "marginal") %>% 
                       revalue.levels(output = relabel.outputs) %>% 
                       rename(LCOE = value) %>%
-                      left_join(df.dC) %>% 
-                      left_join(df.SePrice) %>% 
+                      left_join_silent(df.dC) %>% 
+                      left_join_silent(df.SePrice) %>% 
                       gather(variable, value, LCOE, vm_deltaCap, Price) %>%   
                       # do away with cost dimension for non LCOE variables
                       filter( cost == "Investment Cost" | variable == "LCOE",

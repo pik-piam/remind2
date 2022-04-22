@@ -22,8 +22,8 @@ get_total_efficiencies <- function(gdxName) {
   pf_mapping <- read.gdx(gdxName, 'cesOut2cesIn', factors = FALSE, 
                          colNames = c('pf.out', 'pf.in'))
   
-  full_join(
-    inner_join(
+  full_join_silent(
+    inner_join_silent(
       pf_mapping,
       
       pm_cesdata %>% 
@@ -33,7 +33,7 @@ get_total_efficiencies <- function(gdxName) {
       c('pf.in' = 'pf')
     ),
     
-    inner_join(
+    inner_join_silent(
       pf_mapping,
       
       pm_cesdata %>% 

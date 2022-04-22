@@ -326,7 +326,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
         as_tibble() %>%
         select(-'Cell') %>% 
         # join with population numbers
-        left_join(
+        left_join_silent(
           output[,,'Population (million)'] %>% 
             as.data.frame() %>% 
             as_tibble() %>% 
@@ -336,7 +336,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
         ) %>% 
         # join unit conversion
         extract(.data$Data1, c('variable', 'unit'), '^(.*) \\((.*)\\)$') %>% 
-        full_join(
+        full_join_silent(
           tribble(
             ~unit,                  ~new.unit,    ~factor,
             'Mt/yr',                't/yr',       1,
@@ -366,7 +366,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
         as_tibble() %>%
         select(-'Cell') %>%
         # join with population numbers
-        left_join(
+        left_join_silent(
           output[,,'GDP|PPP (billion US$2005/yr)'] %>%
             as.data.frame() %>%
             as_tibble() %>%
@@ -376,7 +376,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
         ) %>%
         # join unit conversion
         extract(.data$Data1, c('variable', 'unit'), '^(.*) \\((.*)\\)$') %>%
-        full_join(
+        full_join_silent(
           tribble(
             ~unit,                  ~new.unit,    ~factor,
             # Mt/$bn * 1e6 t/Mt * 1e-3 $bn/$m = t/$m

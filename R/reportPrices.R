@@ -121,7 +121,7 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
 
   sector <- emi_sectors <- emiMkt <- all_emiMkt <- NULL
   fe.entries <- entyFe2Sector %>%
-                  left_join(sector2emiMkt) %>%
+                  left_join_silent(sector2emiMkt) %>%
                   rename( sector = emi_sectors, emiMkt = all_emiMkt) %>%
                   filter( sector != "CDR")
 

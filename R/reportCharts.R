@@ -545,7 +545,7 @@ reportCharts <- function(gdx=NULL, regionMapping=NULL, hist=NULL, reportfile=NUL
         scale_y_continuous(labels = scales::percent) +
         scale_x_continuous(limits = c(2005, NA)) )
     #per capita chart
-    df <- suppressWarnings(left_join(df, pop, by=c("region", "period")))
+    df <- suppressWarnings(left_join_silent(df, pop, by=c("region", "period")))
     df <- df %>% group_by(.data$region,.data$period) %>% mutate(percapita = .data$value/.data$population) #creating per capita column
     df$percapitaDetails <- paste0(round(df$percapita,2)," EJ per capita<br>",gsub("\\|"," ",gsub("\\+\\|","",gsub("PE\\|","",as.character(df$variable)))), " primary energy consumption in ", ifelse(reg=="GLO","the World", as.character(df$region)),"<br>year: ",df$period)
     g$percapita <- suppressWarnings( ggplot(data=df,aes_(x=~period,y=~percapita,fill=~variable,text=~percapitaDetails,group = ~variable)) +

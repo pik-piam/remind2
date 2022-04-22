@@ -50,7 +50,7 @@ calc_CES_marginals <- function(gdxName, id = 'file') {
     
     # ---- calculate marginals ----
     marginals <- cesOut2cesIn %>% 
-      left_join(
+      left_join_silent(
         pm_cesdata %>% 
           filter(!!sym('param') %in% c('xi', 'eff')) %>% 
           pivot_wider(names_from = 'param') %>% 
@@ -58,25 +58,25 @@ calc_CES_marginals <- function(gdxName, id = 'file') {
         
         c('pf.in' = 'pf')
       ) %>% 
-      left_join(
+      left_join_silent(
         pm_cesdata %>% 
           filter('rho' == !!sym('param')) %>% 
           select(-'param', 'rho' = 'value'),
         
         c('t', 'regi', 'pf.out' = 'pf')
       ) %>% 
-      left_join(
+      left_join_silent(
         vm_effGr,
         
         c('t', 'regi', 'pf.in' = 'pf')
       ) %>% 
-      left_join(
+      left_join_silent(
         vm_cesIO %>% 
           rename('value.in' = 'value'), 
         
         c('t', 'regi', 'pf.in' = 'pf')
       ) %>% 
-      left_join(
+      left_join_silent(
         vm_cesIO %>% 
           rename('value.out' = 'value'),
         
@@ -107,8 +107,8 @@ calc_CES_marginals <- function(gdxName, id = 'file') {
         marginals %>% 
           filter(!!sym('pf.out') %in% CES_root) %>% 
           select('pf' = 'pf.in', 't', 'regi', 'price' = 'marginal') %>% 
-          left_join(cesOut2cesIn, c('pf' = 'pf.in')) %>% 
-          left_join(
+          left_join_silent(cesOut2cesIn, c('pf' = 'pf.in')) %>% 
+          left_join_silent(
             prices %>% 
               rename('price.out' = 'price'), 
             
