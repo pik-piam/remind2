@@ -6,8 +6,20 @@ R package **remind2**, version **1.86.12**
 
 ## Purpose and Functionality
 
-Contains the REMIND-specific routines for data and model output manipulation.
+Contains functions for creating the reporting of the REMIND model in form of a .mif-file. It includes the function ``convGDX2MIF()`` which creates the main REMIND output contained in the mif-file based on the fulldata.gdx file of a REMIND run. The calculation of the REMIND variables as reported in the mif-file is separated into different functions per variable category (e.g. ``SE|...`` variables are calculated in reportSE.R, ``Emi|...`` variables in reportEmi.R etc.). 
 
+## REMIND Variable Naming
+
+There are a couple of naming conventions for REMIND variables in the mif-file:
+
+* variables typically follow the structure ``Variable Type|...|Sector1|Sector2|…|Energy Carrier Output|Energy Carrier Origin`` (Example: ``FE|Industry|Liquids|Biomass`` contains liquid fuel used as final energy in industry that is produced from biomass)
+* variables including a "+" should sum up to the variable written before the "+". Multiple stages of summations should only feature a "+" at the lowest level of aggregation (see details below), the variables including a "+" are subject to an automated summation check by ``test-convGDX2mif.R`` when building the library. 
+* modifications of standard variables like ``w/ Bunkers``, ``before taxes`` or "gross" should be placed at the highest relevant aggregation level (examples: ``Emi|CO2|Gross|Energy|Supply|+|Liquids``, ``FE|w/ Bunkers|+|Transport``)
+* variables added solely for diagnostic or debugging purpose which should not be used for projects, papers etc. should start with "Internal|..."
+
+* "+" logic in detail + examples
+
+* note that, REMIND variable definition not necessarily the same for similarly named varibles as in IAM comparison projects. For current mappings of REMIND variables to IAM comparison projects see project interfactes
 
 ## Installation
 
@@ -38,6 +50,10 @@ The package comes with vignettes describing the basic functionality of the packa
 vignette("compareScenarios2") # compareScenarios2
 vignette("remind_summary")    # Adding plots to the REMIND_summary.pdf
 ```
+
+## Development
+
+
 
 ## Questions / Problems
 
