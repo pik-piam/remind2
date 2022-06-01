@@ -52,7 +52,7 @@ checkSummations <- function(x) {
     if (is.null(failed)) {
       message("Summations look good")
     } else {
-      warning("Some variable groups do not sum up or the total is missing")
+      warning("Some variable groups do not sum up or the total is missing", immediate. = TRUE)
       return(list("failing and/or missing variable groups", failed))
     }
   } else {
