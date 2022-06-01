@@ -41,13 +41,7 @@ testFE <- reportFE(gdx)
 
 
 
-When developing the remind2 library, please test your changes on a recent ``fulldata.gdx`` file from REMIND by running the ``convGDX2MIF()`` function. Make sure the ``fulldata.gdx`` file is suitable for testing the change you did. For example, check that the relevant GAMS variables and parameters are available and non-zero in the GDX you are testing. Different REMIND runs come with different module realization and switches where certain sets, parameters or variables are not existing such that your change may not be tested by an unsuitable GDX. Moreover, when adapting or adding variables with "+" notation, please run a summation check on a suitable GDX by running the ``checkIntegrity()`` found [here](https://github.com/pik-piam/remind2/blob/1a80cc607db663a211f98cabb3c7408cd08bf713/tests/testthat/test-convGDX2mif.R#L31) on your reporting output:
-
-
-```{r, eval = FALSE}
-checkIntegrity(testReport)
-```
-
+When developing the remind2 library, please test your changes on a recent ``fulldata.gdx`` file from REMIND by running the ``convGDX2MIF()`` function. Make sure the ``fulldata.gdx`` file is suitable for testing the change you did. For example, check that the relevant GAMS variables and parameters are available and non-zero in the GDX you are testing. Different REMIND runs come with different module realization and switches where certain sets, parameters or variables are not existing such that your change may not be tested by an unsuitable GDX. Running ``convGDX2MIF`` will also check if summation groups using the ``|+|`` notation add up correctly. To check the summation of variables not containing the ``|+|`` notation add them to the `inst/extdata/summationGroups.csv`` file and they will be checked automatically.
 
 If your change involves reading in a parameter, variable or set from the GDX-file that is not yet merged to the [main REMIND repository](https://github.com/remindmodel/remind) or that is not declared in the default runs of REMIND, please use conditional statements that check whether these parameters exist. Otherwise, the reporting will break for other users with other GDX files. 
 
