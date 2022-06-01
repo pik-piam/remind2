@@ -2,7 +2,7 @@
 % Please edit documentation in R/checkSummations.R
 \name{checkSummations}
 \alias{checkSummations}
-\title{Perform summation check on a dataset}
+\title{Perform summation check on a dataset.}
 \usage{
 checkSummations(x)
 }
@@ -10,10 +10,10 @@ checkSummations(x)
 \item{x}{a quitte object containing the data}
 }
 \value{
-a list with a message and the failed variable groups as elements
+a list with the failed and/or missing variable groups as elements
 }
 \description{
-Based on the |+| notation in variable names
+Based on the |+| notation in variable names.
 }
 \examples{
 
