@@ -20,6 +20,7 @@
 #' @export
 #' @importFrom gdx readGDX
 #' @importFrom magclass mbind write.report
+#' @importFrom quitte as.quitte
 
 convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
                         t = c(seq(2005, 2060, 5), seq(2070, 2110, 10),
@@ -114,7 +115,7 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   output <- add_dimension(output, dim=3.1, add = "scenario", nm = scenario)
 
   message("Checking summations...")
-  checkIntegrity(output)
+  checkSummations(as.quitte(output))
 
   # either write the *.mif or return the magpie object
   if(!is.null(file)) {
