@@ -206,10 +206,36 @@ stock <- data %>%
 showLinePlots(stock, "Production|Industry|Steel|Accumulated Production", mainReg = "World")
 
 stock_pc <- left_join(stock, population, by = c("period", "region", "scenario")) %>%
-  mutate(value = value.x / value.y, unit = "t per cap")
+  mutate(value = value.x / value.y, unit = "t per cap") %>% 
+  select(-value.x,-value.y)
 
 showLinePlots(stock_pc, "Production|Industry|Steel|Accumulated Production", scales = "fixed", mainReg = "World")
 ```
+
+###Steel accumulation versus GDP evolution and rate 
+```{r}
+steelGDP <- data %>%
+  filter(variable == "GDP|PPP pCap") %>%
+  full_join(stock_pc, by = c("region","scenario","model","period")) %>%
+  mutate(value = value.y/value.x) %>%
+  mutate(variable = "Production|Industry|Steel|Accumulated Production per GDP PPP", unit = "t_pc/ GDPpc") %>%
+  select("model", "scenario", "region", "variable", "unit", "period", "value")
+
+showLinePlots(steelGDP, "Production|Industry|Steel|Accumulated Production per GDP PPP", scales = "fixed", mainReg = "World")
+
+steelGDP_Splot <- data %>% 
+  filter(variable == "GDP|PPP pCap") %>% 
+  full_join(stock_pc, by = c("region","scenario","model","period"))
+
+ggplot() +
+  geom_point(data = steelGDP_Splot, aes_string(x = 'value.x', y = 'value.y', color='scenario')) +
+  expand_limits(y = 0)+
+  ylab('Production|Industry|Steel|Accumulated Production per capita [t]')+
+  xlab('GDP|PPP pCap [kUS$2005]') +
+  facet_wrap(~region, scales="free_y", ncol=4)
+
+```
+
 
 ### Subsector per-GDP Production
 ```{r plot subsector per-GDP production}
