@@ -4,19 +4,21 @@
 \alias{checkSummations}
 \title{Perform summation check on a dataset.}
 \usage{
-checkSummations(x)
+checkSummations(x, tolerance = 1e-05)
 }
 \arguments{
 \item{x}{a quitte object containing the data}
+
+\item{tolerance}{a numeric value of accepted tolerance for parent = sum(children)}
 }
 \value{
-a list with the failed and/or missing variable groups as elements
+a quitte with the failed and/or missing variable groups (contains a
+column "parent" to group by)
 }
 \description{
 Based on the |+| notation in variable names.
 }
 \examples{
-
 \dontrun{
 checkSummations(x)
 }

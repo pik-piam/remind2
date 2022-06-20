@@ -7,7 +7,6 @@
 #' @param tolerance a numeric value of accepted tolerance for parent = sum(children)
 #' @author Anastasis Giannousakis
 #' @examples
-#'
 #' \dontrun{
 #' checkSummations(x)
 #' }
@@ -23,9 +22,10 @@ checkSummations <- function(x, tolerance = 0.00001) {
 
   if (!is.quitte(x)) stop("Object must be quitte")
 
-  tmp <- read.csv(system.file("extdata", "summationGroups.csv", package = "remind2"), sep = ";", stringsAsFactors = FALSE)
+  tmp <- read.csv(system.file("extdata", "summationGroups.csv", package = "remind2"),
+                  sep = ";", stringsAsFactors = FALSE)
   sgroup <- NULL
-  for (i in unique(tmp[, "parent"])) sgroup[[i]] <- tmp[which(tmp[, "parent"]==i), "child"]
+  for (i in unique(tmp[, "parent"])) sgroup[[i]] <- tmp[which(tmp[, "parent"] == i), "child"]
 
   sgroup <- c(sgroup, extractVariableGroups(levels(x$variable), keepOrigNames = TRUE))
   failed <- NULL
@@ -33,7 +33,7 @@ checkSummations <- function(x, tolerance = 0.00001) {
   region <- NULL
   value <- NULL
   period <- NULL
-  parent <- NULL
+  parent <- NULL # nolint
 
   if (length(sgroup) > 0) {
     for (i in seq_len(length(sgroup))) {
