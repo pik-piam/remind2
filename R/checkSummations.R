@@ -4,6 +4,7 @@
 #'
 #'
 #' @param x a quitte object containing the data
+#' @param tolerance a numeric value of accepted tolerance for parent = sum(children)
 #' @author Anastasis Giannousakis
 #' @examples
 #'
@@ -11,12 +12,16 @@
 #' checkSummations(x)
 #' }
 #'
-#' @return a list with the failed and/or missing variable groups as elements
+#' @return a quitte with the failed and/or missing variable groups (contains a
+#' column "parent" to group by)
 #' @importFrom mip extractVariableGroups
 #' @importFrom dplyr %>% filter group_by summarise select arrange mutate
+#' @importFrom quitte is.quitte
 #' @export
 
-checkSummations <- function(x) {
+checkSummations <- function(x, tolerance = 0.00001) {
+
+  if (!is.quitte(x)) stop("Object must be quitte")
 
   tmp <- read.csv(system.file("extdata", "summationGroups.csv", package = "remind2"), sep = ";", stringsAsFactors = FALSE)
   sgroup <- NULL
@@ -28,6 +33,7 @@ checkSummations <- function(x) {
   region <- NULL
   value <- NULL
   period <- NULL
+  parent <- NULL
 
   if (length(sgroup) > 0) {
     for (i in seq_len(length(sgroup))) {
@@ -42,9 +48,12 @@ checkSummations <- function(x) {
 
                 >
 
-                0.00001)
+                tolerance)
 
-        ) failed <- c(failed, names(sgroup[i]))
+        ) {
+          tmp <- x %>% filter(variable %in% sgroup[[i]]) %>% mutate(parent = names(sgroup[i]))
+          failed <- rbind(failed, tmp)
+        }
 
       }
 
@@ -52,8 +61,7 @@ checkSummations <- function(x) {
     if (is.null(failed)) {
       message("Summations look good")
     } else {
-      warning("Some variable groups do not sum up or the total is missing", immediate. = TRUE)
-      return(list("failing and/or missing variable groups", failed))
+      return(failed)
     }
   } else {
     message("No summation groups found in the data")

@@ -115,7 +115,8 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   output <- add_dimension(output, dim=3.1, add = "scenario", nm = scenario)
 
   message("Checking summations...")
-  checkSummations(as.quitte(output))
+  tmp <- checkSummations(as.quitte(output))
+  if (!is.null(tmp)) message("Some summation checks have failed! Run checkSummations()")
 
   # either write the *.mif or return the magpie object
   if(!is.null(file)) {
