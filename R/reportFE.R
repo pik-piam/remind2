@@ -1281,13 +1281,13 @@ reportFE <- function(gdx, regionSubsetList = NULL,
   if(cdr_mod != "off"){
     vm_otherFEdemand  <- readGDX(gdx,name=c("vm_otherFEdemand"),field="l",format="first_found")[,t,]*TWa_2_EJ
 
-    s33_rockgrind_fedem <- readGDX(gdx,"s33_rockgrind_fedem", react = "silent")
-    if (is.null(s33_rockgrind_fedem)){
-      s33_rockgrind_fedem  <- new.magpie("GLO",NULL,fill=0)
+    p33_weathering_fedem <- readGDX(gdx,"p33_weathering_fedem", react = "silent")
+    if (is.null(p33_weathering_fedem)){
+      p33_weathering_fedem <- new.magpie(names = c("feels", "fedie"), fill=0)
     }
-    v33_grindrock_onfield  <- readGDX(gdx,name=c("v33_grindrock_onfield"),field="l",format="first_found",react = "silent")[,t,]
-    if (is.null(v33_grindrock_onfield)){
-      v33_grindrock_onfield  <- new.magpie(getRegions(vm_otherFEdemand),getYears(vm_otherFEdemand),fill=0)
+    v33_weathering_onfield  <- readGDX(gdx,name=c("v33_weathering_onfield","v33_grindrock_onfield"),field="l",format="first_found",react = "silent")[,t,]
+    if (is.null(v33_weathering_onfield)){
+      v33_weathering_onfield  <- new.magpie(getRegions(vm_otherFEdemand),getYears(vm_otherFEdemand),fill=0)
     }
 
     out <- mbind(out,
@@ -1295,7 +1295,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
                  setNames(vm_otherFEdemand[,,"fegas"],        "FE|CDR|DAC|+|Gases (EJ/yr)"),
                  setNames(vm_otherFEdemand[,,"fehes"],        "FE|CDR|DAC|+|Heat (EJ/yr)"),
                  setNames(vm_otherFEdemand[,,"fedie"],        "FE|CDR|EW|+|Diesel (EJ/yr)"),
-                 setNames(s33_rockgrind_fedem*dimSums(v33_grindrock_onfield[,,],dim=3,na.rm=T),        "FE|CDR|EW|+|Electricity (EJ/yr)")
+                 setNames(p33_weathering_fedem[,,"feels"]*dimSums(v33_weathering_onfield[,,],dim=3,na.rm=T),        "FE|CDR|EW|+|Electricity (EJ/yr)")
     )
     out <- mbind(out,
                  setNames(out[,,"FE|CDR|+|Electricity (EJ/yr)"] - out[,,"FE|CDR|EW|+|Electricity (EJ/yr)"], "FE|CDR|DAC|+|Electricity (EJ/yr)")
