@@ -429,16 +429,16 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   }
 
   tmp1 <- mbind(tmp1,
-    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "build"), dim = 3) /
+    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "build", all_emiMkt = "ES"), dim = 3) /
       mselect(pm_eta_conv, all_te = "tdels"),
     "SE|Input|Electricity|Buildings (EJ/yr)"),
-    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "indst"), dim = 3) /
+    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "indst", all_emiMkt = "ES"), dim = 3) /
       mselect(pm_eta_conv, all_te = "tdels"),
     "SE|Input|Electricity|Industry (EJ/yr)"),
-    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feelt", emi_sectors = "trans"), dim = 3) /
-      mselect(pm_eta_conv, all_te = "tdelt"),
+    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feelt", emi_sectors = "trans", all_emiMkt = "ES"), dim = 3) /
+      mselect(pm_eta_conv, all_te = "tdelt"),, all_emiMkt = "ES"
     "SE|Input|Electricity|Transport (EJ/yr)"),
-    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "CDR"), dim = 3) /
+    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "CDR", all_emiMkt = "ES"), dim = 3) /
       mselect(pm_eta_conv, all_te = "tdels"),
     "SE|Input|Electricity|CDR (EJ/yr)"),
     setNames(dimSums(mselect(vm_demSe, all_enty = "seel", all_enty1 = "seh2"), dim = 3),
