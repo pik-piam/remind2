@@ -436,7 +436,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
       mselect(pm_eta_conv, all_te = "tdels"),
     "SE|Input|Electricity|Industry (EJ/yr)"),
     setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feelt", emi_sectors = "trans", all_emiMkt = "ES"), dim = 3) /
-      mselect(pm_eta_conv, all_te = "tdelt"),, all_emiMkt = "ES"
+      mselect(pm_eta_conv, all_te = "tdelt"),
     "SE|Input|Electricity|Transport (EJ/yr)"),
     setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "CDR", all_emiMkt = "ES"), dim = 3) /
       mselect(pm_eta_conv, all_te = "tdels"),
