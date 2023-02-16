@@ -1063,30 +1063,38 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
   YearsFrom2020 <- paste0("y",ttot[ttot >= 2020])
   
   ## Select Final Energy Prices for all scenarios and energy types and remove
-  ## years before 2020 and global values.
+  ## years before 2020 and global values. For some realizations, not all of the
+  ## following variables exist, so missing variables (e.g, Transport|Gases) are
+  ## are removed.
+  tmp_int2ext <- int2ext[
+    intersect(
+      names(int2ext),
+      c(
+        "Price|Final Energy|Transport|Liquids|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Transport|Gases|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Transport|Electricity|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Transport|Hydrogen|Moving Avg (US$2005/GJ)",
+        
+        "Price|Final Energy|Buildings|Liquids|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Solids|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Gases|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Electricity|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Hydrogen|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Heat|Moving Avg (US$2005/GJ)",
+        
+        "Price|Final Energy|Industry|Liquids|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Industry|Solids|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Industry|Gases|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Industry|Electricity|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Industry|Hydrogen|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Industry|Heat|Moving Avg (US$2005/GJ)"
+      )
+    )
+  ]
   tmp_prices <- out[
     setdiff(getRegions(out), "GLO"),
     YearsFrom2020,
-    c(
-      "Price|Final Energy|Transport|Liquids|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Transport|Gases|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Transport|Electricity|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Transport|Hydrogen|Moving Avg (US$2005/GJ)",
-      
-      "Price|Final Energy|Buildings|Liquids|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Buildings|Solids|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Buildings|Gases|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Buildings|Electricity|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Buildings|Hydrogen|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Buildings|Heat|Moving Avg (US$2005/GJ)",
-      
-      "Price|Final Energy|Industry|Liquids|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Industry|Solids|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Industry|Gases|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Industry|Electricity|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Industry|Hydrogen|Moving Avg (US$2005/GJ)",
-      "Price|Final Energy|Industry|Heat|Moving Avg (US$2005/GJ)"
-    )
+    names(tmp_int2ext)
   ]
   getNames(tmp_prices) <- getNames(tmp_prices) %>%
     gsub("Price|Final Energy|", "", ., fixed=T) %>%
@@ -1106,26 +1114,7 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
   tmp_quant <- output[
     setdiff(getRegions(output), "GLO"),
     YearsFrom2020,
-    c(
-      "FE|Transport|Liquids (EJ/yr)",
-      "FE|Transport|Gases (EJ/yr)",
-      "FE|Transport|Electricity (EJ/yr)",
-      "FE|Transport|Hydrogen (EJ/yr)",
-      
-      "FE|Buildings|Liquids (EJ/yr)",
-      "FE|Buildings|Solids (EJ/yr)",
-      "FE|Buildings|Gases (EJ/yr)",
-      "FE|Buildings|Electricity (EJ/yr)",
-      "FE|Buildings|Hydrogen (EJ/yr)",
-      "FE|Buildings|Heat (EJ/yr)",
-      
-      "FE|Industry|Liquids (EJ/yr)",
-      "FE|Industry|Solids (EJ/yr)",
-      "FE|Industry|Gases (EJ/yr)",
-      "FE|Industry|Electricity (EJ/yr)",
-      "FE|Industry|Hydrogen (EJ/yr)",
-      "FE|Industry|Heat (EJ/yr)"
-    )
+    tmp_int2ext
   ]
   getNames(tmp_quant) <- getNames(tmp_quant) %>%
     gsub("FE|", "", ., fixed=T) %>%
