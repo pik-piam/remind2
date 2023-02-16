@@ -1052,6 +1052,223 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
     }
   }
 
+  #  FE price index
+  #  The aggregation of this index to global values uses corrected values of FE
+  #  energy quantities as weights, which are not part of "out". So in order to
+  #  keep the calculation of the FE price index in one place and to not
+  #  interfer with the global aggregation of the other price variables, this
+  #  was put here.
+  ## Select years from 2020, since before 2020 prices are often not meaningful
+  ## due to historic variable fixings and prices consequently dropping to zero
+  YearsFrom2020 <- paste0("y",ttot[ttot >= 2020])
+  
+  ## Select Final Energy Prices for all scenarios and energy types and remove
+  ## years before 2020 and global values.
+  tmp_prices <- out[
+    setdiff(getRegions(out), "GLO"),
+    YearsFrom2020,
+    c(
+      "Price|Final Energy|Transport|Liquids|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Transport|Gases|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Transport|Electricity|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Transport|Hydrogen|Moving Avg (US$2005/GJ)",
+      
+      "Price|Final Energy|Buildings|Liquids|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Buildings|Solids|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Buildings|Gases|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Buildings|Electricity|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Buildings|Hydrogen|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Buildings|Heat|Moving Avg (US$2005/GJ)",
+      
+      "Price|Final Energy|Industry|Liquids|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Industry|Solids|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Industry|Gases|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Industry|Electricity|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Industry|Hydrogen|Moving Avg (US$2005/GJ)",
+      "Price|Final Energy|Industry|Heat|Moving Avg (US$2005/GJ)"
+    )
+  ]
+  getNames(tmp_prices) <- getNames(tmp_prices) %>%
+    gsub("Price|Final Energy|", "", ., fixed=T) %>%
+    gsub("|Moving Avg (US$2005/GJ)", "", ., fixed=T)
+  tmp_prices <- tmp_prices[,YearsFrom2020,]
+  
+  ## Split data columns into sector and enty_fe
+  getNames(tmp_prices) <- getNames(tmp_prices) %>%
+    gsub("|", ".", ., fixed=T)
+  tmp_prices <- clean_magpie(tmp_prices)
+  getSets(tmp_prices)[["d3.1"]] <- "sector"
+  getSets(tmp_prices)[["d3.2"]] <- "enty_fe"
+
+  ## Select Final Energy quantities for all scenarios and energy types, remove
+  ### years before 2020 and harmonize with the magclass object for prices. The
+  ## quantities are used as weights to calculate the price index.
+  tmp_quant <- output[
+    setdiff(getRegions(output), "GLO"),
+    YearsFrom2020,
+    c(
+      "FE|Transport|Liquids (EJ/yr)",
+      "FE|Transport|Gases (EJ/yr)",
+      "FE|Transport|Electricity (EJ/yr)",
+      "FE|Transport|Hydrogen (EJ/yr)",
+      
+      "FE|Buildings|Liquids (EJ/yr)",
+      "FE|Buildings|Solids (EJ/yr)",
+      "FE|Buildings|Gases (EJ/yr)",
+      "FE|Buildings|Electricity (EJ/yr)",
+      "FE|Buildings|Hydrogen (EJ/yr)",
+      "FE|Buildings|Heat (EJ/yr)",
+      
+      "FE|Industry|Liquids (EJ/yr)",
+      "FE|Industry|Solids (EJ/yr)",
+      "FE|Industry|Gases (EJ/yr)",
+      "FE|Industry|Electricity (EJ/yr)",
+      "FE|Industry|Hydrogen (EJ/yr)",
+      "FE|Industry|Heat (EJ/yr)"
+    )
+  ]
+  getNames(tmp_quant) <- getNames(tmp_quant) %>%
+    gsub("FE|", "", ., fixed=T) %>%
+    gsub(" (EJ/yr)", "", ., fixed=T)
+  getSets(tmp_quant)["d1.1"] <- getSets(tmp_prices)["d1.1"]
+  getSets(tmp_quant)["d2.1"] <- getSets(tmp_prices)["d2.1"]
+  getSets(tmp_quant)["d3.1"] <- getSets(tmp_prices)["d3.1"]
+  tmp_quant <- mselect(tmp_quant, region = getItems(tmp_prices)["region"])
+  tmp_quant <- tmp_quant[,YearsFrom2020,]
+  
+  ## Split data columns into sector and enty_fe
+  getNames(tmp_quant) <- getNames(tmp_quant) %>%
+    gsub("|", ".", ., fixed=T)
+  tmp_quant <- clean_magpie(tmp_quant)
+  getSets(tmp_quant)[["d3.1"]] <- "sector"
+  getSets(tmp_quant)[["d3.2"]] <- "enty_fe"
+  
+  ## Calculate FE shares of different energy carriers for each sector
+  tmp_quant_rel <- tmp_quant / dimSums(tmp_quant, dim = "enty_fe")
+  
+  ## For each energy type in each sector select year-region combinations,
+  ## where prices are below 1$/GJ (thr_prices) AND quantities are larger than
+  ## 1% (tmp_quant_rel) of total FE in that sector (for a given year and
+  ## region). Throw a warning in case this happens.
+  thr_prices <- 1
+  thr_quant_rel <- 0.01
+  tmp_zeroPriceNonZeroQuant <- (tmp_prices < thr_prices) &
+    (tmp_quant_rel > thr_quant_rel)
+  if(any(tmp_zeroPriceNonZeroQuant)){
+    # Throw warning
+    list_zero_prices <- where(tmp_zeroPriceNonZeroQuant)$true$individual
+    tmp <- paste0("Small prices at non-zero quantities found in years >= 2020",
+                  " (price < 1$/GJ and quantities > 1% of total FE demand in ",
+                  "sector):\n")
+    for (tmp_row in seq(1,nrow(list_zero_prices))){
+      for(tmp_col in seq(1,ncol(list_zero_prices))){
+        tmp <- tmp %>% paste0(" ", list_zero_prices[tmp_row,tmp_col])
+      }
+      tmp <- tmp %>% paste0(
+        ": ",
+        tmp_prices[list_zero_prices[tmp_row,1],
+                   list_zero_prices[tmp_row,2],
+                   list_zero_prices[tmp_row,3]
+        ] %>%
+          format(digits = 3) %>%
+          as.character(),
+        " $/GJ at ",
+        tmp_quant[list_zero_prices[tmp_row,1],
+                  list_zero_prices[tmp_row,2],
+                  list_zero_prices[tmp_row,3]
+        ] %>%
+          format(digits = 3) %>%
+          as.character(),
+        " EJ/yr\n"
+      )
+    }
+    tmp <- tmp %>% paste0(
+      "Setting respective FE quantities to zero in that sector for the ",
+      "calculation of the FE price index."
+    )
+    tmp_warning_length <- getOption("warning.length")
+    options("warning.length" = 8170)
+    warning(tmp)
+    options("warning.length" = tmp_warning_length)
+    
+    # Set quantities to zero, where prices are too low. Note that this is not
+    # only done in case of non-zero quantities but at every instace whith too
+    # small prices. Here, however, it should not really be an issue, so it is
+    # excluded from the warning above.
+    tmp_quant <- tmp_quant * ifelse(tmp_prices < thr_prices, 0, 1)
+  }
+  
+  ## Calculate the weighted FE price for each sector that is aggregated by FE
+  ## type, both regionally differentiated and globally aggregated.
+  tmp_FE_PI_sector <- dimSums(
+    tmp_prices * tmp_quant /
+      dimSums(tmp_quant, dim = "enty_fe"),
+    dim = "enty_fe"
+  )
+  tmp_FE_PI_sector_glo <- dimSums(
+    tmp_prices * tmp_quant /
+      dimSums(tmp_quant, dim = c("region", "enty_fe")),
+    dim = c("region", "enty_fe")
+  )
+  tmp_FE_PI_sector_glo <- setItems(tmp_FE_PI_sector_glo, dim = 1, value = "GLO")
+  tmp_FE_PI_sector <- mbind(tmp_FE_PI_sector, tmp_FE_PI_sector_glo)
+  
+  ## Calculate the weighted FE price for each FE type that is aggregated by
+  ## sector, both regionally differentiated and globally aggregated.
+  tmp_FE_PI_enty_fe <- dimSums(
+    tmp_prices * tmp_quant /
+      dimSums(tmp_quant, dim = "sector"),
+    dim = "sector"
+  )
+  tmp_FE_PI_enty_fe_glo <- dimSums(
+    tmp_prices * tmp_quant /
+      dimSums(tmp_quant, dim = c("region", "sector")),
+    dim = c("region", "sector")
+  )
+  tmp_FE_PI_enty_fe_glo <- setItems(tmp_FE_PI_enty_fe_glo, dim = 1, value = "GLO")
+  tmp_FE_PI_enty_fe <- mbind(tmp_FE_PI_enty_fe, tmp_FE_PI_enty_fe_glo)
+  
+  ## Calculate the full weighted FE price that is aggregated by both sector and
+  ## FE type, both regionally differentiated and globally aggregated.
+  tmp_FE_PI_full <- dimSums(
+    tmp_prices * tmp_quant /
+      dimSums(tmp_quant, dim = c("enty_fe", "sector")),
+    dim = c("enty_fe", "sector")
+  )
+  tmp_FE_PI_full_glo <- dimSums(
+    tmp_prices * tmp_quant /
+      dimSums(tmp_quant, dim = c("region", "enty_fe", "sector")),
+    dim = c("region", "enty_fe", "sector")
+  )
+  tmp_FE_PI_full_glo <- setItems(tmp_FE_PI_full_glo, dim = 1, value = "GLO")
+  tmp_FE_PI_full <- mbind(tmp_FE_PI_full, tmp_FE_PI_full_glo)
+  
+  ## Calculate the FE price index relative to 2020 for all weighted FE prices
+  tmp_FE_PI <- new.magpie()
+  tmp_FE_PI <- mbind(
+    setNames(tmp_FE_PI_sector[,,"Transport"],     "Price|Final Energy Index|Transport (Index 2020=100)"),
+    setNames(tmp_FE_PI_sector[,,"Buildings"],     "Price|Final Energy Index|Buildings (Index 2020=100)"),
+    setNames(tmp_FE_PI_sector[,,"Industry"],      "Price|Final Energy Index|Industry (Index 2020=100)"),
+    setNames(tmp_FE_PI_enty_fe[,,"Electricity"],  "Price|Final Energy Index|Electricity (Index 2020=100)"),
+    setNames(tmp_FE_PI_enty_fe[,,"Liquids"],      "Price|Final Energy Index|Liquids (Index 2020=100)"),
+    setNames(tmp_FE_PI_enty_fe[,,"Hydrogen"],     "Price|Final Energy Index|Hydrogen (Index 2020=100)"),
+    setNames(tmp_FE_PI_enty_fe[,,"Gases"],        "Price|Final Energy Index|Gases (Index 2020=100)"),
+    setNames(tmp_FE_PI_enty_fe[,,"Heat"],         "Price|Final Energy Index|Heat (Index 2020=100)"),
+    setNames(tmp_FE_PI_enty_fe[,,"Solids"],       "Price|Final Energy Index|Solids (Index 2020=100)"),
+    setNames(tmp_FE_PI_full,                      "Price|Final Energy Index (Index 2020=100)")
+  )
+  getSets(tmp_FE_PI)[["d3.1"]] <- "data"
+  tmp2020 <- mselect(tmp_FE_PI, year = "y2020")
+  getYears(tmp2020) <- NULL
+  tmp_FE_PI <- tmp_FE_PI / tmp2020 * 100
+  
+  ## Add NA to years before 2020 and add to "out"
+  tmp_FE_PI <- mbind(tmp_FE_PI, new.magpie(getItems(tmp_FE_PI)$region,
+                                           setdiff(getItems(out)$year, YearsFrom2020),
+                                           getItems(tmp_FE_PI)$data,
+                                           fill = NA))
+  out <- mbind(out, tmp_FE_PI)
+
   # comment out this section for now as errors, debug this section if needed
   # # ---- debug information for industry/subsectors ----
   # if ('subsectors' == indu_mod & !is.null(q37_limit_secondary_steel_share.m)) {
