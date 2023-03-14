@@ -1070,24 +1070,24 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
     intersect(
       names(int2ext),
       c(
-        "Price|Final Energy|Transport|Liquids|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Transport|Gases|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Transport|Electricity|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Transport|Hydrogen|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Transport|Liquids (US$2005/GJ)",
+        "Price|Final Energy|Transport|Gases (US$2005/GJ)",
+        "Price|Final Energy|Transport|Electricity (US$2005/GJ)",
+        "Price|Final Energy|Transport|Hydrogen (US$2005/GJ)",
         
-        "Price|Final Energy|Buildings|Liquids|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Buildings|Solids|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Buildings|Gases|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Buildings|Electricity|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Buildings|Hydrogen|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Buildings|Heat|Moving Avg (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Liquids (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Solids (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Gases (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Electricity (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Hydrogen (US$2005/GJ)",
+        "Price|Final Energy|Buildings|Heat (US$2005/GJ)",
         
-        "Price|Final Energy|Industry|Liquids|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Industry|Solids|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Industry|Gases|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Industry|Electricity|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Industry|Hydrogen|Moving Avg (US$2005/GJ)",
-        "Price|Final Energy|Industry|Heat|Moving Avg (US$2005/GJ)"
+        "Price|Final Energy|Industry|Liquids (US$2005/GJ)",
+        "Price|Final Energy|Industry|Solids (US$2005/GJ)",
+        "Price|Final Energy|Industry|Gases (US$2005/GJ)",
+        "Price|Final Energy|Industry|Electricity (US$2005/GJ)",
+        "Price|Final Energy|Industry|Hydrogen (US$2005/GJ)",
+        "Price|Final Energy|Industry|Heat (US$2005/GJ)"
       )
     )
   ]
@@ -1098,7 +1098,7 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
   ]
   getNames(tmp_prices) <- getNames(tmp_prices) %>%
     gsub("Price|Final Energy|", "", ., fixed=T) %>%
-    gsub("|Moving Avg (US$2005/GJ)", "", ., fixed=T)
+    gsub(" (US$2005/GJ)", "", ., fixed=T)
   tmp_prices <- tmp_prices[,YearsFrom2020,]
   
   ## Split data columns into sector and enty_fe
@@ -1109,7 +1109,7 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
   getSets(tmp_prices)[["d3.2"]] <- "enty_fe"
 
   ## Select Final Energy quantities for all scenarios and energy types, remove
-  ### years before 2020 and harmonize with the magclass object for prices. The
+  ## years before 2020 and harmonize with the magclass object for prices. The
   ## quantities are used as weights to calculate the price index.
   tmp_quant <- output[
     setdiff(getRegions(output), "GLO"),
