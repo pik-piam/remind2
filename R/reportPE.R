@@ -44,8 +44,6 @@ reportPE <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,211
   dataoc_tmp       <- readGDX(gdx,c("pm_prodCouple","p_prodCouple","p_dataoc"),restore_zeros=FALSE,format="first_found") 
   dataoc_tmp[is.na(dataoc_tmp)] <- 0
   p_costsPEtradeMp <- readGDX(gdx,c("pm_costsPEtradeMp","p_costsPEtradeMp"),restore_zeros=FALSE)
-  p_macBase        <- readGDX(gdx,c("pm_macBaseMagpie","p_macBaseMagpie","p_macBase"),format="first_found")*TWa_2_EJ
-#  p_macEmi         <- readGDX(gdx,c("p_macEmi"),format="first_found")*TWa_2_EJ
   ## variables
   demPE  <- readGDX(gdx,name=c("vm_demPe","v_pedem"),field="l",restore_zeros=FALSE,format="first_found")*TWa_2_EJ
   demPE  <- demPE[pe2se]
@@ -61,8 +59,6 @@ reportPE <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,211
   fuelex <- fuelex[,y,]
   Mport  <- Mport[,y,]
   Xport  <- Xport[,y,]
-  p_macBase <- p_macBase[,y,]
-#  p_macEmi  <- p_macEmi[,y,]
   ####### fix negative values to 0 ##################
   #### adjust regional dimension of dataoc
   dataoc <- new.magpie(getRegions(prodSE),getYears(dataoc_tmp),magclass::getNames(dataoc_tmp),fill=0)
@@ -180,13 +176,9 @@ reportPE <- function(gdx,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,211
                               + dimSums(demPE[,,c("pebiolc","pebios","pebioil")],dim=3)   
                               + dimSums(prodSE[,,c("pegeo","pehyd","pewin","pesol","peur")],dim=3),"PE (EJ/yr)"))
   tmp4 <- mbind(tmp4,setNames(fuelex[,,"pebiolc.2"],"PE|Biomass|Residues (EJ/yr)"))
-# Moved to reportExtraction tmp4 <- mbind(tmp4,setNames(dimSums(fuelex[,,c("pebioil","pebios")][enty2rlf],dim=3),"PE|Production|Biomass|1st Generation (EJ/yr)")) 
   tmp4 <- mbind(tmp4,setNames(( fuelex[,,"pebiolc.1"]
                              + (1-p_costsPEtradeMp[,,"pebiolc"]) * Mport[,,"pebiolc"] - Xport[,,"pebiolc"]
                              ),"PE|Biomass|Energy Crops (EJ/yr)"))
-#  tmp4 <- mbind(tmp4,setNames(0.001638 * (p_macBase[,,"ch4gas"] - p_macEmi[,,"ch4gas"]),"PE|Gas|fromCH4MAC|Gas (EJ/yr)"))
-#  tmp4 <- mbind(tmp4,setNames(0.001638 * 0.5 *(p_macBase[,,"ch4coal"] - p_macEmi[,,"ch4coal"]),"PE|Gas|fromCH4MAC|Coalbed (EJ/yr)"))
-#  tmp4 <- mbind(tmp4,setNames(0.001638 * (p_macBase[,,"ch4wstl"] - p_macEmi[,,"ch4wstl"]) ,"PE|Gas|fromCH4MAC|Waste (EJ/yr)"))
   
   out <- mbind(tmp1,tmp2,tmp3,tmp4)
   # add global values

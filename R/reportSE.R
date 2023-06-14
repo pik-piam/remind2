@@ -65,7 +65,6 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   pm_prodCouple <- mbind(pm_prodCouple, pm_prodCoupleEmi)
   pm_prodCouple[is.na(pm_prodCouple)] <- 0
 
-  p_macBase <- readGDX(gdx, c("p_macBaseMagpie", "pm_macBaseMagpie","p_macBase"), format = "first_found")
   #  p_macEmi  <- readGDX(gdx,"p_macEmi")
   ## variables
   vm_prodSe <- readGDX(gdx, name = c("vm_prodSe", "v_seprod"), field = "l", restore_zeros = FALSE, format = "first_found") * pm_conv_TWa_EJ
@@ -88,7 +87,6 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   ####### set temporal resolution #####
   vm_prodSe    <- vm_prodSe[, y, ]
   storLoss  <- storLoss[, y, ]
-  p_macBase <- p_macBase[, y, ]
   ####### fix negative values to 0 ##################
   #### adjust regional dimension of dataoc
   dataoc <- new.magpie(getRegions(vm_prodSe), getYears(pm_prodCouple), magclass::getNames(pm_prodCouple), fill = 0)
