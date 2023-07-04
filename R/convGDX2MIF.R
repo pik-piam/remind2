@@ -5,17 +5,18 @@
 #'
 #'
 #' @param gdx a GDX as created by readGDX, or the file name of a gdx
-#' @param gdx_ref reference-gdx for policy costs, a GDX as created by readGDX, or the file name of a gdx
+#' @param gdx_ref reference-gdx for < cm_startyear, used for fixing the prices to this scenario
 #' @param file name of the mif file which will be written, if no name is
 #' provided a magpie object containing all the reporting information is
 #' returned
 #' @param scenario scenario name that is used in the *.mif reporting
 #' @param t temporal resolution of the reporting, default:
 #' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
+#' @param gdx_refpolicycost reference-gdx for policy costs, a GDX as created by readGDX, or the file name of a gdx
 #' @author Lavinia Baumstark
 #' @examples
 #' \dontrun{
-#' convGDX2MIF(gdx, gdx_ref, file = "REMIND_generic_default.csv", scenario = "default")
+#' convGDX2MIF(gdx, gdx_refpolicycost, file = "REMIND_generic_default.csv", scenario = "default")
 #' }
 #'
 #' @export
@@ -24,9 +25,9 @@
 #' @importFrom quitte as.quitte
 
 convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
-                        t = c(seq(2005, 2060, 5), seq(2070, 2110, 10),
-                              2130, 2150)) {
-   # Define region subsets
+                        t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
+                        gdx_refpolicycost = gdx_ref) {
+  # Define region subsets
   regionSubsetList <- toolRegionSubsets(gdx)
   # ADD EU-27 region aggregation if possible
   if ("EUR" %in% names(regionSubsetList)) {
@@ -57,22 +58,22 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   message("running reportEnergyInvestment...")
   output <- mbind(output, reportEnergyInvestment(gdx, regionSubsetList, t)[, t, ])
   message("running reportEmiAirPol...")
-  tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t))  # test whether reportEmiAirPol works
-  if (class(tmp) != "try-error") {
-     if (!is.null(tmp)) output <- mbind(output, tmp[, t, ])
+  tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t)) # test whether reportEmiAirPol works
+  if (!inherits(tmp, "try-error")) {
+    if (!is.null(tmp)) output <- mbind(output, tmp[, t, ])
   } else {
     message("function reportEmiAirPol does not work and is skipped")
   }
 
   # reporting of variables that need variables from different other report functions
   message("running reportEmi...")
-  output <- mbind(output, reportEmi(gdx, output, regionSubsetList, t)[, t, ])    # needs output from reportFE
+  output <- mbind(output, reportEmi(gdx, output, regionSubsetList, t)[, t, ]) # needs output from reportFE
   message("running reportTechnology...")
-  output <- mbind(output, reportTechnology(gdx, output, regionSubsetList, t)[, t, ])    # needs output from reportSE
+  output <- mbind(output, reportTechnology(gdx, output, regionSubsetList, t)[, t, ]) # needs output from reportSE
   message("running reportPrices...")
-  output <- mbind(output, reportPrices(gdx, output, regionSubsetList, t)[, t, ]) # needs output from reportSE, reportFE, reportEmi, reportExtraction, reportMacroEconomy
+  output <- mbind(output, reportPrices(gdx, output, regionSubsetList, t, gdx_ref = gdx_ref)[, t, ]) # needs output from reportSE, reportFE, reportEmi, reportExtraction, reportMacroEconomy
   message("running reportCosts...")
-  output <- mbind(output, reportCosts(gdx, output, regionSubsetList, t)[, t, ])  # needs output from reportEnergyInvestment, reportPrices, reportEnergyInvestments
+  output <- mbind(output, reportCosts(gdx, output, regionSubsetList, t)[, t, ]) # needs output from reportEnergyInvestment, reportPrices, reportEnergyInvestments
   message("running reportTax...")
   output <- mbind(output, reportTax(gdx, output, regionSubsetList, t)[, t, ])
 
@@ -82,14 +83,14 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   output <- mbind(output, reportCrossVariables(gdx, output, regionSubsetList, t)[, t, ])
 
   # Report policy costs, if possible and sensible
-  if (!is.null(gdx_ref)) {
-    if (file.exists(gdx_ref)) {
-      gdp_scen <- try(readGDX(gdx, "cm_GDPscen", react = "error"), silent = TRUE)
-      gdp_scen_ref <- try(readGDX(gdx_ref, "cm_GDPscen", react = "error"), silent = TRUE)
+  if (!is.null(gdx_refpolicycost)) {
+    if (file.exists(gdx_refpolicycost)) {
+      gdp_scen <- try(readGDX(gdx, "cm_GDPscen", react = "error"), silent = T)
+      gdp_scen_ref <- try(readGDX(gdx_refpolicycost, "cm_GDPscen", react = "error"), silent = T)
       if (!inherits(gdp_scen, "try-error") && !inherits(gdp_scen_ref, "try-error")) {
         if (gdp_scen[1] == gdp_scen_ref[1]) {
-          message("running reportPolicyCosts, comparing to ", basename(dirname(gdx_ref)), "/", basename(gdx_ref), "...")
-          output <- mbind(output, reportPolicyCosts(gdx, gdx_ref, regionSubsetList, t)[, t, ])
+          message("running reportPolicyCosts, comparing to ", basename(dirname(gdx_refpolicycost)), "/", basename(gdx_refpolicycost), "...")
+          output <- mbind(output, reportPolicyCosts(gdx, gdx_refpolicycost, regionSubsetList, t)[, t, ])
         } else {
           warning(paste0("The GDP scenario differs from that of the reference run. Did not execute 'reportPolicyCosts'! If a policy costs reporting is desired, please use the 'policyCosts' output.R script."))
         }
@@ -97,13 +98,13 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
         warning(paste0("A comparison of the GDP scenarios between this run and its reference run wasn't possible (old remind version). Therefore to avoid reporting unsensible policy costs, 'reportPolicyCosts' was not executed. If a policy costs reporting is required, please use the  'policyCosts' output.R script."))
       }
     } else {
-      warning(paste0("File ", gdx_ref, " not found. Did not execute 'reportPolicyCosts'! If a policy costs reporting is desired, please use the   'policyCosts' output.R script."))
+      warning(paste0("File ", gdx_refpolicycost, " not found. Did not execute 'reportPolicyCosts'! If a policy costs reporting is desired, please use the   'policyCosts' output.R script."))
     }
   }
 
   # reporting of SDP variables
   message("running reportSDPVariables...")
-  tmp <- try(reportSDPVariables(gdx, output, t))  # test whether reportSDPVariables works
+  tmp <- try(reportSDPVariables(gdx, output, t)) # test whether reportSDPVariables works
   if (class(tmp) != "try-error") {
     if (!is.null(tmp)) output <- tmp
   } else {
@@ -112,6 +113,7 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
 
   # Add dimension names "scenario.model.variable"
   getSets(output)[3] <- "variable"
+
   output <- add_dimension(output, dim = 3.1, add = "model", nm = "REMIND")
   output <- add_dimension(output, dim = 3.1, add = "scenario", nm = scenario)
 

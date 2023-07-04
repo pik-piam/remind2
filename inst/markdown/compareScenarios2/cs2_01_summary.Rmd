@@ -1,9 +1,10 @@
 # Summary
 
 
+
 ## GHG Emissions
 
-```{r Emi-GHG}
+```{r summary GHG emissions}
 tot <- "Emi|GHG"
 items <- c(
   "Emi|CO2|Energy",
@@ -13,12 +14,12 @@ items <- c(
   "Emi|GHG|N2O",
   "Emi|GHG|F-Gases",
   "Emi|CO2|non-BECCS CDR")
-showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
 ## GHG by sector (w/ gross emissions, excl. BECCS)
 
-```{r Emi-GHG with gross}
+```{r summary GHG by sector}
 tot <- "Emi|GHG"
 items <- c(
   "Emi|GHG|Gross|Energy|Supply|Electricity",
@@ -34,7 +35,13 @@ items <- c(
   "Emi|CO2|CDR|Industry CCS|Synthetic Fuels",
   "Emi|CO2|CDR|DACCS",
   "Emi|CO2|CDR|EW")
-showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, scales = "fixed")
+```
+
+### GHG pCap by sector
+
+```{r GHG pCap by sector}
+showAreaAndBarPlots(data, paste(items, "pCap"), paste(tot, "pCap"), scales = "fixed")
 ```
 
 ## CO2 by sector (w/ gross emissions, excl. BECCS)
@@ -53,10 +60,19 @@ items <- c(
   "Emi|CO2|CDR|Industry CCS|Synthetic Fuels",
   "Emi|CO2|CDR|DACCS",
   "Emi|CO2|CDR|EW")
-showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
-```{r CO2 by sector cumulated}
+###  CO2 pCap by sector
+
+```{r CO2 pCap by sector}
+showAreaAndBarPlots(data, paste(items, "pCap"), paste(tot, "pCap"), scales = "fixed")
+```
+
+
+###  CO2 cumulated by sector
+
+```{r CO2 cumulated by sector}
 tot <- "Emi|CO2|Cumulated"
 items <- c(
   "Emi|CO2|Cumulated|Land-Use Change",
@@ -69,7 +85,7 @@ items <- c(
   "Emi|CO2|Cumulated|CDR|BECCS",
   "Emi|CO2|Cumulated|CDR|DACCS",
   "Emi|CO2|Cumulated|CDR|EW")
-showAreaAndBarPlots(data, items, tot)
+showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
 
@@ -81,47 +97,45 @@ items <- c(
   "FE|Transport",
   "FE|Buildings",
   "FE|Industry")
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, scales = "fixed")
 ```
 
 ## FE per capita (by sector, time domain, area plot)
 
-```{r FE per capita (by sector, time domain, area plot)}
+```{r FE per capita area plot}
 items <- c(
   "FE|Transport pCap",
   "FE|Buildings pCap",
   "FE|Industry pCap")
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, scales = "fixed")
 ```
 
 ## FE per capita (by sector, time domain, line graph)
 
-```{r FE per capita (by sector, time domain, line graph)}
-data %>% 
+```{r FE per capita line plot}
+dIea <- data %>%
   # To make the plots less crowded, show only IEA historical data.
-  filter(scenario != "historical" | model == "IEA") -> 
-  dIea
+  filter(scenario != "historical" | model == "IEA")
 showMultiLinePlots(dIea, "FE pCap")
 items <- c(
   "FE|Transport pCap",
   "FE|Buildings pCap",
   "FE|Industry pCap")
-showMultiLinePlots(dIea, items, scales="fixed")
+showMultiLinePlots(dIea, items, scales = "fixed")
 ```
 
 ## FE per capita (by sector, GDP)
 
-```{r FE per capita by sector (GDP domain)}
-data %>% 
+```{r FE per capita}
+dIea <- data %>%
   # To make the plots less crowded, show only IEA historical data.
-  filter(scenario != "historical" | model == "IEA") -> 
-  dIea
+  filter(scenario != "historical" | model == "IEA")
 showMultiLinePlotsByVariable(dIea, "FE pCap", "GDP|PPP pCap")
 items <- c(
   "FE|Transport pCap",
   "FE|Buildings pCap",
   "FE|Industry pCap")
-showMultiLinePlotsByVariable(dIea, items, "GDP|PPP pCap", scales="fixed")
+showMultiLinePlotsByVariable(dIea, items, "GDP|PPP pCap", scales = "fixed")
 ```
 
 ## FE by carrier
@@ -134,7 +148,7 @@ items <- c(
   "FE|Heat",
   "FE|Hydrogen",
   "FE|Electricity")
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, scales = "fixed")
 ```
 
 ## FE Industry by carrier
@@ -147,7 +161,7 @@ items <- c(
   "FE|Industry|Heat",
   "FE|Industry|Hydrogen",
   "FE|Industry|Electricity")
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, scales = "fixed")
 ```
 
 ## FE Buildings by carrier
@@ -160,7 +174,7 @@ items <- c(
   "FE|Buildings|Heat",
   "FE|Buildings|Hydrogen",
   "FE|Buildings|Electricity")
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, scales = "fixed")
 ```
 
 ## FE Transport by carrier
@@ -171,7 +185,7 @@ items <- c(
   "FE|Transport|Hydrogen",
   "FE|Transport|Liquids",
   "FE|Transport|Gases")
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, scales = "fixed")
 ```
 
 ## FE CDR by carrier
@@ -183,12 +197,15 @@ items <- c(
   "FE|CDR|Gases",
   "FE|CDR|Hydrogen",
   "FE|CDR|Electricity")
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, scales = "fixed")
 ```
 
 ## SE Electricity by carrier
 
 ```{r SE Electricity by carrier}
+
+tot <- "SE|Electricity"
+
 items <- c(
   "SE|Electricity|Coal|w/ CC",
   "SE|Electricity|Coal|w/o CC",
@@ -202,38 +219,14 @@ items <- c(
   "SE|Electricity|Biomass|w/o CC",
   "SE|Electricity|Solar|CSP",
   "SE|Electricity|Solar|PV",
+  "SE|Electricity|Wind|Onshore",
+  "SE|Electricity|Wind|Offshore",
   "SE|Electricity|Hydrogen",
   "SE|Electricity|Net Imports")
 
-if ("SE|Electricity|Wind|Offshore" %in% levels(data$variable)) {
-  items <- c(
-    items, 
-    "SE|Electricity|Wind|Onshore",
-    "SE|Electricity|Wind|Offshore")
-} else {
-  items <- c(
-    items, 
-    "SE|Electricity|Wind")
-}
-
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
-
-
-
-### SE Wind Onshore
-
-```{r SE Wind Onshore}
-showLinePlots(data, "SE|Electricity|Wind|Onshore")
-```
-
-
-### SE Wind Offshore
-
-```{r SE Wind Offshore}
-showLinePlots(data, "SE|Electricity|Wind|Offshore")
-```
 
 
 ## PE by carrier
@@ -249,7 +242,7 @@ items <- c(
   "PE|Wind",
   "PE|Hydro",
   "PE|Geothermal")
-showAreaAndBarPlots(data, items)
+showAreaAndBarPlots(data, items, scales = "fixed")
 ```
 
 
@@ -260,7 +253,7 @@ showLinePlots(data, "Price|Carbon")
 showRegiLinePlots(data, "Price|Carbon")
 ```
 
-```{r CO2 Sector Prices}
+```{r CO2 Prices per sector}
 items <- c(
   "Price|Carbon|Demand|Transport",
   "Price|Carbon|Demand|Buildings",
@@ -269,16 +262,16 @@ items <- c(
 )
 # older runs might not have the new sector tax variables
 if (all(items %in% data$variable)) {
-  avg_tax <- data[data$variable == "Price|Carbon"                  & data$scenario != "historical", "value"]
-  bui_tax <- data[data$variable == "Price|Carbon|Demand|Buildings" & data$scenario != "historical", "value"]
-  tra_tax <- data[data$variable == "Price|Carbon|Demand|Transport" & data$scenario != "historical", "value"]
-  ind_tax <- data[data$variable == "Price|Carbon|Demand|Industry"  & data$scenario != "historical", "value"]
-  sup_tax <- data[data$variable == "Price|Carbon|Supply"           & data$scenario != "historical", "value"]
+  avgTax <- data[data$variable == "Price|Carbon"                  & data$scenario != "historical", "value"]
+  buiTax <- data[data$variable == "Price|Carbon|Demand|Buildings" & data$scenario != "historical", "value"]
+  traTax <- data[data$variable == "Price|Carbon|Demand|Transport" & data$scenario != "historical", "value"]
+  indTax <- data[data$variable == "Price|Carbon|Demand|Industry"  & data$scenario != "historical", "value"]
+  supTax <- data[data$variable == "Price|Carbon|Supply"           & data$scenario != "historical", "value"]
   # only create plots if a tax is unequal to the average co2 tax
-  if (! identical(bui_tax, avg_tax) |
-      ! identical(tra_tax, avg_tax) |
-      ! identical(ind_tax, avg_tax) |
-      ! identical(sup_tax, avg_tax)
+  if (!identical(buiTax, avgTax) ||
+      !identical(traTax, avgTax) ||
+      !identical(indTax, avgTax) ||
+      !identical(supTax, avgTax)
       ) {
     showLinePlots(data, "Price|Carbon|Demand|Buildings")
     showLinePlots(data, "Price|Carbon|Demand|Transport")
@@ -288,7 +281,7 @@ if (all(items %in% data$variable)) {
 }
 ```
 
-```{r CO2 Prices ETS,ESR}
+```{r CO2 Prices ETS/ESR}
 showLinePlots(data, "Price|Carbon|ETS")
 showLinePlots(data, "Price|Carbon|ESR")
 ```
@@ -296,16 +289,117 @@ showLinePlots(data, "Price|Carbon|ESR")
 
 ## Policy Costs
 
-```{r Policy Costs-Consumption Loss}
+```{r Policy Costs Consumption}
 showLinePlots(data, "Policy Cost|Consumption Loss")
 ```
 
 
-```{r Policy Cost-Consumption Loss-Relative to Reference Consumption}
+```{r Policy Costs Relative}
 showLinePlots(data, "Policy Cost|Consumption Loss|Relative to Reference Consumption")
 ```
 
 
-```{r Policy Cost-GDP Loss}
+```{r Policy Costs GDP}
 showLinePlots(data, "Policy Cost|GDP Loss")
 ```
+
+## Tables of Significant Periods 
+
+Every statistic in the following tables, e.g., $\max$, $\min$, is taken over the REMIND model outputs only (no historical data).
+
+\newpage
+
+### Emi|CO2: Max, Min, and Net 0
+
+```{r Tables CO2 Max}
+data %>%
+  calcTimeSeriesStats(
+    "Emi|CO2",
+    stats = list("Max Period (Max Value)" = function(v, p) {
+      sprintf("%d (%5.2f)", p[which.max(v)], max(v) / 1000)
+    })
+  ) %>%
+  mutate(unit = "Gt CO2/yr") %>% # divided by 1000 and change unit form Mt to Gt
+  showStatsTable()
+```
+
+```{r Tables CO2 Min}
+data %>%
+  calcTimeSeriesStats(
+    "Emi|CO2",
+    stats = list("Min Period (Min Value)" = function(v, p) {
+      sprintf("%d (%5.2f)", p[which.min(v)], min(v) / 1000)
+    })
+  ) %>%
+  mutate(unit = "Gt CO2/yr") %>% # divided by 1000 and change unit form Mt to Gt
+  showStatsTable()
+```
+
+```{r Tables CO2 Net Zero}
+data %>%
+  calcTimeSeriesStats(
+    "Emi|CO2",
+    stats = list("Net 0 Period, i.e., first period with < 2\\% of 2005 value" = function(v, p) {
+      p[which(v <= v[p == 2005] * 0.02)[1]]
+    })
+  ) %>%
+  showStatsTable()
+```
+
+\newpage
+
+### Emi|GHG: Max, Min, and Net 0
+
+```{r Tables GHG Max}
+data %>%
+  calcTimeSeriesStats(
+    "Emi|GHG",
+    stats = list("Max Period (Max Value)" = function(v, p) {
+      sprintf("%d (%5.2f)", p[which.max(v)], max(v) / 1000)
+    })
+  ) %>%
+  mutate(unit = "Gt CO2eq/yr") %>% # divided by 1000 and change unit form Mt to Gt
+  showStatsTable()
+```
+
+```{r Tables GHG Min}
+data %>%
+  calcTimeSeriesStats(
+    "Emi|GHG",
+    stats = list("Min Period (Min Value)" = function(v, p) {
+      sprintf("%d (%5.2f)", p[which.min(v)], min(v) / 1000)
+    })
+  ) %>%
+  mutate(unit = "Gt CO2eq/yr") %>% # divided by 1000 and change unit form Mt to Gt
+  showStatsTable()
+```
+
+```{r Tables GHG Net Zero}
+data %>%
+  calcTimeSeriesStats(
+    "Emi|GHG",
+    stats = list("Net 0 Period, i.e., first period with < 2\\% of 2005 value" = function(v, p) {
+      p[which(v <= v[p == 2005] * 0.02)[1]]
+    })
+  ) %>%
+  showStatsTable()
+```
+
+\newpage
+
+
+### Temperature|Global Mean: Max
+
+```{r Temperature}
+data %>%
+  calcTimeSeriesStats(
+    "Temperature|Global Mean",
+    stats = list("Max Period (Max Value)" = function(v, p) {
+      sprintf("%d (%.2f)", p[which.max(v)], max(v))
+    })
+  ) %>%
+  showStatsTable()
+```
+
+\newpage
+

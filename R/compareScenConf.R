@@ -1,29 +1,37 @@
 #' take two REMIND scenario-config*.csv files and print the difference,
 #' comparing it to a default.cfg
 #'
-#' @param fileList vector containing two csv file paths as c(oldfile, newfile). If empty, user can select
-#' @param configfile path to configfile. If empty, uses './default.cfg'
+#' @param fileList vector containing one csv file paths or two paths as c(oldfile, newfile)
+#' If one, searches same filename in defaultPath. If NULL, user can select
+#' @param remindPath path to REMIND directory containing main.gms
 #' @param row.names column in csv used for row.names. Use NULL for mapping files
 #' @param renamedCols vector with old and new column names such as c("old1" = "new1", "old2" = "new2"))
-#' @param renamedRows vector with old and new row names such as c("old3" = "new3", "old4" = "new4"))
+#' @param renamedRows vector with old and new row names such as c("old3" = "new3", "old3" = "new4", "old5" = "new5"))
+#'        the "old" name can also remain in the new file, if you generated a variant
 #' @param printit boolean switch (default: TRUE) whether function prints its output
+#' @param expanddata fill empty cells with default values
 #' @author Oliver Richters
 #' @examples
 #'
 #'  \dontrun{
 #'     compareScenConf(fileList = c("scenario_config_old.csv", "scenario_config_new.csv"),
-#'     configfile = "default.cfg",
 #'     renamedCols = c("old1" = "new1", "old2" = "new2"),
 #'     renamedRows = c("old3" = "new3", "old4" = "new4"))
 #'   }
 #'
 #' @return list with $allwarnings and $out
 #' @importFrom utils read.csv2
+#' @importFrom gms getLine
 #' @export
-compareScenConf <- function(fileList = "", configfile = "default.cfg", row.names = 1,
-                            renamedCols = NULL, renamedRows = NULL, printit = TRUE) {
+compareScenConf <- function(fileList = NULL, remindPath = "/p/projects/rd3mod/github/repos/remindmodel/remind/develop",
+                            row.names = 1, renamedCols = NULL, renamedRows = NULL, printit = TRUE, expanddata = TRUE) {
   m <- c()
   folder <- getwd()
+  # if one file supplied, compare to the same file in remindPath
+  if (length(fileList) == 1 && fileList != "") {
+    partafterconfig <- gsub(file.path("config", ""), "", file.path(basename(dirname(fileList)), basename(fileList)))
+    fileList <- c(file.path(remindPath, "config", partafterconfig), fileList)
+  }
   if (length(fileList) != 2) {
     cat("Specify folder with .csv files. The script also searches in subdirectories.\n")
     cat(paste0("Press enter to use current: ", getwd(), ".\n"))
@@ -39,24 +47,17 @@ compareScenConf <- function(fileList = "", configfile = "default.cfg", row.names
     if (length(identifier) < 2) stop("You must choose two files!")
     fileList <- fileList[identifier]
   }
-  if (! file.exists(configfile)) {
-    if (file.exists(paste0("config/", configfile))) {
-      configfile <- paste0("config/", configfile)
-    } else if (file.exists(paste0(folder, "/", configfile))) {
-      configfile <- paste0(folder, "/", configfile)
-    } else if (file.exists(paste0(folder, "/config/", configfile))) {
-      configfile <- paste0(folder, "/config/", configfile)
+  if (! is.null(remindPath) && ! file.exists(file.path(remindPath, "main.gms"))) {
+    if (dir.exists("..") && file.exists("../main.gms")) {
+      remindPath <- normalizePath("..")
     } else {
-      m <- c(m, paste0("No configfile ", configfile, " found in ", getwd(), " or ", folder, "."))
-      configfile <- FALSE
+      remindPath <- NULL
     }
   }
   m <- c(m, "", paste0("File comparison: ", fileList[[1]], " -> ", fileList[[2]]))
-  if (! isFALSE(configfile)) {
-    m <- c(m, paste("Using configfile", configfile, "as default."))
-    cfg <- list() # to avoid 'no visible binding' error
-    source(configfile, local = TRUE)
-    if (!length(cfg)) stop(paste0("In ", configfile, ", no 'cfg' data was found."))
+  cfg <- list() # to avoid 'no visible binding' error
+  if (! is.null(remindPath)) {
+    cfg <- gms::readDefaultConfig(remindPath)
     # enable script to match default data not in gms
     try(cfg$gms[["output"]] <- paste0(cfg$output, collapse = ","))
     try(cfg$gms[["model"]] <- cfg$model)
@@ -64,10 +65,18 @@ compareScenConf <- function(fileList = "", configfile = "default.cfg", row.names
     try(cfg$gms[["inputRevision"]] <- cfg$inputRevision)
   }
 
-  settings1 <- read.csv2(fileList[[1]], stringsAsFactors = FALSE, row.names = row.names,
-                         comment.char = "#", na.strings = "", dec = ".")
-  settings2 <- read.csv2(fileList[[2]], stringsAsFactors = FALSE, row.names = row.names,
-                         comment.char = "#", na.strings = "", dec = ".")
+  readCheckScenarioConfig <- function(csvFile, ...) {
+    return(read.csv2(csvFile, stringsAsFactors = FALSE, row.names = row.names,
+                            comment.char = "#", na.strings = "", dec = "."))
+  }
+  if (expanddata) {
+    message("Loading path_gdx_list and readCheckScenarioConfig")
+    source(file.path(remindPath, "scripts", "start", "path_gdx_list.R"), local = TRUE)
+    # overwrite readCheckScenarioConfig
+    source(file.path(remindPath, "scripts", "start", "readCheckScenarioConfig.R"), local = TRUE)
+  }
+  settings1 <- readCheckScenarioConfig(fileList[[1]], remindPath = remindPath, fillWithDefault = TRUE)
+  settings2 <- readCheckScenarioConfig(fileList[[2]], remindPath = remindPath, fillWithDefault = TRUE)
 
   # for mapping files
   if (is.null(row.names)) {
@@ -77,17 +86,14 @@ compareScenConf <- function(fileList = "", configfile = "default.cfg", row.names
 
   # rename columns and rows in old file to new names after some checks
   allwarnings <- checkRowsCols(settings1, settings2, renamedCols, renamedRows)
-  names(settings1)[names(settings1) %in% names(renamedCols)] <-
-    renamedCols[intersect(names(renamedCols), unlist(names(settings1)))]
-  rownames(settings1)[rownames(settings1) %in% names(renamedRows)] <-
-    renamedRows[intersect(names(renamedRows), unlist(rownames(settings1)))]
+  for (colname in intersect(names(settings1), names(renamedCols)))
+    names(settings1)[names(settings1) == colname] <- renamedCols[colname]
 
   # print comparison
   scenarios <- unique(c(rownames(settings2), rownames(settings1)))
   switchnames <- sort(unique(c(names(settings1), names(settings2))))
   deletedCols <- setdiff(switchnames, names(settings2))
   addedCols <- setdiff(switchnames, names(settings1))
-  jointCols <- intersect(names(settings1), names(settings2))
   m <- c(m, paste0("Columns deleted: ", ifelse(length(deletedCols) > 0, paste(deletedCols, collapse = ", "), "-")))
   m <- c(m, paste0("Columns added:   ", ifelse(length(addedCols) > 0, paste(addedCols, collapse = ", "), "-")))
   m <- c(m, paste0("Renamed columns: ", ifelse(length(renamedCols) > 0,
@@ -95,28 +101,32 @@ compareScenConf <- function(fileList = "", configfile = "default.cfg", row.names
   m <- c(m, paste0("Renamed rows:    ", ifelse(length(renamedRows) > 0,
                    paste(names(renamedRows), renamedRows, sep = " -> ", collapse = ", "), "-")))
 
-  settings1[, addedCols] <- ""
+  for (c in addedCols) {
+    settings1[, c] <- if (is.null(cfg$gms[[c]])) NA else cfg$gms[[c]]
+  }
+  jointCols <- intersect(names(settings1), names(settings2))
   m <- c(m, "", "Changes in the scenarios:")
   for (s in scenarios) {
-    if (s %in% intersect(rownames(settings1), rownames(settings2))) {
+    if (s %in% intersect(c(rownames(settings1), renamedRows), rownames(settings2))) {
       # scenario name, oldname -> newname if renamed
-      if (! all(identical(toString(settings1[s, jointCols]), toString(settings2[s, jointCols])))) {
-        m <- c(m, paste0("~ ", ifelse(s %in% renamedRows, paste(names(which(renamedRows == s)), "-> "), ""), s, ":"))
+      sold <- if (s %in% renamedRows) names(renamedRows[s == renamedRows]) else s
+      if (! all(identical(toString(settings1[sold, jointCols]), toString(settings2[s, jointCols])))) {
+        m <- c(m, paste0("~ ", ifelse(s %in% renamedRows, paste(sold, "-> "), ""), s, ":"))
         for (c in jointCols) {
           # print only if different, if description was changed print only this fact
-          if (! identical(toString(settings1[s, c]), toString(settings2[s, c]))) {
+          if (! identical(toString(settings1[sold, c]), toString(settings2[s, c]))) {
             m <- c(m, paste0("    ", ifelse(c %in% renamedCols, paste(names(which(renamedCols == c)), "-> "), ""), c,
-                   ": ", ifelse(c == "description", "was changed", paste0(settings1[s, c], " -> ", settings2[s, c])),
-                   ifelse(isFALSE(configfile) || is.null(cfg$gms[[c]]), "", paste0(" (default: ", cfg$gms[[c]], ")"))))
+                   ": ", ifelse(c == "description", "was changed", paste0(settings1[sold, c], " -> ", settings2[s, c])),
+                   ifelse(is.null(remindPath) || is.null(cfg$gms[[c]]), "", paste0(" (default: ", cfg$gms[[c]], ")"))))
           }
         }
       }
-    } else {
+    } else if (! s %in% names(renamedRows)) {
       m <- c(m, ifelse(s %in% rownames(settings1), paste0("- ", s, " was deleted."), paste0("+ ", s, " was added.")))
     }
   }
   if (printit) {
-    message(paste0(m, collapse = "\n"), "\n");
+    message(paste0(m, collapse = "\n"), "\n")
     if (length(allwarnings) > 0) warning(paste0(allwarnings, collapse = "\n"), "\n")
     return(list(allwarnings = allwarnings))
   } else {
@@ -145,10 +155,6 @@ checkRowsCols <- function(settings1, settings2, renamedCols, renamedRows) {
   if (any(! names(renamedRows) %in% rownames(settings1))) {
     allwarnings <- c(allwarnings, "newRowNotIn1" = paste(
       "Old row name(s) not present in first file:", setdiff(names(renamedRows), rownames(settings1))))
-  }
-  if (any(names(renamedRows) %in% rownames(settings2))) {
-    allwarnings <- c(allwarnings, "oldRowAlsoIn2" = paste(
-      "Old row name(s) also present in second file:", setdiff(names(renamedRows), rownames(settings2))))
   }
   if (any(! renamedRows %in% rownames(settings2))) {
     allwarnings <- c(allwarnings, "newRowNotIn2" = paste(

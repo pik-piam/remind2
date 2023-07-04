@@ -6,26 +6,31 @@
 comparing it to a default.cfg}
 \usage{
 compareScenConf(
-  fileList = "",
-  configfile = "default.cfg",
+  fileList = NULL,
+  remindPath = "/p/projects/rd3mod/github/repos/remindmodel/remind/develop",
   row.names = 1,
   renamedCols = NULL,
   renamedRows = NULL,
-  printit = TRUE
+  printit = TRUE,
+  expanddata = TRUE
 )
 }
 \arguments{
-\item{fileList}{vector containing two csv file paths as c(oldfile, newfile). If empty, user can select}
+\item{fileList}{vector containing one csv file paths or two paths as c(oldfile, newfile)
+If one, searches same filename in defaultPath. If NULL, user can select}
 
-\item{configfile}{path to configfile. If empty, uses './default.cfg'}
+\item{remindPath}{path to REMIND directory containing main.gms}
 
 \item{row.names}{column in csv used for row.names. Use NULL for mapping files}
 
 \item{renamedCols}{vector with old and new column names such as c("old1" = "new1", "old2" = "new2"))}
 
-\item{renamedRows}{vector with old and new row names such as c("old3" = "new3", "old4" = "new4"))}
+\item{renamedRows}{vector with old and new row names such as c("old3" = "new3", "old3" = "new4", "old5" = "new5"))
+the "old" name can also remain in the new file, if you generated a variant}
 
 \item{printit}{boolean switch (default: TRUE) whether function prints its output}
+
+\item{expanddata}{fill empty cells with default values}
 }
 \value{
 list with $allwarnings and $out
@@ -38,7 +43,6 @@ comparing it to a default.cfg
 
  \dontrun{
     compareScenConf(fileList = c("scenario_config_old.csv", "scenario_config_new.csv"),
-    configfile = "default.cfg",
     renamedCols = c("old1" = "new1", "old2" = "new2"),
     renamedRows = c("old3" = "new3", "old4" = "new4"))
   }

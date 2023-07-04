@@ -43,7 +43,7 @@ grades[is.na(grades)] <- 0
   }  # substitute na by 0
   datarog           <- readGDX(gdx, name = c("p31_costExPoly", "p31_datarog"), format = "first_found")
   datarog2          <- readGDX(gdx, name = c("p31_ffPolyCoeffs"), format = "first_found")
-  pebiolc_demandmag <- readGDX(gdx, name = c("p30_pebiolc_demandmag"),  format = "first_found")
+  pebiolc_demandmag <- readGDX(gdx, name = c("pm_pebiolc_demandmag", "p30_pebiolc_demandmag"),  format = "first_found")
   p_cint            <- readGDX(gdx, name = c("pm_cint", "p_cint"), format = "first_found", react = "silent")
   fuExtrOwnCons     <- readGDX(gdx, name = c("pm_fuExtrOwnCons"), format = "first_found")
   ## variables
@@ -252,18 +252,10 @@ grades[is.na(grades)] <- 0
                                              filter(.data$variable == x),
                                            nameVar = x,
                                            discount = 0.0)) %>%
-      mutate(variable = paste0(gsub(" \\(.*\\)", "", x),
-                               "|Cumulated ",
-                               gsub("/yr", "",  # remove /yr
-                                    substr(x,
-                                           regexec("(\\(.*\\))", x)[[1]][1],
-                                           regexec("(\\(.*\\))", x)[[1]][1] +
-                                             attributes(regexec("(\\(.*\\))", x)[[1]])$match.length[1]))))
+      mutate(variable = paste0(x, "|Cumulated (", gsub("/yr", "", unique(filter(tmp6, .data$variable == x)$unit)[[1]], fixed = TRUE), ")"))
   })
-
   tmp6 <- do.call("rbind", mylist)
   tmp6 <- as.magpie(quitte::as.quitte(tmp6))
-  magclass::getNames(tmp6) <- paste0(magclass::getNames(tmp6), " (NA)")
 
   # PE|Production based on extraction
   tmp7 <- tmp1
