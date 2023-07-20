@@ -112,12 +112,15 @@ reportCosts <- function(gdx,output=NULL,regionSubsetList=NULL,t=c(seq(2005,2060,
   vm_cesIO         <- readGDX(gdx, name = c('vm_cesIO'), field = 'l',
                               restore_zeros = FALSE)
 
-  v33_FEdemand     <- readGDX(gdx, name=c("v33_FEdemand"), field="l", restore_zeros=FALSE, format="first_found", react="silent")
-  CDR_FEdemand     <- dimSums(v33_FEdemand, dim=c(3.2, 3.3))
+  v33_FEdemand <- readGDX(gdx, name = c("v33_FEdemand"), field = "l", restore_zeros = F, react = "silent")
+  # v33_FEdemand has two FE dimensions, 2nd is used to determine the overall FE demand (e.g., DAC requires heat and el),
+  # the 1st dim is FE that is actually used to supply the demand
+  # (e.g., heat for DAC can be supplied by feels, feh2s, fehes or fegas)
+  CDR_FEdemand <- dimSums(v33_FEdemand, dim=c(3.2, 3.3)) # FE summed over all CDR
   if (is.null(v33_FEdemand)) { # compatibility with the CDR module before the portfolio was added
-    CDR_FEdemand <- readGDX(gdx, name=c("vm_otherFEdemand"), field="l", restore_zeros=FALSE, format="first_found")
+    CDR_FEdemand <- readGDX(gdx, name = c("vm_otherFEdemand"), field = "l", restore_zeros = F, format = "first_found")
   }
-  
+
   # Equations
   finenbal     <- readGDX(gdx,name=c("fe2ppfEn","finenbal"),  types="sets",format="first_found")
   pebal.m      <- readGDX(gdx,name=c("q_balPe","qm_pebal"),  types="equations",field="m",format="first_found")
@@ -419,16 +422,14 @@ reportCosts <- function(gdx,output=NULL,regionSubsetList=NULL,t=c(seq(2005,2060,
   }
   
   price_fedie <- abs(febalForUe.m[,,"fedie"]/(budget.m+1e-10)) * 1000 / pm_conv_TWa_EJ # "Price|Final Energy|Diesel (US$2005/GJ)")
+
+  tmp  <- mbind(tmp, setNames(price_feeli * CDR_FEdemand[,,"feels"] * pm_conv_TWa_EJ, "Energy costs CDR|Electricity (billion US$2005/yr)"))
+  tmp  <- mbind(tmp, setNames(price_fedie * CDR_FEdemand[,,"fedie"] * pm_conv_TWa_EJ, "Energy costs CDR|Diesel (billion US$2005/yr)"))
+  tmp  <- mbind(tmp, setNames((price_fegai * CDR_FEdemand[,,"fegas"] + price_feh2i * CDR_FEdemand[,,"feh2s"]) * pm_conv_TWa_EJ,
+                     "Energy costs CDR|Heat (billion US$2005/yr)"))
   
-  tmp  <- mbind(tmp,setNames(price_feeli * CDR_FEdemand[,,"feels"] * pm_conv_TWa_EJ , "Energy costs CDR|Electricity (billion US$2005/yr)"))
-  tmp  <- mbind(tmp,setNames(price_fedie * CDR_FEdemand[,,"fedie"] * pm_conv_TWa_EJ, "Energy costs CDR|Diesel (billion US$2005/yr)"))
-  tmp  <- mbind(tmp,setNames(price_fegai * CDR_FEdemand[,,"fegas"] * pm_conv_TWa_EJ +
-                               price_feh2i * CDR_FEdemand[,,"feh2s"] * pm_conv_TWa_EJ, "Energy costs CDR|Heat (billion US$2005/yr)"))
-  
-  tmp  <- mbind(tmp,setNames(price_feeli * CDR_FEdemand[,,"feels"] * pm_conv_TWa_EJ +
-                               price_fedie * CDR_FEdemand[,,"fedie"] * pm_conv_TWa_EJ +
-                               price_fegai * CDR_FEdemand[,,"fegas"] * pm_conv_TWa_EJ +
-                               price_feh2i * CDR_FEdemand[,,"feh2s"] * pm_conv_TWa_EJ,
+  tmp  <- mbind(tmp, setNames((price_feeli * CDR_FEdemand[,,"feels"] + price_fedie * CDR_FEdemand[,,"fedie"] +
+                               price_fegai * CDR_FEdemand[,,"fegas"] + price_feh2i * CDR_FEdemand[,,"feh2s"]) * pm_conv_TWa_EJ,
                              "Energy costs CDR (billion US$2005/yr)"))
 
   #######################################
