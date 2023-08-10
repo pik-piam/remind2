@@ -41,7 +41,6 @@ URL: https://github.com/pik-piam/remind2
 Depends:
     magclass (>= 3.37)
 Imports:
-    RColorBrewer,
     abind,
     assertr,
     data.table,
@@ -53,6 +52,7 @@ Imports:
     gms,
     highcharter,
     iamc,
+    jsonlite,
     knitr,
     lubridate,
     lucode2 (>= 0.43.0),
@@ -60,11 +60,13 @@ Imports:
     luscale,
     lusweave,
     madrat,
+    methods,
     mip (>= 0.139.1),
     openxlsx,
     piamInterfaces (>= 0.0.62),
     plotly,
     quitte,
+    RColorBrewer,
     readr,
     remulator,
     reshape2,
@@ -78,7 +80,6 @@ Imports:
     withr,
     yaml,
     ymlthis,
-    jsonlite
 Suggests:
     covr,
     flexdashboard,

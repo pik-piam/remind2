@@ -21,6 +21,7 @@
 #' @export
 #' @importFrom gdx readGDX
 #' @importFrom magclass mbind write.report
+#' @importFrom methods formalArgs getFunction
 
 convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
                         t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
@@ -28,60 +29,99 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
 
   # Define region subsets
   regionSubsetList <- toolRegionSubsets(gdx)
+
   # ADD EU-27 region aggregation if possible
-  if("EUR" %in% names(regionSubsetList)){
-    regionSubsetList <- c(regionSubsetList,list(
-      "EU27"=c("ENC","EWN","ECS","ESC","ECE","FRA","DEU","ESW")
-    ))
+  if ("EUR" %in% names(regionSubsetList)) {
+    regionSubsetList <- c(regionSubsetList,
+                          list("EU27" = c("ENC", "EWN", "ECS", "ESC", "ECE",
+                                          "FRA", "DEU", "ESW")))
   }
 
-  # make the reporting
+  # reporting functions ----
+
+  ## setup ----
+  # List all reporting functions to be called by name in the order they should
+  # be called.  If the function needs parameters not included in the default
+  # reporting arguments (see below), add the function name and the names of the
+  # parameters as a vector, e.g. c('reportPrices', 'gdx_ref').  The parameters
+  # must exist in the scope of this function (i.e. must be accessible by code
+  # run inside this function).
+  reportings <- list(
+    'reportMacroEconomy',
+    'reportTrade',
+    'reportPE',
+    'reportSE',
+    'reportFE',
+    'reportExtraction',
+    'reportCapacity',
+    'reportCapitalStock',
+    'reportEnergyInvestment',
+    'reportEmiAirPol',
+    'reportEmi',
+    'reportTechnology',
+    c('reportPrices', 'gdx_ref'),
+    'reportCosts',
+    'reportTax',
+    'reportCrossVariables'
+  )
+
+  # Default arguments passed to all reporting functions, provided they accept
+  # them.
+  default_reporting_arguments <- c('gdx', 'output', 'regionSubsetList', 't')
+
+  ## execution ----
   output <- NULL
-  message("running reportMacroEconomy...")
-  output <- mbind(output,reportMacroEconomy(gdx,regionSubsetList,t)[,t,])
-  message("running reportTrade...")
-  output <- mbind(output,reportTrade(gdx,regionSubsetList,t)[,t,])
-  message("running reportPE...")
-  output <- mbind(output,reportPE(gdx,regionSubsetList,t)[,t,])
-  message("running reportSE...")
-  output <- mbind(output,reportSE(gdx,regionSubsetList,t)[,t,])
-  message("running reportFE...")
-  output <- mbind(output,reportFE(gdx,regionSubsetList,t))
-  message("running reportExtraction...")
-  output <- mbind(output,reportExtraction(gdx,regionSubsetList,t)[,t,])
-  message("running reportCapacity...")
-  output <- mbind(output,reportCapacity(gdx,regionSubsetList,t)[,t,])
-  #output <- mbind(output,reportLCOE(gdx)[,t,])     now moved to additional LCOE.mif file because many variables
-  message("running reportCapitalStock...")
-  output <- mbind(output,reportCapitalStock(gdx,regionSubsetList,t)[,t,])
-  message("running reportEnergyInvestment...")
-  output <- mbind(output,reportEnergyInvestment(gdx,regionSubsetList,t)[,t,])
-  message("running reportEmiAirPol...")
-  tmp <- try(reportEmiAirPol(gdx,regionSubsetList,t))  # test whether reportEmiAirPol works
-  if (!inherits(tmp, "try-error")) {
-    if (!is.null(tmp)) output <- mbind(output, tmp[, t, ])
-  } else {
-    message("function reportEmiAirPol does not work and is skipped")
+
+  for (reporting in reportings) {
+    # Get the reporting function by name from the remind2 package, print an
+    # expressive error message should that fail.
+    reporting_function <- tryCatch(
+      getFunction(reporting[[1]], where = getNamespace('remind2')),
+      error = function(e) {
+        known_error_message <- paste0('^no function .', reporting[[1]],
+                                      '. found$')
+        if (   inherits(e, 'error')
+            && grepl(known_error_message, e[['message']])) {
+          stop('Function foo() not defined in package remind2.')
+        }
+        else {
+          stop(e)
+        }
+      })
+
+    # Create a named list of function arguments from default arguments and
+    # declared arguments.  Should the reporting function expect an argument that
+    # is not in <default_reporting_arguments>, that is not declared in
+    # <reportings>, and for which it has no default value, R will throw an
+    #  error.
+    convGDX2MIF_environment <- environment()
+
+    reporting_function_arguments <- intersect(formalArgs(reporting_function),
+                                              c(default_reporting_arguments,
+                                                reporting[-1]))
+    reporting_function_arguments <- sapply(
+      X = reporting_function_arguments,
+      FUN = get, envir = convGDX2MIF_environment, inherits = FALSE,
+      simplify = FALSE, USE.NAMES = TRUE)
+
+    # Call the reporting function, catching any errors it might throw.  Warn the
+    # user about errors and carry on, or join the resulting data.  Filter the
+    # reporting return values to <t> time steps (some functions report more).
+    output_reporting <- try(do.call(reporting_function,
+                                    args = reporting_function_arguments))
+
+    if (inherits(output_reporting, 'try-error')) {
+      message('Function ', reporting[[1]], '() failed and is skipped\n',
+              '  Error message: ',
+              attr(output_reporting, 'condition')[['message']])
+    }
+    else {
+      output <- mbind(output, output_reporting[,t,])
+    }
   }
 
-  # reporting of variables that need variables from different other report functions
-  message("running reportEmi...")
-  output <- mbind(output,reportEmi(gdx,output,regionSubsetList,t)[,t,])    # needs output from reportFE
-  message("running reportTechnology...")
-  output <- mbind(output,reportTechnology(gdx,output,regionSubsetList,t)[,t,])    # needs output from reportSE
-  message("running reportPrices...")
-  output <- mbind(output,reportPrices(gdx,output,regionSubsetList,t,gdx_ref = gdx_ref)[,t,]) # needs output from reportSE, reportFE, reportEmi, reportExtraction, reportMacroEconomy
-  message("running reportCosts...")
-  output <- mbind(output,reportCosts(gdx,output,regionSubsetList,t)[,t,])  # needs output from reportEnergyInvestment, reportPrices, reportEnergyInvestments
-  message("running reportTax...")
-  output <- mbind(output,reportTax(gdx,output,regionSubsetList,t)[,t,])
-
-  # reporting of cross variables ----
-  # needs variables from different other report* functions
-  message("running reportCrossVariables...")
-  output <- mbind(output,reportCrossVariables(gdx,output,regionSubsetList,t)[,t,])
-
-  # Report policy costs, if possible and sensible
+  # additional reporting ----
+  ## Report policy costs, if possible and sensible ----
   if(!is.null(gdx_refpolicycost)) {
     if (file.exists(gdx_refpolicycost)) {
       gdp_scen <- try(readGDX(gdx,"cm_GDPscen",react ="error"),silent=T)
@@ -101,28 +141,30 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
     }
   }
 
-  # reporting of SDP variables
+  ## reporting of SDP variables ----
   message("running reportSDPVariables...")
   tmp <- try(reportSDPVariables(gdx,output,t))  # test whether reportSDPVariables works
   if (!inherits(tmp, "try-error")) {
-    if(!is.null(tmp)) output <- tmp
-  } else {
+    if (!is.null(tmp))
+      output <- tmp
+  }
+  else {
     message("function reportSDPVariables does not work and is skipped")
   }
 
+  # create output ----
   # Add dimension names "scenario.model.variable"
   getSets(output)[3] <- "variable"
-  output <- add_dimension(output,dim=3.1,add = "model",nm = "REMIND")
-  output <- add_dimension(output,dim=3.1,add = "scenario",nm = scenario)
-
-
+  output <- add_dimension(output, dim = 3.1, add = "model", nm = "REMIND")
+  output <- add_dimension(output, dim = 3.1, add = "scenario", nm = scenario)
 
   # either write the *.mif or return the magpie object
-  if(!is.null(file)) {
-    write.report(output,file=file,ndigit=7)
+  if (!is.null(file)) {
+    write.report(output, file = file, ndigit = 7)
     # write same reporting without "+" or "++" in variable names
-    deletePlus(file,writemif=TRUE)
-  } else {
+    deletePlus(file, writemif = TRUE)
+  }
+  else {
     return(output)
   }
 }
