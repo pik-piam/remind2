@@ -1,26 +1,71 @@
+#' Read in GDX and calculate policy costs
+#'
 #' Read in GDX and calculate policy costs, used in convGDX2MIF.R for the
-#' reporting
-#' 
-#' Read in GDX and calculate policy costs functions
-#' 
-#' 
-#' @param gdx a GDX as created by readGDX, or the file name of a gdx
-#' @param gdx_ref a reference GDX as created by readGDX, or the file name of a gdx
-#' @param regionSubsetList a list containing regions to create report variables region
-#' aggregations. If NULL (default value) only the global region aggregation "GLO" will
-#' be created.
-#' @param t temporal resolution of the reporting, default:
-#' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
-#' 
+#' reporting.
+#'
+#' @md
+#' @param gdx gdx file path.
+#' @param gdx_ref Reference gdx file path.
+#' @param regionSubsetList A list containing regions to create report variables
+#'     region aggregations.  If `NULL` (default value) only the global region
+#'     aggregation `"GLO"` will be created.
+#' @param t Temporal resolution of the reporting, defaults to
+#'     `t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)`.
+#' @param check_GDPscen Check for identical `cm_GDPscen` parameters in both
+#'     `gdx` and `gdx_ref`?  Defaults to `FALSE`.
+#'
 #' @author Lavinia Baumstark
+#'
 #' @examples
-#' 
-#' \dontrun{reportPolicyCosts(gdx)}
-#' 
-#' @export
+#' \dontrun{
+#'     reportPolicyCosts(gdx)
+#'  }
+#'
 #' @importFrom gdx readGDX
 #' @importFrom magclass getYears mbind dimSums setNames
-reportPolicyCosts <- function(gdx,gdx_ref,regionSubsetList=NULL,t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)){
+
+#' @export
+reportPolicyCosts <- function(gdx, gdx_ref, regionSubsetList = NULL,
+                              t = c(seq(2005,2060,5), seq(2070,2110,10),
+                                    2130,2150),
+                              check_GDPscen = FALSE) {
+
+  # check matching GDPscen ----
+  if (check_GDPscen) {
+    gdp_scen     <- try(readGDX(gdx, 'cm_GDPscen', react = 'error'),
+                        silent = TRUE)
+    gdp_scen_ref <- try(readGDX(gdx_ref, 'cm_GDPscen', react = 'error'),
+                        silent = TRUE)
+
+    # check both files
+    for (tmp in c(gdp_scen, gdp_scen_ref)) {
+      # if both parameters were read, carry on
+      if (!inherits(tmp, 'error'))
+        next
+
+      # if a parameter is missing, notify the user
+      if (grepl('No corresponding', attr(tmp, 'condition')[['message']]))
+        stop(
+          'A comparison of the GDP scenarios between this run and its reference run\n',
+          '  wasn\'t possible (old REMIND version).  Therefore to avoid reporting\n',
+          '  unsensible policy costs, \'reportPolicyCosts()\' was not executed.  If a\n',
+          '  policy costs reporting is required, please use\n',
+          '  reportPolicyCosts(check_GDPscen = FALSE), e.g. via the \'policyCosts\'\n',
+          '  output.R script.\n',
+          format(tmp))
+
+      # all other errors get passed along
+      stop(tmp)
+    }
+
+    # check for identical GDPscen
+    if (gdp_scen != gdp_scen_ref)
+      stop(
+        'The GDP scenario differs from that of the reference run.  If a policy costs\n',
+        '  reporting is desired, please use reportPolicyCosts(check_GDPscen = FALSE),\n',
+        '  e.g. via the \'policyCosts\' output.R script.')
+  }
+
   ####### read in needed data #########
   ## sets
   trade_bau <- readGDX(gdx_ref,name=c("trade"),format="first_found")
@@ -29,7 +74,7 @@ reportPolicyCosts <- function(gdx,gdx_ref,regionSubsetList=NULL,t=c(seq(2005,206
   pm_pvp_bau<- readGDX(gdx_ref,name=c("pm_pvp"),format = "first_found")
   pm_pvp    <- readGDX(gdx,name=c("pm_pvp"),format = "first_found")
   ## variables
-  cons_bau  <- readGDX(gdx_ref,name=c("vm_cons"),field="l",restore_zeros=FALSE,format="first_found") 
+  cons_bau  <- readGDX(gdx_ref,name=c("vm_cons"),field="l",restore_zeros=FALSE,format="first_found")
   gdp_bau   <- readGDX(gdx_ref,name=c("vm_cesIO"),field="l",restore_zeros=FALSE,format="first_found")[,,"inco"]
   Xport_bau <- readGDX(gdx_ref,name=c("vm_Xport"),field = "l",format = "first_found")
   Mport_bau <- readGDX(gdx_ref,name=c("vm_Mport"),field = "l",format = "first_found")
@@ -43,7 +88,7 @@ reportPolicyCosts <- function(gdx,gdx_ref,regionSubsetList=NULL,t=c(seq(2005,206
   v_costfu         <- readGDX(gdx,name=c("v_costFu","v_costfu"),         field="l",restore_zeros=FALSE,format="first_found")
   v_costom         <- readGDX(gdx,name=c("v_costOM","v_costom"),         field="l",                    format="first_found")
   v_costin         <- readGDX(gdx,name=c("v_costInv","v_costin"),         field = "l",format = "first_found")
-  
+
   ####### calculate minimal temporal and regional resolution #####
   y <- Reduce(intersect,list(getYears(cons),getYears(gdp),getYears(Xport),getYears(Mport),getYears(pm_pvp)))
   cons_bau  <- cons_bau[,y,]
@@ -81,19 +126,19 @@ reportPolicyCosts <- function(gdx,gdx_ref,regionSubsetList=NULL,t=c(seq(2005,206
   currAcc_bau <- dimSums( (Xport_bau[,,trade] - Mport_bau[,,trade] ) * pm_pvp_bau[,,trade]/setNames(pm_pvp_bau[,,'good'],NULL),dim = 3)
   currAcc     <- dimSums( (Xport[,,trade] - Mport[,,trade] ) * pm_pvp[,,trade]/setNames(pm_pvp[,,'good'],NULL),dim = 3)
   ####### calculate reporting parameters ############
-  tmp <- NULL 
+  tmp <- NULL
   tmp <- mbind(tmp,setNames((cons_bau - cons) * 1000, "Policy Cost|Consumption Loss (billion US$2005/yr)" ))
-  tmp <- mbind(tmp,setNames((cons_bau - cons)/(cons_bau + 1e-10) * 100, "Policy Cost|Consumption Loss|Relative to Reference Consumption (percent)")) 
+  tmp <- mbind(tmp,setNames((cons_bau - cons)/(cons_bau + 1e-10) * 100, "Policy Cost|Consumption Loss|Relative to Reference Consumption (percent)"))
   tmp <- mbind(tmp,setNames((gdp_bau - gdp) * 1000, "Policy Cost|GDP Loss (billion US$2005/yr)" ))
-  tmp <- mbind(tmp,setNames((gdp_bau - gdp)/(gdp_bau + 1e-10) * 100, "Policy Cost|GDP Loss|Relative to Reference GDP (percent)")) 
+  tmp <- mbind(tmp,setNames((gdp_bau - gdp)/(gdp_bau + 1e-10) * 100, "Policy Cost|GDP Loss|Relative to Reference GDP (percent)"))
   tmp <- mbind(tmp,setNames((v_costfu +v_costin + v_costom  - (v_costfu_bau + v_costin_bau + v_costom_bau)) * 1000, "Policy Cost|Additional Total Energy System Cost (billion US$2005/yr)" ))
-  # Policy costs calculated as consumption losses net the effect of climate-policy induced changes in the current account  
+  # Policy costs calculated as consumption losses net the effect of climate-policy induced changes in the current account
   tmp <- mbind(tmp,setNames(((cons_bau + currAcc_bau) - (cons + currAcc)) * 1000, "Policy Cost|Consumption + Current Account Loss (billion US$2005/yr)" ))
   tmp <- mbind(tmp,setNames(((cons_bau + currAcc_bau) - (cons + currAcc))/(cons_bau + currAcc_bau + 1e-10) * 100, "Policy Cost|Consumption + Current Account Loss|Relative to Reference Consumption + Current Account (percent)" ))
-  
+
   # add other region aggregations
   if (!is.null(regionSubsetList))
     tmp <- mbind(tmp, calc_regionSubset_sums(tmp, regionSubsetList))
-  
+
   return(tmp)
 }
