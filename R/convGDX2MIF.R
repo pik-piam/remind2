@@ -1,28 +1,33 @@
 #' Read in GDX and write *.mif reporting
 #'
-#' Read in all information from GDX file and create
-#' the *.mif reporting
+#' Read in all information from GDX file and create the *.mif reporting.
 #'
+#' @md
+#' @param gdx gdx file path.
+#' @param gdx_ref Reference gdx file path, used for fixing the prices to this
+#'     scenario for all time steps before `cm_startyear`.
+#' @param file Name of the .mif file which will be written.  If no name is
+#'     provided a magpie object containing all the reporting information is
+#'     returned.
+#' @param scenario Scenario name that is used in the *.mif reporting.  Defaults
+#'     to `'default'`.
+#' @param t Temporal resolution of the reporting, defaults to
+#'     `t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)`.
+#' @param gdx_refpolicycost Reference gdx file path for policy costs.
 #'
-#' @param gdx a GDX as created by readGDX, or the file name of a gdx
-#' @param gdx_ref reference-gdx for < cm_startyear, used for fixing the prices to this scenario
-#' @param file name of the mif file which will be written, if no name is
-#' provided a magpie object containing all the reporting information is
-#' returned
-#' @param scenario scenario name that is used in the *.mif reporting
-#' @param t temporal resolution of the reporting, default:
-#' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
-#' @param gdx_refpolicycost reference-gdx for policy costs, a GDX as created by readGDX, or the file name of a gdx
 #' @author Lavinia Baumstark
+#'
 #' @examples
+#' \dontrun{
+#'     convGDX2MIF(gdx, gdx_refpolicycost, file = "REMIND_generic_default.csv",
+#'                 scenario = "default")
+#' }
 #'
-#' \dontrun{convGDX2MIF(gdx,gdx_refpolicycost,file="REMIND_generic_default.csv",scenario="default")}
-#'
-#' @export
 #' @importFrom gdx readGDX
 #' @importFrom magclass mbind write.report
 #' @importFrom methods formalArgs getFunction
 
+#' @export
 convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
                         t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130,
                               2150),
@@ -44,9 +49,13 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   # List all reporting functions to be called by name in the order they should
   # be called.  If the function needs parameters not included in the default
   # reporting arguments (see below), add the function name and the names of the
-  # parameters as a vector, e.g. c('reportPrices', 'gdx_ref').  The parameters
-  # must exist in the scope of this function (i.e. must be accessible by code
-  # run inside this function).
+  # parameters as a list, in which arguments can be named if their name inside
+  # convGDX2MIF differs from the argument name of the reporting function, e.g.
+  #   list('reportPolicyCosts',
+  #        'gdx_ref' = gdx_refpolicycost,
+  #        'check_GDPscen' = TRUE)
+  # Arguments  must exist in the scope of this function (i.e. must be accessible
+  # by code run inside this function).
   reportings <- list(
     'reportMacroEconomy',
     'reportTrade',
@@ -75,34 +84,34 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   default_reporting_arguments <- c('gdx', 'output', 'regionSubsetList', 't')
 
   ## execution ----
-  output <- NULL
-
-  for (reporting in reportings) {
+  .get_reporting_function <- function(reporting_function_name) {
     # Get the reporting function by name from the remind2 package, print an
     # expressive error message should that fail.
-    reporting_function <- tryCatch(
+    tryCatch(
       getFunction(reporting[[1]], where = getNamespace('remind2')),
       error = function(e) {
         known_error_message <- paste0('^no function .', reporting[[1]],
                                       '. found$')
-        if (   inherits(e, 'error')
-            && grepl(known_error_message, e[['message']])) {
+        if (grepl(known_error_message, e[['message']])) {
           stop('Function foo() not defined in package remind2.')
         }
         else {
           stop(e)
         }
       })
+  }
 
+  .get_reporting_function_arguments <- function(reporting_function,
+                                                declared_arguments,
+                                                default_reporting_arguments,
+                                                env) {
     # Create a named list of function arguments from default arguments and
     # declared arguments.  Should the reporting function expect an argument that
     # is not in <default_reporting_arguments>, that is not declared in
-    # <reportings>, and for which it has no default value, R will throw an
-    #  error.
-    convGDX2MIF_environment <- environment()
-
+    # the reporting, and for which it has no default value, R will throw an
+    # error.
     reporting_function_arguments <- intersect(
-      setdiff(formalArgs(reporting_function), names(reporting[-1])),
+      setdiff(formalArgs(reporting_function), names(declared_arguments)),
       default_reporting_arguments)
 
     reporting_function_arguments <- sapply(
@@ -112,24 +121,38 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
 
     reporting_function_arguments <- c(
       reporting_function_arguments,
-      reporting[-1])
+      declared_arguments)
+
+    return(reporting_function_arguments)
+  }
+
+  output <- NULL
+  convGDX2MIF_environment <- environment()
+
+  for (reporting in reportings) {
+    reporting_function_name <- reporting[[1]]
+    declared_arguments <- reporting[-1]
+
+    reporting_function <- .get_reporting_function(reporting_function_name)
+    reporting_function_arguments <- .get_reporting_function_arguments(
+      reporting_function, declared_arguments, default_reporting_arguments,
+      convGDX2MIF_environment)
 
     # Call the reporting function, catching any errors it might throw.  Warn the
     # user about errors and carry on, or join the resulting data.  Filter the
     # reporting return values to <t> time steps (some functions report more).
-    output_reporting <- try(do.call(reporting_function,
-                                    args = reporting_function_arguments))
-
-    if (inherits(output_reporting, 'try-error')) {
-      message('Function ', reporting[[1]], '() failed and is skipped\n',
-              '  Error message: ',
-              attr(output_reporting, 'condition')[['message']])
-    }
-    else {
+    tryCatch(
+      expr = { output_reporting <- do.call(reporting_function,
+                                           args = reporting_function_arguments)
       output <- mbind(output, output_reporting[,t,])
-    }
+      },
+      error = function(e) {
+        message('Function ', reporting_function_name,
+                '() failed and is skipped\n',
+                '  Error message: ', e[['message']])
+      }
+    )
   }
-
 
   # create output ----
   # Add dimension names "scenario.model.variable"
