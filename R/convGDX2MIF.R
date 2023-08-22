@@ -76,6 +76,9 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
     'reportTax',
     'reportCrossVariables',
     list('reportPolicyCosts',
+         # convGDX2MIF() has an additional argument for the gdx used in
+         # reportPolicyCosts(), gdx_refpolicycost, but reportPolicyCosts() uses
+         # just gdx_ref as an argument name, so this parameter look a bit weird.
          'gdx_ref' = gdx_refpolicycost,
          'check_GDPscen' = TRUE),
     'reportSDPVariables'
