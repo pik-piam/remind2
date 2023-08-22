@@ -93,7 +93,8 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
         known_error_message <- paste0('^no function .', reporting[[1]],
                                       '. found$')
         if (grepl(known_error_message, e[['message']])) {
-          stop('Function foo() not defined in package remind2.')
+          stop('Function `', reporting[[1]],
+               '()` not defined in package remind2.')
         }
         else {
           stop(e)
