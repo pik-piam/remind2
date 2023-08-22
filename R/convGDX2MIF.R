@@ -14,6 +14,7 @@
 #' @param t Temporal resolution of the reporting, defaults to
 #'     `t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)`.
 #' @param gdx_refpolicycost Reference gdx file path for policy costs.
+#' @param verbose Report on reporting functions being called.
 #'
 #' @author Lavinia Baumstark
 #'
@@ -31,7 +32,8 @@
 convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
                         t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130,
                               2150),
-                        gdx_refpolicycost = gdx_ref) {
+                        gdx_refpolicycost = gdx_ref,
+                        verbose = TRUE) {
 
   # Define region subsets
   regionSubsetList <- toolRegionSubsets(gdx)
@@ -142,6 +144,9 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
     # Call the reporting function, catching any errors it might throw.  Warn the
     # user about errors and carry on, or join the resulting data.  Filter the
     # reporting return values to <t> time steps (some functions report more).
+    if (verbose)
+      message('running ', reporting_function_name, '...')
+
     tryCatch(
       expr = { output_reporting <- do.call(reporting_function,
                                            args = reporting_function_arguments)
