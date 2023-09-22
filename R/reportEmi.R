@@ -138,9 +138,16 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
   vm_demFeSector <- readGDX(gdx, "vm_demFeSector", field = "l", restore_zeros = F)[, t, ]
   # set NA values to 0,
   vm_demFeSector[is.na(vm_demFeSector)] <- 0
-  # FE demand per industry subsector
-  o37_demFeIndSub <- readGDX(gdx, "o37_demFeIndSub", restore_zeros = F)[, t, ]
-  if (!is.null(o37_demFeIndSub)) {
+  # FE demand per industry subsector. First read without subsetting to check if
+  # is was actually written
+  # o37_demFeIndSub <- readGDX(gdx, "o37_demFeIndSub", restore_zeros = F)[, t, ]
+  o37_demFeIndSub <- readGDX(gdx, "o37_demFeIndSub", restore_zeros = F)
+  # Does subsector information exist?
+  if (length(o37_demFeIndSub) != 0) {
+    hassubsectors <- TRUE
+    o37_demFeIndSub <- o37_demFeIndSub[,t,]
+  } else {
+    hassubsectors <- FALSE
     o37_demFeIndSub[is.na(o37_demFeIndSub)] <- 0
   }
 
@@ -555,7 +562,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
 
 
   # reporting if FE per industry subsector o37_demFeIndSub exists
-  if (!is.null(o37_demFeIndSub)) {
+  if (hassubsectors) {
 
     # relabel industry energy CC from CCS sectors to industry sectors
     vm_emiIndCCS_Mapped <- toolAggregate(
@@ -1231,7 +1238,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
         mbind())
   } else {
 
-    if (!is.null(o37_demFeIndSub)) {
+    if (hassubsectors) {
 
 
       # calculate bioenergy shares in industry solids, liquids and gases per subsector
@@ -2392,7 +2399,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
     "Emi|CO2|Gross|Energy|Demand|+|Transport (Mt CO2/yr)")
 
   # TODO: remove this if clause once the below variable are there for industry subsectors
-  if ((module2realisation["industry", 2] == "fixed_shares") | (!is.null(o37_demFeIndSub))) {
+  if ((module2realisation["industry", 2] == "fixed_shares") | hassubsectors) {
     # Note: this assumes that all bunker fuels are liquids
     emi.vars.wBunkers <- c(emi.vars.wBunkers,     "Emi|CO2|Energy|Demand|Transport|+|Liquids (Mt CO2/yr)",  "Emi|CO2|Energy|Demand|++|Liquids (Mt CO2/yr)")
 
