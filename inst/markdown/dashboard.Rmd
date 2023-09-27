@@ -22,81 +22,89 @@ params:
 <!--#### INITIALIZATION #### -->
 
 ```{r loading_libraries, include=FALSE}
-  #loading required libraries
-  #library(remind2)
-  library(knitr)
-  library(flexdashboard)
+# loading required libraries
+library(knitr)
+library(flexdashboard)
 ```
 
 ```{r global_options, include=FALSE}
-  # setting global R chunk options (https://yihui.name/knitr/options/#chunk_options)
-  knitr::opts_chunk$set(dev='svg', fig.asp = 1 ) # fig.asp = default aspect ratio
+# setting global R chunk options (https://yihui.name/knitr/options/#chunk_options)
+knitr::opts_chunk$set(dev = "svg", fig.asp = 1) # fig.asp = default aspect ratio
 ```
 
 ```{r loading_diagnosis_charts, include=FALSE}
-  # loading diagnosis results
-  diag <- reportDiagnosis(gdx=gdx, statsFile=statsFile, chartType="plotly")
+# loading diagnosis results
+diag <- reportDiagnosis(gdx = gdx, statsFile = statsFile, chartType = "plotly")
 ```
 
 ```{r loading_REMIND_charts, include=FALSE}
-  #loading REMIND results and plots 
-  out <- reportCharts(gdx=gdx, regionMapping=regionMapping, hist=hist, reportfile=reportfile, chartType="plotly")
+# loading REMIND results and plots
+out <- reportCharts(gdx = gdx, regionMapping = regionMapping, hist = hist, reportfile = reportfile, chartType = "plotly")
 ```
 
 ```{r creating_info_tooltips, include=FALSE}
-  #data frame with help tooltips
-  # helpTooltip_df <- data.frame(
-  #   title=c("Convergence Report","Carbon Price","CO2 Emissions per Sector","Main Greenhouse Gases Emissions","F-Gases","Kyoto Gases Emissions","Other Gases"),
-  #   placement=c("right","right","top","right","right","left","left"))
-  helpTooltip_df <- data.frame(
-    title=c("Convergence Report","Execution time","Summary",
-            "Carbon Price","CO2 Emissions per Sector","Kyoto Gases Emissions",
-            "Total Primary Energy","Primary Energy Prices","Coal production","Gas production","Oil production","Uranium production","Biomass production",
-            "Secondary Energy Prices","Total Secondary Energy","Electricity Secondary Energy","Liquids Secondary Energy","Gases Secondary Energy","Heat Secondary Energy","Solids Secondary Energy","Hydrogen Secondary Energy",
-            "Final Energy Prices","Total Final Energy","Buildings Final Energy Prices","Buildings Final Energy","Transport Final Energy Prices","Transport Final Energy","Industry Final Energy Prices","Industry Final Energy"),
-    placement=c("right","none","top",
-                "none","right","left",
-                "right","right","left","left","left","left","left",
-                "right","right","right","right","right","left","top","top",
-                "right","right","right","right","right","right","left","top"))
-  legend <- c(diag$legend,out$legend)
+# data frame with help tooltips
+# helpTooltip_df <- data.frame(
+#   title=c("Convergence Report","Carbon Price","CO2 Emissions per Sector","Main Greenhouse Gases Emissions","F-Gases","Kyoto Gases Emissions","Other Gases"),
+#   placement=c("right","right","top","right","right","left","left"))
+helpTooltip_df <- data.frame(
+  title = c(
+    "Convergence Report", "Execution time", "Summary",
+    "Carbon Price", "CO2 Emissions per Sector", "Kyoto Gases Emissions",
+    "Total Primary Energy", "Primary Energy Prices", "Coal production", "Gas production", "Oil production", "Uranium production", "Biomass production",
+    "Secondary Energy Prices", "Total Secondary Energy", "Electricity Secondary Energy", "Liquids Secondary Energy", "Gases Secondary Energy", "Heat Secondary Energy", "Solids Secondary Energy", "Hydrogen Secondary Energy",
+    "Final Energy Prices", "Total Final Energy", "Buildings Final Energy Prices", "Buildings Final Energy", "Transport Final Energy Prices", "Transport Final Energy", "Industry Final Energy Prices", "Industry Final Energy"
+  ),
+  placement = c(
+    "right", "none", "top",
+    "none", "right", "left",
+    "right", "right", "left", "left", "left", "left", "left",
+    "right", "right", "right", "right", "right", "left", "top", "top",
+    "right", "right", "right", "right", "right", "right", "left", "top"
+  )
+)
+legend <- c(diag$legend, out$legend)
 ```
 
 ```{r hidding_unused_region_menus, include=FALSE}
-  #control region menus appearance
-  showMenu <- list()
-  for (region in names(out$data$regions))
-    showMenu[[region]] <- TRUE
-
+# control region menus appearance
+showMenu <- list()
+for (region in names(out$data$regions)) {
+  showMenu[[region]] <- TRUE
+}
 ```
 
 
 ```{r loading_aesthetics, include=FALSE}
-  #aesthetics
-  aesthetics <- list(
-    color = c(  "Iteration Limit" = "warning",
-                # solver status
-                "optimal"="success",
-                "locally optimal"="success", #theme colors “primary”, “info”, “success”, “warning”, and “danger”
-                "unbounded"="danger",
-                "infeasible"="danger",
-                "locally infeasible"="danger",
-                "intermediate infeasible"="danger",
-                "intermediate nonoptimal"="warning",
-                # solving time
-                "solvingTime"="primary"),
-    icon  = c(  "Iteration Limit" = "glyphicon glyphicon-exclamation-sign", #fa-exclamation-triangle 
-                # solver status
-                "optimal"="glyphicon glyphicon-thumbs-up", #fa-thumbs-up
-                "locally optimal"="glyphicon glyphicon-thumbs-up", #fa-thumbs-up
-                "unbounded"="glyphicon glyphicon-exclamation-sign", #fa-exclamation-triangle
-                "infeasible"="glyphicon glyphicon-exclamation-sign", #fa-exclamation-triangle
-                "locally infeasible"="glyphicon glyphicon-exclamation-sign", #fa-exclamation-triangle
-                "intermediate infeasible"="glyphicon glyphicon-exclamation-sign", #fa-exclamation-triangle
-                "intermediate nonoptimal"="glyphicon glyphicon-exclamation-sign", #fa-exclamation-triangle
-                # solving time
-                "solvingTime"="glyphicon glyphicon-time")
-    ) 
+# aesthetics
+aesthetics <- list(
+  color = c(
+    "Iteration Limit" = "warning",
+    # solver status
+    "optimal" = "success",
+    "locally optimal" = "success", # theme colors “primary”, “info”, “success”, “warning”, and “danger”
+    "unbounded" = "danger",
+    "infeasible" = "danger",
+    "locally infeasible" = "danger",
+    "intermediate infeasible" = "danger",
+    "intermediate nonoptimal" = "warning",
+    # solving time
+    "solvingTime" = "primary"
+  ),
+  icon = c(
+    "Iteration Limit" = "glyphicon glyphicon-exclamation-sign", # fa-exclamation-triangle
+    # solver status
+    "optimal" = "glyphicon glyphicon-thumbs-up", # fa-thumbs-up
+    "locally optimal" = "glyphicon glyphicon-thumbs-up", # fa-thumbs-up
+    "unbounded" = "glyphicon glyphicon-exclamation-sign", # fa-exclamation-triangle
+    "infeasible" = "glyphicon glyphicon-exclamation-sign", # fa-exclamation-triangle
+    "locally infeasible" = "glyphicon glyphicon-exclamation-sign", # fa-exclamation-triangle
+    "intermediate infeasible" = "glyphicon glyphicon-exclamation-sign", # fa-exclamation-triangle
+    "intermediate nonoptimal" = "glyphicon glyphicon-exclamation-sign", # fa-exclamation-triangle
+    # solving time
+    "solvingTime" = "glyphicon glyphicon-time"
+  )
+)
 ```
 
 <!--#### START OF MENUS CODE #### -->
@@ -122,19 +130,21 @@ Row
 ### Iterations number {data-width=200}
 
 ```{r}
-  valueBox(diag$summary$status, 
-           caption=diag$summary$statusMessage, 
-           color = aesthetics$color[[diag$summary$status]],
-           icon = aesthetics$icon[[diag$summary$status]])
+valueBox(diag$summary$status,
+  caption = diag$summary$statusMessage,
+  color = aesthetics$color[[diag$summary$status]],
+  icon = aesthetics$icon[[diag$summary$status]]
+)
 ```
 
 ### Solving time {data-width=200}
 
 ```{r}
-  valueBox(diag$data$runTime$formated,
-           caption=paste0("The runtime was ", diag$data$runTime$longFormat), 
-           color = aesthetics$color[["solvingTime"]],
-           icon = aesthetics$icon[["solvingTime"]])
+valueBox(diag$data$runTime$formated,
+  caption = paste0("The runtime was ", diag$data$runTime$longFormat),
+  color = aesthetics$color[["solvingTime"]],
+  icon = aesthetics$icon[["solvingTime"]]
+)
 ```
 
 ### Additional info {data-width=400}
@@ -147,14 +157,14 @@ Row {data-height=300}
 ### Convergence Report {.hasModal data-width=300 data-target=".surplusConvergence"}
 
 ```{r}
-  diag$plotly$'Convergence Report' 
+diag$plotly$"Convergence Report"
 ```
 
 
 <div class="modal surplusConvergence plotlyModal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
 ```{r}
-  diag$plotly$surplusConvergence
+diag$plotly$surplusConvergence
 ```
   </div>
 </div>
@@ -164,7 +174,7 @@ Row {data-height=300}
 
 ```{r}
 # regions mapping
-  out$maps$world
+out$maps$world
 ```
 
 Row {data-height=400}
@@ -172,20 +182,20 @@ Row {data-height=400}
 ### Execution time
 
 ```{r fig.width = 12, fig.asp = .2}
-  diag$plotly$'Execution time'
+diag$plotly$"Execution time"
 ```
 
 ### Summary {.hasModal data-target=".iterationDetails"}
 
 ```{r fig.width = 12, fig.asp = .2}
-  diag$plotly$'Summary'
+diag$plotly$"Summary"
 ```
 
 <!--Iteration Details modal-->
 <div class="modal iterationDetails plotlyModal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
 ```{r}
-  diag$plotly$iterationDetails
+diag$plotly$iterationDetails
 ```
   </div>
 </div>
@@ -233,10 +243,12 @@ Side Navigation {.sidebar .sidebarEmissions data-width=60}
 [](#emissions){class="ico-GLO selected sidebar-button"}
 [](#emissions---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#emissions---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#emissions---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#emissions---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#emissions---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 Column {data-width=600}
@@ -245,13 +257,13 @@ Column {data-width=600}
 ### Carbon Price
 
 ```{r}
-  out$plotly$emissions$'Carbon Price'$world
+out$plotly$emissions$"Carbon Price"$world
 ```   
  
 ### CO2 Emissions per Sector
 
 ```{r}
-  out$plotly$emissions$'CO2 Emissions per Sector'$world
+out$plotly$emissions$"CO2 Emissions per Sector"$world
 ```   
 
 
@@ -261,13 +273,13 @@ Column {data-width=300}
 ### Main Greenhouse Gases Emissions
 
 ```{r}
-  out$plotly$emissions$'Main Greenhouse Gases Emissions'$world
+out$plotly$emissions$"Main Greenhouse Gases Emissions"$world
 ```   
 
 ### F-Gases
 
 ```{r}
-  out$plotly$emissions$'F-Gases'$world
+out$plotly$emissions$"F-Gases"$world
 ```   
 
 Column {data-width=300}  
@@ -277,13 +289,13 @@ Column {data-width=300}
 ### Kyoto Gases Emissions {data-height=200}
 
 ```{r}
-  out$plotly$emissions$'Kyoto Gases Emissions'$world
+out$plotly$emissions$"Kyoto Gases Emissions"$world
 ```   
 
 ### Other Gases {data-height=400}
 
 ```{r}
-  out$plotly$emissions$'Other Gases'$world
+out$plotly$emissions$"Other Gases"$world
 ```   
 
 
@@ -298,10 +310,12 @@ Side Navigation {.sidebar .sidebarEmissions data-width=60}
 [](#emissions){class="ico-GLO sidebar-button"}
 [](#emissions---regional){class="ico-regions sidebar-button selected"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#emissions---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#emissions---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#emissions---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#emissions---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 Column {data-width=600}
@@ -310,13 +324,13 @@ Column {data-width=600}
 ### Carbon Price
 
 ```{r}
-  out$plotly$emissions$'Carbon Price'$regions
+out$plotly$emissions$"Carbon Price"$regions
 ```   
  
 ### CO2 Emissions per Sector
 
 ```{r}
-  out$plotly$emissions$'CO2 Emissions per Sector'$regions
+out$plotly$emissions$"CO2 Emissions per Sector"$regions
 ```   
 
 
@@ -326,13 +340,13 @@ Column {data-width=300}
 ### Main Greenhouse Gases Emissions
 
 ```{r}
-  out$plotly$emissions$'Main Greenhouse Gases Emissions'$regions
+out$plotly$emissions$"Main Greenhouse Gases Emissions"$regions
 ```   
 
 ### F-Gases
 
 ```{r}
-  out$plotly$emissions$'F-Gases'$regions
+out$plotly$emissions$"F-Gases"$regions
 ```   
 
 Column {data-width=300}  
@@ -342,13 +356,13 @@ Column {data-width=300}
 ### Kyoto Gases Emissions {data-height=200}
 
 ```{r}
-  out$plotly$emissions$'Kyoto Gases Emissions'$regions
+out$plotly$emissions$"Kyoto Gases Emissions"$regions
 ```   
 
 ### Other Gases {data-height=400}
 
 ```{r}
-  out$plotly$emissions$'Other Gases'$regions
+out$plotly$emissions$"Other Gases"$regions
 ```   
 
 
@@ -364,10 +378,12 @@ Side Navigation {.sidebar .sidebarEmissions data-width=60}
 [](#emissions){class="ico-GLO sidebar-button"}
 [](#emissions---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#emissions---eur){class="ico-EUR sidebar-button selected"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#emissions---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#emissions---eur){class="ico-EUR sidebar-button selected"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#emissions---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 Column {data-width=600}
@@ -376,13 +392,13 @@ Column {data-width=600}
 ### Carbon Price
 
 ```{r}
-  out$plotly$emissions$'Carbon Price'$EUR
+out$plotly$emissions$"Carbon Price"$EUR
 ```   
  
 ### CO2 Emissions per Sector
 
 ```{r}
-  out$plotly$emissions$'CO2 Emissions per Sector'$EUR
+out$plotly$emissions$"CO2 Emissions per Sector"$EUR
 ```   
 
 
@@ -392,13 +408,13 @@ Column {data-width=300}
 ### Main Greenhouse Gases Emissions
 
 ```{r}
-  out$plotly$emissions$'Main Greenhouse Gases Emissions'$EUR
+out$plotly$emissions$"Main Greenhouse Gases Emissions"$EUR
 ```   
 
 ### F-Gases
 
 ```{r}
-  out$plotly$emissions$'F-Gases'$EUR
+out$plotly$emissions$"F-Gases"$EUR
 ```   
 
 Column {data-width=300}  
@@ -408,13 +424,13 @@ Column {data-width=300}
 ### Kyoto Gases Emissions {data-height=200}
 
 ```{r}
-  out$plotly$emissions$'Kyoto Gases Emissions'$EUR
+out$plotly$emissions$"Kyoto Gases Emissions"$EUR
 ```   
 
 ### Other Gases {data-height=400}
 
 ```{r}
-  out$plotly$emissions$'Other Gases'$EUR
+out$plotly$emissions$"Other Gases"$EUR
 ```   
 
 
@@ -427,10 +443,12 @@ Side Navigation {.sidebar .sidebarEmissions data-width=60}
 [](#emissions){class="ico-GLO sidebar-button"}
 [](#emissions---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#emissions---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#emissions---neu){class="ico-NEU sidebar-button selected"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#emissions---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#emissions---neu){class="ico-NEU sidebar-button selected"}')
+}
 ```
 
 Column {data-width=600}
@@ -439,13 +457,13 @@ Column {data-width=600}
 ### Carbon Price
 
 ```{r}
-  out$plotly$emissions$'Carbon Price'$NEU
+out$plotly$emissions$"Carbon Price"$NEU
 ```   
  
 ### CO2 Emissions per Sector
 
 ```{r}
-  out$plotly$emissions$'CO2 Emissions per Sector'$NEU
+out$plotly$emissions$"CO2 Emissions per Sector"$NEU
 ```   
 
 
@@ -455,13 +473,13 @@ Column {data-width=300}
 ### Main Greenhouse Gases Emissions
 
 ```{r}
-  out$plotly$emissions$'Main Greenhouse Gases Emissions'$NEU
+out$plotly$emissions$"Main Greenhouse Gases Emissions"$NEU
 ```   
 
 ### F-Gases
 
 ```{r}
-  out$plotly$emissions$'F-Gases'$NEU
+out$plotly$emissions$"F-Gases"$NEU
 ```   
 
 Column {data-width=300}  
@@ -471,13 +489,13 @@ Column {data-width=300}
 ### Kyoto Gases Emissions {data-height=200}
 
 ```{r}
-  out$plotly$emissions$'Kyoto Gases Emissions'$NEU
+out$plotly$emissions$"Kyoto Gases Emissions"$NEU
 ```   
 
 ### Other Gases {data-height=400}
 
 ```{r}
-  out$plotly$emissions$'Other Gases'$NEU
+out$plotly$emissions$"Other Gases"$NEU
 ```   
 
 
@@ -495,10 +513,12 @@ Side Navigation {.sidebar .sidebarPrimaryEnergy data-width=60}
 [](#primary-energy){class="ico-GLO sidebar-button selected"}
 [](#primary-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#primary-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#primary-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#primary-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#primary-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 
@@ -508,16 +528,16 @@ Column {data-width=600}
 ### Primary Energy Prices
 
 ```{r}
-  out$plotly$PE$'Primary Energy Prices'$world
+out$plotly$PE$"Primary Energy Prices"$world
 ```   
 
  
 ### Total Primary Energy
 
 ```{r}
-  out$plotly$PE$'Total Primary Energy'$world$abs
-  out$plotly$PE$'Total Primary Energy'$world$perc
-  out$plotly$PE$'Total Primary Energy'$world$percapita
+out$plotly$PE$"Total Primary Energy"$world$abs
+out$plotly$PE$"Total Primary Energy"$world$perc
+out$plotly$PE$"Total Primary Energy"$world$percapita
 ```   
 
 Column {data-width=300}  
@@ -525,12 +545,12 @@ Column {data-width=300}
 
 ### Coal production
 ```{r}
-  out$plotly$PE$'Coal production'$world
+out$plotly$PE$"Coal production"$world
 ```   
 
 ### Gas production
 ```{r}
-  out$plotly$PE$'Gas production'$world
+out$plotly$PE$"Gas production"$world
 ```   
 
 Column {data-width=300}  
@@ -538,17 +558,17 @@ Column {data-width=300}
 
 ### Oil production
 ```{r}
-  out$plotly$PE$'Oil production'$world
+out$plotly$PE$"Oil production"$world
 ```   
 
 ### Uranium production
 ```{r}
-  out$plotly$PE$'Uranium production'$world
+out$plotly$PE$"Uranium production"$world
 ```   
 
 ### Biomass production
 ```{r}
-  out$plotly$PE$'Biomass production'$world
+out$plotly$PE$"Biomass production"$world
 ```   
 
 <!-- Regional primary energy menu -->
@@ -562,10 +582,12 @@ Side Navigation {.sidebar .sidebarPrimaryEnergy data-width=60}
 [](#primary-energy){class="ico-GLO sidebar-button"}
 [](#primary-energy---regional){class="ico-regions sidebar-button selected"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#primary-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#primary-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#primary-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#primary-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 <!-- it does not make sense to have primary energy per region prices as they are equal to the global levels-->
@@ -576,9 +598,9 @@ Column {data-width=600}
 ### Total Primary Energy
 
 ```{r}
-  out$plotly$PE$'Total Primary Energy'$regions$abs
-  out$plotly$PE$'Total Primary Energy'$regions$perc
-  out$plotly$PE$'Total Primary Energy'$regions$percapita
+out$plotly$PE$"Total Primary Energy"$regions$abs
+out$plotly$PE$"Total Primary Energy"$regions$perc
+out$plotly$PE$"Total Primary Energy"$regions$percapita
 ```   
 
 Column {data-width=300}  
@@ -586,12 +608,12 @@ Column {data-width=300}
 
 ### Coal production
 ```{r}
-  out$plotly$PE$'Coal production'$regions
+out$plotly$PE$"Coal production"$regions
 ```   
 
 ### Gas production
 ```{r}
-  out$plotly$PE$'Gas production'$regions
+out$plotly$PE$"Gas production"$regions
 ```   
 
 Column {data-width=300}  
@@ -599,17 +621,17 @@ Column {data-width=300}
 
 ### Oil production
 ```{r}
-  out$plotly$PE$'Oil production'$regions
+out$plotly$PE$"Oil production"$regions
 ```   
 
 ### Uranium production
 ```{r}
-  out$plotly$PE$'Uranium production'$regions
+out$plotly$PE$"Uranium production"$regions
 ```   
 
 ### Biomass production
 ```{r}
-  out$plotly$PE$'Biomass production'$regions
+out$plotly$PE$"Biomass production"$regions
 ```   
 
 
@@ -624,10 +646,12 @@ Side Navigation {.sidebar .sidebarPrimaryEnergy data-width=60}
 [](#primary-energy){class="ico-GLO sidebar-button"}
 [](#primary-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#primary-energy---eur){class="ico-EUR sidebar-button selected"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#primary-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#primary-energy---eur){class="ico-EUR sidebar-button selected"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#primary-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 <!-- it does not make sense to have primary energy per region prices as they are equal to the global levels-->
@@ -638,9 +662,9 @@ Column {data-width=600}
 ### Total Primary Energy
 
 ```{r}
-  out$plotly$PE$'Total Primary Energy'$EUR$abs
-  out$plotly$PE$'Total Primary Energy'$EUR$perc
-  out$plotly$PE$'Total Primary Energy'$EUR$percapita
+out$plotly$PE$"Total Primary Energy"$EUR$abs
+out$plotly$PE$"Total Primary Energy"$EUR$perc
+out$plotly$PE$"Total Primary Energy"$EUR$percapita
 ```   
 
 Column {data-width=300}  
@@ -648,12 +672,12 @@ Column {data-width=300}
 
 ### Coal production
 ```{r}
-  out$plotly$PE$'Coal production'$EUR
+out$plotly$PE$"Coal production"$EUR
 ```   
 
 ### Gas production
 ```{r}
-  out$plotly$PE$'Gas production'$EUR
+out$plotly$PE$"Gas production"$EUR
 ```   
 
 Column {data-width=300}  
@@ -661,17 +685,17 @@ Column {data-width=300}
 
 ### Oil production
 ```{r}
-  out$plotly$PE$'Oil production'$EUR
+out$plotly$PE$"Oil production"$EUR
 ```   
 
 ### Uranium production
 ```{r}
-  out$plotly$PE$'Uranium production'$EUR
+out$plotly$PE$"Uranium production"$EUR
 ```   
 
 ### Biomass production
 ```{r}
-  out$plotly$PE$'Biomass production'$EUR
+out$plotly$PE$"Biomass production"$EUR
 ```   
 
 <!-- NEU primary energy menu -->
@@ -685,10 +709,12 @@ Side Navigation {.sidebar .sidebarPrimaryEnergy data-width=60}
 [](#primary-energy){class="ico-GLO sidebar-button"}
 [](#primary-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#primary-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#primary-energy---neu){class="ico-NEU sidebar-button selected"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#primary-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#primary-energy---neu){class="ico-NEU sidebar-button selected"}')
+}
 ```
 
 <!-- it does not make sense to have primary energy per region prices as they are equal to the global levels-->
@@ -699,9 +725,9 @@ Column {data-width=600}
 ### Total Primary Energy
 
 ```{r}
-  out$plotly$PE$'Total Primary Energy'$NEU$abs
-  out$plotly$PE$'Total Primary Energy'$NEU$perc
-  out$plotly$PE$'Total Primary Energy'$NEU$percapita
+out$plotly$PE$"Total Primary Energy"$NEU$abs
+out$plotly$PE$"Total Primary Energy"$NEU$perc
+out$plotly$PE$"Total Primary Energy"$NEU$percapita
 ```   
 
 Column {data-width=300}  
@@ -709,12 +735,12 @@ Column {data-width=300}
 
 ### Coal production
 ```{r}
-  out$plotly$PE$'Coal production'$NEU
+out$plotly$PE$"Coal production"$NEU
 ```   
 
 ### Gas production
 ```{r}
-  out$plotly$PE$'Gas production'$NEU
+out$plotly$PE$"Gas production"$NEU
 ```   
 
 Column {data-width=300}  
@@ -722,17 +748,17 @@ Column {data-width=300}
 
 ### Oil production
 ```{r}
-  out$plotly$PE$'Oil production'$NEU
+out$plotly$PE$"Oil production"$NEU
 ```   
 
 ### Uranium production
 ```{r}
-  out$plotly$PE$'Uranium production'$NEU
+out$plotly$PE$"Uranium production"$NEU
 ```   
 
 ### Biomass production
 ```{r}
-  out$plotly$PE$'Biomass production'$NEU
+out$plotly$PE$"Biomass production"$NEU
 ```   
 
 
@@ -749,10 +775,12 @@ Side Navigation {.sidebar .sidebarSecondaryEnergy data-width=60}
 [](#secondary-energy){class="ico-GLO sidebar-button selected"}
 [](#secondary-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#secondary-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#secondary-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#secondary-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#secondary-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 Column {data-width=600}
@@ -761,14 +789,14 @@ Column {data-width=600}
 ### Secondary Energy Prices
 
 ```{r}
-  out$plotly$SE$'Secondary Energy Prices'$world
+out$plotly$SE$"Secondary Energy Prices"$world
 ```   
 
  
 ### Total Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Total Secondary Energy'$world
+out$plotly$SE$"Total Secondary Energy"$world
 ```   
 
 
@@ -778,21 +806,21 @@ Column {data-width=600}
 ### Electricity Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Electricity Secondary Energy'$world
+out$plotly$SE$"Electricity Secondary Energy"$world
 ```   
 
 
 ### Liquids Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Liquids Secondary Energy'$world
+out$plotly$SE$"Liquids Secondary Energy"$world
 ```   
 
 
 ### Gases Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Gases Secondary Energy'$world
+out$plotly$SE$"Gases Secondary Energy"$world
 ```   
 
 
@@ -803,21 +831,21 @@ Column {data-width=600}
 ### Heat Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Heat Secondary Energy'$world
+out$plotly$SE$"Heat Secondary Energy"$world
 ```   
 
  
 ### Solids Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Solids Secondary Energy'$world
+out$plotly$SE$"Solids Secondary Energy"$world
 ```   
 
 
 ### Hydrogen Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Hydrogen Secondary Energy'$world
+out$plotly$SE$"Hydrogen Secondary Energy"$world
 ```   
 
 
@@ -832,10 +860,12 @@ Side Navigation {.sidebar .sidebarSecondaryEnergy data-width=60}
 [](#secondary-energy){class="ico-GLO sidebar-button"}
 [](#secondary-energy---regional){class="ico-regions sidebar-button selected"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#secondary-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#secondary-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#secondary-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#secondary-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 
@@ -845,13 +875,13 @@ Column {data-width=600}
 ###  Secondary Energy Prices
 
 ```{r}
-  out$plotly$SE$'Secondary Energy Prices'$regions
+out$plotly$SE$"Secondary Energy Prices"$regions
 ```   
  
 ### Total Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Total Secondary Energy'$regions
+out$plotly$SE$"Total Secondary Energy"$regions
 ```   
 
 
@@ -861,20 +891,20 @@ Column {data-width=600}
 ### Electricity Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Electricity Secondary Energy'$regions
+out$plotly$SE$"Electricity Secondary Energy"$regions
 ```   
 
 
 ### Liquids Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Liquids Secondary Energy'$regions
+out$plotly$SE$"Liquids Secondary Energy"$regions
 ```   
 
 ### Gases Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Gases Secondary Energy'$regions
+out$plotly$SE$"Gases Secondary Energy"$regions
 ```   
 
 
@@ -885,21 +915,21 @@ Column {data-width=600}
 ### Heat Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Heat Secondary Energy'$regions
+out$plotly$SE$"Heat Secondary Energy"$regions
 ```   
 
  
 ### Solids Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Solids Secondary Energy'$regions
+out$plotly$SE$"Solids Secondary Energy"$regions
 ```   
 
 
 ### Hydrogen Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Hydrogen Secondary Energy'$regions
+out$plotly$SE$"Hydrogen Secondary Energy"$regions
 ```   
 
 
@@ -915,10 +945,12 @@ Side Navigation {.sidebar .sidebarSecondaryEnergy data-width=60}
 [](#secondary-energy){class="ico-GLO sidebar-button"}
 [](#secondary-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#secondary-energy---eur){class="ico-EUR sidebar-button selected"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#secondary-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#secondary-energy---eur){class="ico-EUR sidebar-button selected"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#secondary-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 
@@ -928,13 +960,13 @@ Column {data-width=600}
 ###  Secondary Energy Prices
 
 ```{r}
-  out$plotly$SE$'Secondary Energy Prices'$EUR
+out$plotly$SE$"Secondary Energy Prices"$EUR
 ```   
  
 ### Total Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Total Secondary Energy'$EUR
+out$plotly$SE$"Total Secondary Energy"$EUR
 ```   
 
 
@@ -944,20 +976,20 @@ Column {data-width=600}
 ### Electricity Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Electricity Secondary Energy'$EUR
+out$plotly$SE$"Electricity Secondary Energy"$EUR
 ```   
 
 ### Liquids Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Liquids Secondary Energy'$EUR
+out$plotly$SE$"Liquids Secondary Energy"$EUR
 ```   
 
 
 ### Gases Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Gases Secondary Energy'$EUR
+out$plotly$SE$"Gases Secondary Energy"$EUR
 ```   
 
 
@@ -969,21 +1001,21 @@ Column {data-width=600}
 ### Heat Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Heat Secondary Energy'$EUR
+out$plotly$SE$"Heat Secondary Energy"$EUR
 ```   
 
  
 ### Solids Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Solids Secondary Energy'$EUR
+out$plotly$SE$"Solids Secondary Energy"$EUR
 ```   
 
 
 ### Hydrogen Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Hydrogen Secondary Energy'$EUR
+out$plotly$SE$"Hydrogen Secondary Energy"$EUR
 ```   
 
 
@@ -999,10 +1031,12 @@ Side Navigation {.sidebar .sidebarSecondaryEnergy data-width=60}
 [](#secondary-energy){class="ico-GLO sidebar-button"}
 [](#secondary-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#secondary-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#secondary-energy---neu){class="ico-NEU sidebar-button selected"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#secondary-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#secondary-energy---neu){class="ico-NEU sidebar-button selected"}')
+}
 ```
 
 
@@ -1012,13 +1046,13 @@ Column {data-width=600}
 ###  Secondary Energy Prices
 
 ```{r}
-  out$plotly$SE$'Secondary Energy Prices'$NEU
+out$plotly$SE$"Secondary Energy Prices"$NEU
 ```   
  
 ### Total Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Total Secondary Energy'$NEU
+out$plotly$SE$"Total Secondary Energy"$NEU
 ```   
 
 
@@ -1028,20 +1062,20 @@ Column {data-width=600}
 ### Electricity Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Electricity Secondary Energy'$NEU
+out$plotly$SE$"Electricity Secondary Energy"$NEU
 ```   
 
 ### Liquids Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Liquids Secondary Energy'$NEU
+out$plotly$SE$"Liquids Secondary Energy"$NEU
 ```   
 
 
 ### Gases Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Gases Secondary Energy'$NEU
+out$plotly$SE$"Gases Secondary Energy"$NEU
 ```   
 
 
@@ -1053,21 +1087,21 @@ Column {data-width=600}
 ### Heat Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Heat Secondary Energy'$NEU
+out$plotly$SE$"Heat Secondary Energy"$NEU
 ```   
 
  
 ### Solids Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Solids Secondary Energy'$NEU
+out$plotly$SE$"Solids Secondary Energy"$NEU
 ```   
 
 
 ### Hydrogen Secondary Energy
 
 ```{r}
-  out$plotly$SE$'Hydrogen Secondary Energy'$NEU
+out$plotly$SE$"Hydrogen Secondary Energy"$NEU
 ```   
 
 
@@ -1086,10 +1120,12 @@ Side Navigation {.sidebar .sidebarFinalEnergy data-width=60}
 [](#final-energy){class="ico-GLO sidebar-button selected"}
 [](#final-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#final-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#final-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#final-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#final-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 
@@ -1099,13 +1135,13 @@ Column
 ### Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Final Energy Prices'$world
+out$plotly$FE$"Final Energy Prices"$world
 ```   
 
 ### Total Final Energy
 
 ```{r}
-  out$plotly$FE$'Total Final Energy'$world
+out$plotly$FE$"Total Final Energy"$world
 ```   
 
 
@@ -1115,13 +1151,13 @@ Column
 ### Buildings Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Buildings Final Energy Prices'$world
+out$plotly$FE$"Buildings Final Energy Prices"$world
 ``` 
 
 ### Buildings Final Energy
 
 ```{r}
-  out$plotly$FE$'Buildings Final Energy'$world
+out$plotly$FE$"Buildings Final Energy"$world
 ```   
 
 Column
@@ -1130,13 +1166,13 @@ Column
 ### Transport Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Transport Final Energy Prices'$world
+out$plotly$FE$"Transport Final Energy Prices"$world
 ``` 
 
 ### Transport Final Energy
 
 ```{r}
-  out$plotly$FE$'Transport Final Energy'$world
+out$plotly$FE$"Transport Final Energy"$world
 ```   
 
 
@@ -1146,13 +1182,13 @@ Column
 ### Industry Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Industry Final Energy Prices'$world
+out$plotly$FE$"Industry Final Energy Prices"$world
 ``` 
 
 ### Industry Final Energy
 
 ```{r}
-  out$plotly$FE$'Industry Final Energy'$world
+out$plotly$FE$"Industry Final Energy"$world
 ```   
 
 
@@ -1167,10 +1203,12 @@ Side Navigation {.sidebar .sidebarFinalEnergy data-width=60}
 [](#final-energy){class="ico-GLO sidebar-button"}
 [](#final-energy---regional){class="ico-regions sidebar-button selected"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#final-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#final-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#final-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#final-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 
@@ -1180,13 +1218,13 @@ Column
 ### Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Final Energy Prices'$regions
+out$plotly$FE$"Final Energy Prices"$regions
 ```   
 
 ### Total Final Energy
 
 ```{r}
-  out$plotly$FE$'Total Final Energy'$regions
+out$plotly$FE$"Total Final Energy"$regions
 ```   
 
 Column
@@ -1195,13 +1233,13 @@ Column
 ### Buildings Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Buildings Final Energy Prices'$regions
+out$plotly$FE$"Buildings Final Energy Prices"$regions
 ``` 
 
 ### Buildings Final Energy
 
 ```{r}
-  out$plotly$FE$'Buildings Final Energy'$regions
+out$plotly$FE$"Buildings Final Energy"$regions
 ```   
 
 
@@ -1211,13 +1249,13 @@ Column
 ### Transport Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Transport Final Energy Prices'$regions
+out$plotly$FE$"Transport Final Energy Prices"$regions
 ``` 
 
 ### Transport Final Energy
 
 ```{r}
-  out$plotly$FE$'Transport Final Energy'$regions
+out$plotly$FE$"Transport Final Energy"$regions
 ```   
 
 Column
@@ -1226,13 +1264,13 @@ Column
 ### Industry Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Industry Final Energy Prices'$regions
+out$plotly$FE$"Industry Final Energy Prices"$regions
 ``` 
  
 ### Industry Final Energy
 
 ```{r}
-  out$plotly$FE$'Industry Final Energy'$regions
+out$plotly$FE$"Industry Final Energy"$regions
 ```   
 
 
@@ -1248,10 +1286,12 @@ Side Navigation {.sidebar .sidebarFinalEnergy data-width=60}
 [](#final-energy){class="ico-GLO sidebar-button"}
 [](#final-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#final-energy---eur){class="ico-EUR sidebar-button selected"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#final-energy---neu){class="ico-NEU sidebar-button"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#final-energy---eur){class="ico-EUR sidebar-button selected"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#final-energy---neu){class="ico-NEU sidebar-button"}')
+}
 ```
 
 Column
@@ -1260,13 +1300,13 @@ Column
 ### Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Final Energy Prices'$EUR
+out$plotly$FE$"Final Energy Prices"$EUR
 ```   
 
 ### Total Final Energy
 
 ```{r}
-  out$plotly$FE$'Total Final Energy'$EUR
+out$plotly$FE$"Total Final Energy"$EUR
 ```   
 
 Column
@@ -1275,13 +1315,13 @@ Column
 ### Buildings Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Buildings Final Energy Prices'$EUR
+out$plotly$FE$"Buildings Final Energy Prices"$EUR
 ``` 
 
 ### Buildings Final Energy
 
 ```{r}
-  out$plotly$FE$'Buildings Final Energy'$EUR
+out$plotly$FE$"Buildings Final Energy"$EUR
 ```   
 
 
@@ -1291,13 +1331,13 @@ Column
 ### Transport Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Transport Final Energy Prices'$EUR
+out$plotly$FE$"Transport Final Energy Prices"$EUR
 ``` 
 
 ### Transport Final Energy
 
 ```{r}
-  out$plotly$FE$'Transport Final Energy'$EUR
+out$plotly$FE$"Transport Final Energy"$EUR
 ```   
 
 Column
@@ -1306,13 +1346,13 @@ Column
 ### Industry Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Industry Final Energy Prices'$EUR
+out$plotly$FE$"Industry Final Energy Prices"$EUR
 ``` 
  
 ### Industry Final Energy
 
 ```{r}
-  out$plotly$FE$'Industry Final Energy'$EUR
+out$plotly$FE$"Industry Final Energy"$EUR
 ```   
 
 <!-- NEU final energy menu -->
@@ -1326,10 +1366,12 @@ Side Navigation {.sidebar .sidebarFinalEnergy data-width=60}
 [](#final-energy){class="ico-GLO sidebar-button"}
 [](#final-energy---regional){class="ico-regions sidebar-button"}
 ```{r, results='asis'}
-  if (!is.null(showMenu$EUR))
-    cat('\n[](#final-energy---eur){class="ico-EUR sidebar-button"}')
-  if (!is.null(showMenu$NEU))
-    cat('\n[](#final-energy---neu){class="ico-NEU sidebar-button selected"}')
+if (!is.null(showMenu$EUR)) {
+  cat('\n[](#final-energy---eur){class="ico-EUR sidebar-button"}')
+}
+if (!is.null(showMenu$NEU)) {
+  cat('\n[](#final-energy---neu){class="ico-NEU sidebar-button selected"}')
+}
 ```
 
 Column
@@ -1338,13 +1380,13 @@ Column
 ### Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Final Energy Prices'$NEU
+out$plotly$FE$"Final Energy Prices"$NEU
 ```   
 
 ### Total Final Energy
 
 ```{r}
-  out$plotly$FE$'Total Final Energy'$NEU
+out$plotly$FE$"Total Final Energy"$NEU
 ```   
 
 Column
@@ -1353,13 +1395,13 @@ Column
 ### Buildings Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Buildings Final Energy Prices'$NEU
+out$plotly$FE$"Buildings Final Energy Prices"$NEU
 ``` 
 
 ### Buildings Final Energy
 
 ```{r}
-  out$plotly$FE$'Buildings Final Energy'$NEU
+out$plotly$FE$"Buildings Final Energy"$NEU
 ```   
 
 
@@ -1369,13 +1411,13 @@ Column
 ### Transport Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Transport Final Energy Prices'$NEU
+out$plotly$FE$"Transport Final Energy Prices"$NEU
 ``` 
 
 ### Transport Final Energy
 
 ```{r}
-  out$plotly$FE$'Transport Final Energy'$NEU
+out$plotly$FE$"Transport Final Energy"$NEU
 ```   
 
 Column
@@ -1384,13 +1426,13 @@ Column
 ### Industry Final Energy Prices
 
 ```{r}
-  out$plotly$FE$'Industry Final Energy Prices'$NEU
+out$plotly$FE$"Industry Final Energy Prices"$NEU
 ``` 
  
 ### Industry Final Energy
 
 ```{r}
-  out$plotly$FE$'Industry Final Energy'$NEU
+out$plotly$FE$"Industry Final Energy"$NEU
 ```   
 
 
@@ -1404,51 +1446,52 @@ Column
 
 <!-- Adding js function to add "memory" to the nav bar navigation   -->
 ```{r}
-navBarMemory = function(topMenuLabel, sideBarClass){
-  result = ""
-  result = paste0(result,"<script type='text/javascript'>\n");
-  result = paste0(result,"$(document).ready(function () {\n");
-  result = paste0(result,"	$(\"",sideBarClass," a\").click(function(){\n");
-  result = paste0(result,"	console.log($(this).attr('href'));\n");  
-  result = paste0(result,"	console.log($(\".nav.navbar-nav.navbar-left a:contains('",topMenuLabel,"')\").attr('href'));\n"); 
-  result = paste0(result,"	  $(\".nav.navbar-nav.navbar-left a:contains('",topMenuLabel,"')\").attr('href', $(this).attr('href'));\n");
-  result = paste0(result,"	  if(!is_chrome){\n");
-  result = paste0(result,"	    window.FlexDashboardUtils.showPage($(this).attr('href'));\n");
-  result = paste0(result,"	  }\n"); 
-  result = paste0(result,"	})\n");
-  result = paste0(result,"})\n");
-  result = paste0(result,"</script>");
+navBarMemory <- function(topMenuLabel, sideBarClass) {
+  result <- ""
+  result <- paste0(result, "<script type='text/javascript'>\n")
+  result <- paste0(result, "$(document).ready(function () {\n")
+  result <- paste0(result, "	$(\"", sideBarClass, " a\").click(function(){\n")
+  result <- paste0(result, "	console.log($(this).attr('href'));\n")
+  result <- paste0(result, "	console.log($(\".nav.navbar-nav.navbar-left a:contains('", topMenuLabel, "')\").attr('href'));\n")
+  result <- paste0(result, "	  $(\".nav.navbar-nav.navbar-left a:contains('", topMenuLabel, "')\").attr('href', $(this).attr('href'));\n")
+  result <- paste0(result, "	  if(!is_chrome){\n")
+  result <- paste0(result, "	    window.FlexDashboardUtils.showPage($(this).attr('href'));\n")
+  result <- paste0(result, "	  }\n")
+  result <- paste0(result, "	})\n")
+  result <- paste0(result, "})\n")
+  result <- paste0(result, "</script>")
   return(result)
 }
 ```
 
 ```{r, results='asis'}
-  cat(navBarMemory("Diagnosis",".sidebarDiagnosis"))
-  cat(navBarMemory("Emissions",".sidebarEmissions"))
-  cat(navBarMemory("Primary Energy",".sidebarPrimaryEnergy"))
-  cat(navBarMemory("Secondary Energy",".sidebarSecondaryEnergy"))
-  cat(navBarMemory("Final Energy",".sidebarFinalEnergy"))
+cat(navBarMemory("Diagnosis", ".sidebarDiagnosis"))
+cat(navBarMemory("Emissions", ".sidebarEmissions"))
+cat(navBarMemory("Primary Energy", ".sidebarPrimaryEnergy"))
+cat(navBarMemory("Secondary Energy", ".sidebarSecondaryEnergy"))
+cat(navBarMemory("Final Energy", ".sidebarFinalEnergy"))
 ```
 
 
 <!-- Adding units-->
 ```{r}
 # function to add html element with unit information
-unitDiv = function(tooltipdf){
-  title <- as.character(tooltipdf$title) 
-  if (!(is.null(legend[[title]]$units))){
+unitDiv <- function(tooltipdf) {
+  title <- as.character(tooltipdf$title)
+  if (!(is.null(legend[[title]]$units))) {
     unit <- as.vector(NULL)
-    for(i in 1:length(legend[[title]]$units)) 
-      unit <- c(unit,paste0("data-unit-", i-1, "=\"", legend[[title]]$units[i], "\""))
-    unit <- paste(as.vector(unit),collapse=" ")
-    result = ""
-    result = paste0(result,"<script type='text/javascript'>\n");
-    result = paste0(result,"$(window).load(function () {\n");
-    result = paste0(result,"  $('.chart-title').filter(function() { return $(this).clone().children().remove().end().text() == '", title, "' }).each(function(){\n");
-    result = paste0(result,"  	$(this).append('<i class=\"units\" ", unit, ">",legend[[title]]$units[1],"</i>');\n");
-    result = paste0(result,"	})\n");
-    result = paste0(result,"})\n");
-    result = paste0(result,"</script>");
+    for (i in 1:length(legend[[title]]$units)) {
+      unit <- c(unit, paste0("data-unit-", i - 1, "=\"", legend[[title]]$units[i], "\""))
+    }
+    unit <- paste(as.vector(unit), collapse = " ")
+    result <- ""
+    result <- paste0(result, "<script type='text/javascript'>\n")
+    result <- paste0(result, "$(window).load(function () {\n")
+    result <- paste0(result, "  $('.chart-title').filter(function() { return $(this).clone().children().remove().end().text() == '", title, "' }).each(function(){\n")
+    result <- paste0(result, "  	$(this).append('<i class=\"units\" ", unit, ">", legend[[title]]$units[1], "</i>');\n")
+    result <- paste0(result, "	})\n")
+    result <- paste0(result, "})\n")
+    result <- paste0(result, "</script>")
     return(result)
   }
 }
@@ -1458,44 +1501,47 @@ unitDiv = function(tooltipdf){
 <!-- Adding information tooltip to chart titlebar -->
 ```{r}
 # function to add tooltips
-helpTooltip = function(tooltipdf){
-  
-  title <- as.character(tooltipdf$title) 
-  placement <- as.character(tooltipdf$placement) 
-  
-  contents <- gsub('\n', '',gsub('"', '&quot;',paste0('
+helpTooltip <- function(tooltipdf) {
+  title <- as.character(tooltipdf$title)
+  placement <- as.character(tooltipdf$placement)
+
+  contents <- gsub("\n", "", gsub('"', "&quot;", paste0(
+    '
 <div class="tooltipContainer">
   <div class="tooltipDescription">',
-    legend[[title]]$description,'
+    legend[[title]]$description, '
   </div>
   <div class="legendContainer">
   	<table class="legendTable">
   		<tbody>
   			<tr>',
-	      do.call(paste,lapply(names(legend[[title]]$contents),function(x){
-        paste0('<tr><td>',
-          ifelse(is.null(legend[[title]]$contents[[x]]$linetype),
-                  paste0('<div class="square"><div class="circle" style="background-color:',legend[[title]]$contents[[x]]$fill,';"></div></div>'),
-  				        paste0('<div class="line" style="border-color:',legend[[title]]$contents[[x]]$fill,'; border-style: ',legend[[title]]$contents[[x]]$linetype,';"></div>')
-  				        ),'
-            </td><td class="legendText">',x,'</td></tr>'
-           )
-  	    })),'
+    do.call(paste, lapply(names(legend[[title]]$contents), function(x) {
+      paste0(
+        "<tr><td>",
+        ifelse(is.null(legend[[title]]$contents[[x]]$linetype),
+          paste0('<div class="square"><div class="circle" style="background-color:', legend[[title]]$contents[[x]]$fill, ';"></div></div>'),
+          paste0('<div class="line" style="border-color:', legend[[title]]$contents[[x]]$fill, "; border-style: ", legend[[title]]$contents[[x]]$linetype, ';"></div>')
+        ), '
+            </td><td class="legendText">', x, "</td></tr>"
+      )
+    })), "
   		</tbody>
   	</table>
   </div>
-</div>')))
-  
-  result = ""
-  result = paste0(result,"<script type='text/javascript'>\n");
-  result = paste0(result,"$(window).load(function () {\n");
-  result = paste0(result,"  $('.chart-title').filter(function() { return $(this).clone().children().remove().end().text() == '", title, "' }).each(function(){\n");
-  if(!(placement == "none"))
-    result = paste0(result,"  	$(this).append('<i class=\"glyphicon glyphicon-info-sign infoIcon\" data-toggle=\"tooltip\" data-html=\"true\" data-placement=\"right\" title=\"",contents,"\"></i>');\n");
-  result = paste0(result,"  	$(this).find('[data-toggle=\"tooltip\"]').tooltip({ placement:'",placement,"'});\n");
-  result = paste0(result,"	})\n");
-  result = paste0(result,"})\n");
-  result = paste0(result,"</script>");
+</div>"
+  )))
+
+  result <- ""
+  result <- paste0(result, "<script type='text/javascript'>\n")
+  result <- paste0(result, "$(window).load(function () {\n")
+  result <- paste0(result, "  $('.chart-title').filter(function() { return $(this).clone().children().remove().end().text() == '", title, "' }).each(function(){\n")
+  if (!(placement == "none")) {
+    result <- paste0(result, "  	$(this).append('<i class=\"glyphicon glyphicon-info-sign infoIcon\" data-toggle=\"tooltip\" data-html=\"true\" data-placement=\"right\" title=\"", contents, "\"></i>');\n")
+  }
+  result <- paste0(result, "  	$(this).find('[data-toggle=\"tooltip\"]').tooltip({ placement:'", placement, "'});\n")
+  result <- paste0(result, "	})\n")
+  result <- paste0(result, "})\n")
+  result <- paste0(result, "</script>")
 
   return(result)
 }
@@ -1568,8 +1614,8 @@ $(window).load(function () {
 
 <!-- creating information tooltip -->
 ```{r, results='asis'}
-for(i in 1:nrow(helpTooltip_df)){
-  cat(helpTooltip(helpTooltip_df[i,]))
+for (i in 1:nrow(helpTooltip_df)) {
+  cat(helpTooltip(helpTooltip_df[i, ]))
 }
 ```
 
@@ -1612,8 +1658,8 @@ $(window).load(function () {
 
 <!-- creating unit text -->
 ```{r, results='asis'}
-for(i in 1:nrow(helpTooltip_df)){
-  cat(unitDiv(helpTooltip_df[i,]))
+for (i in 1:nrow(helpTooltip_df)) {
+  cat(unitDiv(helpTooltip_df[i, ]))
 }
 ```
 
