@@ -46,7 +46,7 @@ dashboard <- function(gdx = NULL, statsFile = NULL, regionMapping = NULL,
   }
 
   # dashboard markdown file path
-  markdownPath <- system.file("markdown", "dashboard.Rmd", package = "remind")
+  markdownPath <- system.file("markdown", "dashboard.Rmd", package = "remind2")
 
   # set output file if null
   if (is.null(output_file)) {

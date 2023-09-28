@@ -190,7 +190,7 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
   # save(europeMap, file="EuropeMap.RData")
 
   # loading previosuly created map files
-  worldMap <- system.file("extdata", "WorldMap.RData", package = "remind")
+  worldMap <- system.file("extdata", "WorldMap.RData", package = "remind2")
   load(worldMap) # updates worldMap object with world map file data
   # europeMap <- system.file("extdata","EuropeMap.RData",package = "remind")
   # load(europeMap) #updates europeMap object with europe map file data
@@ -205,7 +205,7 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   series <- regionMapping %>%
     group_by(name = .data$RegionCode) %>%
-    do(data = list_parse(select(.data, .data$CountryCode))) %>%
+    do(data = list_parse(select(.data, CountryCode))) %>%
     ungroup()
   series$color <- colors[series$name]
 
@@ -234,7 +234,7 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
     df <- as.quitte(data[reg, , vars])
     df$details <- paste0(round(df$value, 2), " US$<sub>2005</sub>/t CO<sub>2</sub><br>CO<sub>2</sub> ", ifelse(reg == "GLO", "World", as.character(df$region)), " carbon price", "<br>year: ", df$period)
     g <- ggplot(data = df, aes_(x = ~period, y = ~value, color = ~variable, text = ~details, group = ~variable)) +
-      geom_line(size = aestethics$line$size, alpha = aestethics$alpha) + # line plot
+      geom_line(linewidth = aestethics$line$size, alpha = aestethics$alpha) + # line plot
       geom_vline(xintercept = as.numeric(min(df$period)), linetype = 2, size = aestethics$`y-axis`$size, color = aestethics$`y-axis`$color) + # vertical line at initial year
       facet_wrap(~region, scales = "fixed") +
       theme_minimal() +
@@ -267,25 +267,48 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   # Kyoto Gases
   vars <- c(
-    "F-Gases" = "Emi|F-Gases (Mt CO2-equiv/yr)",
-    "CO2 - Gross Fossil Fuels and Industry" = "Emi|CO2|Gross Fossil Fuels and Industry (Mt CO2/yr)",
-    "CH4 - Energy Supply and Demand" = "Emi|CH4|Energy Supply and Demand (Mt CH4/yr)",
-    "N2O - Energy Supply and Demand" = "Emi|N2O|Energy Supply and Demand (kt N2O/yr)",
+    "F-Gases" = "Emi|GHG|F-Gases (Mt CO2eq/yr)",
+    # "CO2 - Gross Fossil Fuels and Industry" = "Emi|CO2|Gross Fossil Fuels and Industry (Mt CO2/yr)",
+    # "CH4 - Energy Supply and Demand" = "Emi|CH4|Energy Supply and Demand (Mt CH4/yr)",
+    # "N2O - Energy Supply and Demand" = "Emi|N2O|Energy Supply and Demand (kt N2O/yr)",
     "N2O - Industry" = "Emi|N2O|Industry (kt N2O/yr)",
     "CH4 - Waste" = "Emi|CH4|Waste (Mt CH4/yr)",
     "N2O - Waste" = "Emi|N2O|Waste (kt N2O/yr)",
-    "CH4 - Other" = "Emi|CH4|Other (Mt CH4/yr)",
-    "CH4 - Land-Use Change" = "Emi|CH4|Land Use (Mt CH4/yr)",
-    "N2O - Land-Use Change" = "Emi|N2O|Land Use (kt N2O/yr)",
-    "CO2 - CCS Biomass" = "Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)",
+    # "CH4 - Other" = "Emi|CH4|Other (Mt CH4/yr)",
+    "CH4 - Land-Use Change" = "Emi|CH4|Land-Use Change (Mt CH4/yr)",
+    "N2O - Land-Use Change" = "Emi|N2O|Land-Use Change (kt N2O/yr)",
+    # "CO2 - CCS Biomass" = "Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)",
     "CO2 - Land-Use Change" = "Emi|CO2|Land-Use Change (Mt CO2/yr)"
   )
   tmpData <- data[, , vars] # converting emissions to CO2 equivalent
   GWP <- c("CO2" = 1, "CH4" = 28, "N2O" = 265)
-  tmpData[, , c("Emi|CO2|Land-Use Change (Mt CO2/yr)", "Emi|CO2|Gross Fossil Fuels and Industry (Mt CO2/yr)", "Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)")] <- tmpData[, , c("Emi|CO2|Land-Use Change (Mt CO2/yr)", "Emi|CO2|Gross Fossil Fuels and Industry (Mt CO2/yr)", "Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)")] * GWP["CO2"]
-  tmpData[, , c("Emi|CH4|Energy Supply and Demand (Mt CH4/yr)", "Emi|CH4|Land Use (Mt CH4/yr)", "Emi|CH4|Other (Mt CH4/yr)", "Emi|CH4|Waste (Mt CH4/yr)")] <- tmpData[, , c("Emi|CH4|Energy Supply and Demand (Mt CH4/yr)", "Emi|CH4|Land Use (Mt CH4/yr)", "Emi|CH4|Other (Mt CH4/yr)", "Emi|CH4|Waste (Mt CH4/yr)")] * GWP["CH4"]
-  tmpData[, , c("Emi|N2O|Land Use (kt N2O/yr)", "Emi|N2O|Energy Supply and Demand (kt N2O/yr)", "Emi|N2O|Waste (kt N2O/yr)", "Emi|N2O|Industry (kt N2O/yr)")] <- tmpData[, , c("Emi|N2O|Land Use (kt N2O/yr)", "Emi|N2O|Energy Supply and Demand (kt N2O/yr)", "Emi|N2O|Waste (kt N2O/yr)", "Emi|N2O|Industry (kt N2O/yr)")] * GWP["N2O"] / 1000
-  tmpData[, , c("Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)")] <- -tmpData[, , c("Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)")]
+  tmpData[, , c("Emi|CO2|Land-Use Change (Mt CO2/yr)"
+                # "Emi|CO2|Gross Fossil Fuels and Industry (Mt CO2/yr)",
+                # "Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)"
+                )] <- tmpData[, , c(
+                  "Emi|CO2|Land-Use Change (Mt CO2/yr)"
+                  # "Emi|CO2|Gross Fossil Fuels and Industry (Mt CO2/yr)",
+                  # "Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)"
+                  )] * GWP["CO2"]
+  tmpData[, , c(# "Emi|CH4|Energy Supply and Demand (Mt CH4/yr)",
+                "Emi|CH4|Land-Use Change (Mt CH4/yr)",
+                # "Emi|CH4|Other (Mt CH4/yr)",
+                "Emi|CH4|Waste (Mt CH4/yr)")] <- tmpData[, , c(
+                  #"Emi|CH4|Energy Supply and Demand (Mt CH4/yr)",
+                  "Emi|CH4|Land-Use Change (Mt CH4/yr)",
+                  # "Emi|CH4|Other (Mt CH4/yr)",
+                  "Emi|CH4|Waste (Mt CH4/yr)"
+                  )] * GWP["CH4"]
+  tmpData[, , c("Emi|N2O|Land-Use Change (kt N2O/yr)",
+                # "Emi|N2O|Energy Supply and Demand (kt N2O/yr)",
+                "Emi|N2O|Waste (kt N2O/yr)",
+                "Emi|N2O|Industry (kt N2O/yr)")] <- tmpData[, , c(
+                  "Emi|N2O|Land-Use Change (kt N2O/yr)",
+                  # "Emi|N2O|Energy Supply and Demand (kt N2O/yr)",
+                  "Emi|N2O|Waste (kt N2O/yr)",
+                  "Emi|N2O|Industry (kt N2O/yr)"
+                )] * GWP["N2O"] / 1000
+  # tmpData[, , c("Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)")] <- -tmpData[, , c("Emi|CO2|Carbon Capture and Storage|Biomass (Mt CO2/yr)")]
 
   color <- plotstyle(as.character(gsub(" \\(.*", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
   names(color) <- gsub(" \\(.*", "", vars)
@@ -316,8 +339,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -334,14 +359,14 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   # CO2 emissions per sector
   vars <- c(
-    "Energy - Non-electricity" = "Emi|CO2|Energy|Supply|Non-Elec (Mt CO2/yr)",
-    "Energy - Electricity" = "Emi|CO2|Energy|Supply|Electricity|Gross (Mt CO2/yr)",
-    "Industrial Processes" = "Emi|CO2|FFaI|Industry|Process (Mt CO2/yr)",
-    "Demand - Industry" = "Emi|CO2|Energy|Demand|Industry|Gross (Mt CO2/yr)",
-    #          "Emi|CO2|Industrial Processes (Mt CO2/yr)",
-    "Demand - Buildings" = "Emi|CO2|Buildings|Direct (Mt CO2/yr)",
+    "Energy - Non-electricity" = "Emi|CO2|Energy|Supply|Non-electric (Mt CO2/yr)",
+    "Energy - Electricity" = "Emi|CO2|Energy|Supply|Electricity w/ couple prod (Mt CO2/yr)",
+    # "Industrial Processes" = "Emi|CO2|FFaI|Industry|Process (Mt CO2/yr)",
+    # "Demand - Industry" = "Emi|CO2|Energy|Demand|Industry|Gross (Mt CO2/yr)",
+    # "Emi|CO2|Industrial Processes (Mt CO2/yr)",
+    # "Demand - Buildings" = "Emi|CO2|Buildings|Direct (Mt CO2/yr)",
     "Demand - Transport" = "Emi|CO2|Transport|Demand (Mt CO2/yr)",
-    "Land use change" = "Emi|CO2|Carbon Capture and Storage|Biomass|Neg (Mt CO2/yr)",
+    # "Land use change" = "Emi|CO2|Carbon Capture and Storage|Biomass|Neg (Mt CO2/yr)",
     "Carbon Capture and Storage - Biomass" = "Emi|CO2|Land-Use Change (Mt CO2/yr)"
   )
 
@@ -424,22 +449,23 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
     out$ggplot$emissions$"Main Greenhouse Gases Emissions" <- g
   }
 
-  if ("plotly" %in% chartType) {
-    out$plotly$emissions$"Main Greenhouse Gases Emissions" <- lapply(names(regionsList), function(reg) {
-      ggplotly <- ggplotly(g[[reg]], tooltip = c("text")) %>%
-        hide_legend() %>%
-        config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
-      return(ggplotly)
-    })
-    names(out$plotly$emissions$"Main Greenhouse Gases Emissions") <- names(regionsList)
-  }
+  # currently crashes due to failure to convert facet_wrap (line 441)
+  # if ("plotly" %in% chartType) {
+  #   out$plotly$emissions$"Main Greenhouse Gases Emissions" <- lapply(names(regionsList), function(reg) {
+  #     ggplotly <- ggplotly(g[[reg]], tooltip = c("text")) %>%
+  #       hide_legend() %>%
+  #       config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
+  #     return(ggplotly)
+  #   })
+  #   names(out$plotly$emissions$"Main Greenhouse Gases Emissions") <- names(regionsList)
+  # }
 
   # out$legend$'Main Greenhouse Gases Emissions'$description <- "<p>Annual emissions for main greenhouse gases</p>"
   # out$legend$'Main Greenhouse Gases Emissions'$contents <- "placeholder - not needed"
 
   # F-Gases
   vars <- c(
-    "Emi|PFC (kt CF4-equiv/yr)",
+    #"Emi|PFC (kt CF4-equiv/yr)",
     "Emi|HFC (kt HFC134a-equiv/yr)",
     "Emi|SF6 (kt SF6/yr)"
   )
@@ -466,15 +492,16 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
     out$ggplot$emissions$"F-Gases" <- g
   }
 
-  if ("plotly" %in% chartType) {
-    out$plotly$emissions$"F-Gases" <- lapply(names(regionsList), function(reg) {
-      ggplotly <- ggplotly(g[[reg]], tooltip = c("text")) %>%
-        hide_legend() %>%
-        config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
-      return(ggplotly)
-    })
-    names(out$plotly$emissions$"F-Gases") <- names(regionsList)
-  }
+  # currently crashes due to failure to convert facet_wrap (line 484)
+  # if ("plotly" %in% chartType) {
+  #   out$plotly$emissions$"F-Gases" <- lapply(names(regionsList), function(reg) {
+  #     ggplotly <- ggplotly(g[[reg]], tooltip = c("text")) %>%
+  #       hide_legend() %>%
+  #       config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
+  #     return(ggplotly)
+  #   })
+  #   names(out$plotly$emissions$"F-Gases") <- names(regionsList)
+  # }
 
   # out$legend$'F-Gases'$description <- "<p>placeholder - not needed</p>"
   # out$legend$'F-Gases'$contents <- "placeholder - not needed"
@@ -514,15 +541,16 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
     out$ggplot$emissions$"Other Gases" <- g
   }
 
-  if ("plotly" %in% chartType) {
-    out$plotly$emissions$"Other Gases" <- lapply(names(regionsList), function(reg) {
-      ggplotly <- ggplotly(g[[reg]], tooltip = c("text")) %>%
-        hide_legend() %>%
-        config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
-      return(ggplotly)
-    })
-    names(out$plotly$emissions$"Other Gases") <- names(regionsList)
-  }
+  # currently crashes due to failure to convert facet_wrap (line 533)
+  # if ("plotly" %in% chartType) {
+  #   out$plotly$emissions$"Other Gases" <- lapply(names(regionsList), function(reg) {
+  #     ggplotly <- ggplotly(g[[reg]], tooltip = c("text")) %>%
+  #       hide_legend() %>%
+  #       config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
+  #     return(ggplotly)
+  #   })
+  #   names(out$plotly$emissions$"Other Gases") <- names(regionsList)
+  # }
 
   # out$legend$'Other Gases'$description <- "<p>placeholder - not needed</p>"
   # out$legend$'Other Gases'$contents <- "placeholder - not needed"
@@ -642,10 +670,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   # PE prices
   vars <- c(
-    "Biomass - World Market" = "Price|Biomass|World Market (US$2005/GJ)",
-    "Coal - Primary Level" = "Price|Coal|Primary Level (US$2005/GJ)",
-    "Natural Gas - Primary Level" = "Price|Natural Gas|Primary Level (US$2005/GJ)",
-    "Crude Oil - Primary Level" = "Price|Crude Oil|Primary Level (US$2005/GJ)"
+    "Biomass - World Market" = "Price|Biomass|World Market (US$2005/GJ)"
+    # "Coal - Primary Level" = "Price|Coal|Primary Level (US$2005/GJ)",
+    # "Natural Gas - Primary Level" = "Price|Natural Gas|Primary Level (US$2005/GJ)",
+    # "Crude Oil - Primary Level" = "Price|Crude Oil|Primary Level (US$2005/GJ)"
   )
 
   color <- plotstyle(as.character(gsub(" \\(.*", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
@@ -722,8 +750,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+          }
         }
       }
       return(ggplotly)
@@ -772,8 +802,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+          }
         }
       }
       return(ggplotly)
@@ -822,8 +854,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+          }
         }
       }
       return(ggplotly)
@@ -872,8 +906,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+          }
         }
       }
       return(ggplotly)
@@ -925,8 +961,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.02
+          }
         }
       }
       return(ggplotly)
@@ -945,7 +983,7 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   # SE price
   vars <- c(
-    "Price|Secondary Energy|Biomass (US$2005/GJ)",
+    # "Price|Secondary Energy|Biomass (US$2005/GJ)",
     "Price|Secondary Energy|Electricity (US$2005/GJ)",
     "Price|Secondary Energy|Gases (US$2005/GJ)",
     "Price|Secondary Energy|Heat (US$2005/GJ)",
@@ -1117,8 +1155,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1142,9 +1182,9 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
   vars <- c(
     "Biomass with CC" = "SE|Gases|Biomass|w/ CC (EJ/yr)",
     "Biomass without CC" = "SE|Gases|Biomass|w/o CC (EJ/yr)",
-    "Coal with CC" = "SE|Gases|Coal|w/ CC (EJ/yr)",
-    "Coal without CC" = "SE|Gases|Coal|w/o CC (EJ/yr)",
-    "Natural Gas" = "SE|Gases|Natural Gas (EJ/yr)"
+    "Coal with CC" = "SE|Gases|Fossil|Coal|w/ CC (EJ/yr)",
+    "Coal without CC" = "SE|Gases|Fossil|Coal|w/o CC (EJ/yr)",
+    "Natural Gas" = "SE|Gases|Fossil|Natural Gas (EJ/yr)"
   )
 
   color <- plotstyle(as.character(gsub("\\+\\|", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
@@ -1187,8 +1227,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1253,8 +1295,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1274,11 +1318,11 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
   # var.tot <-"SE|Liquids (EJ/yr)"
   vars <- c(
     "Biomass" = "SE|Liquids|Biomass (EJ/yr)",
-    "Coal with CC" = "SE|Liquids|Coal|w/ CC (EJ/yr)",
-    "Coal without CC" = "SE|Liquids|Coal|w/o CC (EJ/yr)",
-    "Gas with CC" = "SE|Liquids|Gas|w/ CC (EJ/yr)",
-    "Gas without CC" = "SE|Liquids|Gas|w/o CC (EJ/yr)",
-    "Oil" = "SE|Liquids|Oil (EJ/yr)"
+    "Coal with CC" = "SE|Liquids|Fossil|Coal|w/ CC (EJ/yr)",
+    "Coal without CC" = "SE|Liquids|Fossil|Coal|w/o CC (EJ/yr)",
+    "Gas with CC" = "SE|Liquids|Fossil|Gas|w/ CC (EJ/yr)",
+    "Gas without CC" = "SE|Liquids|Fossil|Gas|w/o CC (EJ/yr)",
+    "Oil" = "SE|Liquids|Fossil|Oil (EJ/yr)"
   )
 
   color <- plotstyle(as.character(gsub("\\+\\|", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
@@ -1321,8 +1365,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1386,8 +1432,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1455,8 +1503,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1526,8 +1576,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1544,58 +1596,58 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
   out$legend$"Total Final Energy"$units <- "EJ per year"
 
   # price
-  vars <- c(
-    "Price|Final Energy|Buildings (US$2005/GJ)",
-    # "Price|Final Energy|Transport (US$2005/GJ)",
-    "Price|Final Energy|Industry (US$2005/GJ)"
-  )
-
-  color <- plotstyle(as.character(gsub(" \\(.*", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
-  names(color) <- gsub(" \\(.*", "", vars)
-
-  g <- lapply(regionsList, function(reg) {
-    df <- as.quitte(data[reg, , vars])
-    df$details <- paste0(round(df$value, 2), " US$<sub>2005</sub>/GJ<br>", ifelse(reg == "GLO", "World", as.character(df$region)), " final energy price for ", gsub("Price\\|Final Energy\\|", "", df$variable), "<br>", "year: ", df$period)
-    g <- ggplot(data = df, aes_(x = ~period, y = ~value, color = ~variable, text = ~details, group = ~variable)) +
-      geom_line(size = aestethics$line$size, alpha = aestethics$alpha) + # line plot
-      geom_vline(xintercept = as.numeric(min(df$period)), linetype = 2, size = aestethics$`y-axis`$size, color = aestethics$`y-axis`$color) + # vertical line at initial year
-      facet_wrap(~region, ncol = 3, scales = "fixed") +
-      theme_minimal() +
-      labs(x = NULL, y = NULL) +
-      scale_color_manual(values = color)
-    if (length(reg) == 1) {
-      g <- g + theme(strip.text.x = element_blank())
-    } else {
-      g <- g + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-    }
-    return(g)
-  })
-
-  if ("ggplot" %in% chartType) {
-    out$ggplot$FE$"Final Energy Prices" <- g
-  }
-
-  if ("plotly" %in% chartType) {
-    out$plotly$FE$"Final Energy Prices" <- lapply(names(regionsList), function(reg) {
-      ggplotly <- ggplotly(g[[reg]], tooltip = c("text")) %>%
-        hide_legend() %>%
-        config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
-      if (length(ggplotly$x$layout$annotations) > 4) {
-        for (i in 4:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
-        }
-      }
-      return(ggplotly)
-    })
-    names(out$plotly$FE$"Final Energy Prices") <- names(regionsList)
-  }
-
-  out$legend$"Final Energy Prices"$description <- "<p>Final energy prices</p>"
-  out$legend$"Final Energy Prices"$contents <- lapply(gsub(" \\(.*", "", vars), function(var) {
-    return(list("fill" = color[var], "linetype" = "solid"))
-  })
-  names(out$legend$"Final Energy Prices"$contents) <- gsub(".*\\|", "", gsub(" \\(.*", "", vars))
-  out$legend$"Final Energy Prices"$units <- "US$<sub>2005</sub>/GJ per year"
+  # vars <- c(
+  #   "Price|Final Energy|Buildings (US$2005/GJ)",
+  #   # "Price|Final Energy|Transport (US$2005/GJ)",
+  #   "Price|Final Energy|Industry (US$2005/GJ)"
+  # )
+  #
+  # color <- plotstyle(as.character(gsub(" \\(.*", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
+  # names(color) <- gsub(" \\(.*", "", vars)
+  #
+  # g <- lapply(regionsList, function(reg) {
+  #   df <- as.quitte(data[reg, , vars])
+  #   df$details <- paste0(round(df$value, 2), " US$<sub>2005</sub>/GJ<br>", ifelse(reg == "GLO", "World", as.character(df$region)), " final energy price for ", gsub("Price\\|Final Energy\\|", "", df$variable), "<br>", "year: ", df$period)
+  #   g <- ggplot(data = df, aes_(x = ~period, y = ~value, color = ~variable, text = ~details, group = ~variable)) +
+  #     geom_line(size = aestethics$line$size, alpha = aestethics$alpha) + # line plot
+  #     geom_vline(xintercept = as.numeric(min(df$period)), linetype = 2, size = aestethics$`y-axis`$size, color = aestethics$`y-axis`$color) + # vertical line at initial year
+  #     facet_wrap(~region, ncol = 3, scales = "fixed") +
+  #     theme_minimal() +
+  #     labs(x = NULL, y = NULL) +
+  #     scale_color_manual(values = color)
+  #   if (length(reg) == 1) {
+  #     g <- g + theme(strip.text.x = element_blank())
+  #   } else {
+  #     g <- g + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  #   }
+  #   return(g)
+  # })
+  #
+  # if ("ggplot" %in% chartType) {
+  #   out$ggplot$FE$"Final Energy Prices" <- g
+  # }
+  #
+  # if ("plotly" %in% chartType) {
+  #   out$plotly$FE$"Final Energy Prices" <- lapply(names(regionsList), function(reg) {
+  #     ggplotly <- ggplotly(g[[reg]], tooltip = c("text")) %>%
+  #       hide_legend() %>%
+  #       config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
+  #     if (length(ggplotly$x$layout$annotations) > 4) {
+  #       for (i in 4:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
+  #         ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+  #       }
+  #     }
+  #     return(ggplotly)
+  #   })
+  #   names(out$plotly$FE$"Final Energy Prices") <- names(regionsList)
+  # }
+  #
+  # out$legend$"Final Energy Prices"$description <- "<p>Final energy prices</p>"
+  # out$legend$"Final Energy Prices"$contents <- lapply(gsub(" \\(.*", "", vars), function(var) {
+  #   return(list("fill" = color[var], "linetype" = "solid"))
+  # })
+  # names(out$legend$"Final Energy Prices"$contents) <- gsub(".*\\|", "", gsub(" \\(.*", "", vars))
+  # out$legend$"Final Energy Prices"$units <- "US$<sub>2005</sub>/GJ per year"
 
   ### FE Transport
 
@@ -1650,8 +1702,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1669,9 +1723,9 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   # price
   vars <- c(
-    "Price|Final Energy|Electricity|Transport (US$2005/GJ)",
-    "Price|Final Energy|Liquids|Transport (US$2005/GJ)",
-    "Price|Final Energy|Hydrogen|Transport (US$2005/GJ)"
+    "Price|Final Energy|Transport|Electricity (US$2005/GJ)",
+    "Price|Final Energy|Transport|Liquids (US$2005/GJ)",
+    "Price|Final Energy|Transport|Hydrogen (US$2005/GJ)"
   )
 
   color <- plotstyle(as.character(gsub(" \\(.*", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
@@ -1775,8 +1829,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1794,12 +1850,12 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   # price
   vars <- c(
-    "Price|Final Energy|Electricity|Industry (US$2005/GJ)",
-    "Price|Final Energy|Heating Oil|Industry (US$2005/GJ)",
-    "Price|Final Energy|Gases|Industry (US$2005/GJ)",
-    "Price|Final Energy|Heat|Industry (US$2005/GJ)",
-    "Price|Final Energy|Solids|Industry (US$2005/GJ)",
-    "Price|Final Energy|Hydrogen|Industry (US$2005/GJ)"
+    "Price|Final Energy|Industry|Electricity (US$2005/GJ)",
+#    "Price|Final Energy|Industry|Heating Oil (US$2005/GJ)",
+    "Price|Final Energy|Industry|Gases (US$2005/GJ)",
+    "Price|Final Energy|Industry|Heat (US$2005/GJ)",
+    "Price|Final Energy|Industry|Solids (US$2005/GJ)",
+    "Price|Final Energy|Industry|Hydrogen (US$2005/GJ)"
   )
 
   color <- plotstyle(as.character(gsub(" \\(.*", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
@@ -1902,8 +1958,10 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
         hide_legend() %>%
         config(modeBarButtonsToRemove = plotlyButtonsToHide, displaylogo = FALSE)
       for (i in 1:length(ggplotly$x$layout$annotations)) { # displacing facet titles a little down
-        if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
-          ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+        if (!is_empty(ggplotly$x$layout$annotations[[i]]$y)) {
+          if (ggplotly$x$layout$annotations[[i]]$y < 0.9) {
+            ggplotly$x$layout$annotations[[i]]$y <- ggplotly$x$layout$annotations[[i]]$y - 0.04
+          }
         }
       }
       return(ggplotly)
@@ -1921,12 +1979,12 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   # price
   vars <- c(
-    "Price|Final Energy|Electricity|Buildings (US$2005/GJ)",
-    "Price|Final Energy|Heating Oil|Buildings (US$2005/GJ)",
-    "Price|Final Energy|Gases|Buildings (US$2005/GJ)",
-    "Price|Final Energy|Heat|Buildings (US$2005/GJ)",
-    "Price|Final Energy|Solids|Buildings (US$2005/GJ)",
-    "Price|Final Energy|Hydrogen|Buildings (US$2005/GJ)"
+    "Price|Final Energy|Buildings|Electricity (US$2005/GJ)",
+    #"Price|Final Energy|Buildings|Heating Oil (US$2005/GJ)",
+    "Price|Final Energy|Buildings|Gases (US$2005/GJ)",
+    "Price|Final Energy|Buildings|Heat (US$2005/GJ)",
+    "Price|Final Energy|Buildings|Solids (US$2005/GJ)",
+    "Price|Final Energy|Buildings|Hydrogen (US$2005/GJ)"
   )
 
   color <- plotstyle(as.character(gsub(" \\(.*", "", shorten_legend(vars, identical_only = TRUE))), unknown = missingColorsdf)
