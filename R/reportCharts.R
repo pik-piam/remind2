@@ -205,7 +205,7 @@ reportCharts <- function(gdx = NULL, regionMapping = NULL, hist = NULL, reportfi
 
   series <- regionMapping %>%
     group_by(name = .data$RegionCode) %>%
-    do(data = list_parse(select(.data, CountryCode))) %>%
+    do(data = list_parse(select(.data, !!sym("CountryCode")))) %>%
     ungroup()
   series$color <- colors[series$name]
 
