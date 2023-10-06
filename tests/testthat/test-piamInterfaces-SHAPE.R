@@ -5,10 +5,9 @@ test_that("Test if REMIND reporting produces mandatory variables for SHAPE repor
 
   gdxPath <- file.path(tempdir(), "fulldata.gdx")
 
-  utils::download.file("https://rse.pik-potsdam.de/data/example/remind2_test-SHAPE_fulldata.gdx",
-                       gdxPath,
-                       mode = "wb", quiet = TRUE
-  )
+  get_cached_file(
+    "https://rse.pik-potsdam.de/data/example/remind2_test-SHAPE_fulldata.gdx",
+    gdxPath, mode = "wb", quiet = TRUE)
 
   mif <- suppressWarnings(convGDX2MIF(gdxPath, gdx_refpolicycost = gdxPath))
 
