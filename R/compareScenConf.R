@@ -70,13 +70,12 @@ compareScenConf <- function(fileList = NULL, remindPath = "/p/projects/rd3mod/gi
                             comment.char = "#", na.strings = "", dec = "."))
   }
   if (expanddata) {
-    message("Loading path_gdx_list and readCheckScenarioConfig")
-    source(file.path(remindPath, "scripts", "start", "path_gdx_list.R"), local = TRUE)
-    # overwrite readCheckScenarioConfig
-    source(file.path(remindPath, "scripts", "start", "readCheckScenarioConfig.R"), local = TRUE)
+    message("Loading R helper functions from remindmodel.") # overwrite readCheckScenarioConfig
+    remindRscripts <- list.files(file.path(remindPath, "scripts", "start"), pattern = "\\.R$", full.names = TRUE)
+    invisible(sapply(remindRscripts, source, local = TRUE))
   }
-  settings1 <- readCheckScenarioConfig(fileList[[1]], remindPath = remindPath, fillWithDefault = TRUE)
-  settings2 <- readCheckScenarioConfig(fileList[[2]], remindPath = remindPath, fillWithDefault = TRUE)
+  settings1 <- readCheckScenarioConfig(fileList[[1]], remindPath = remindPath, fillWithDefault = TRUE, testmode = TRUE)
+  settings2 <- readCheckScenarioConfig(fileList[[2]], remindPath = remindPath, fillWithDefault = TRUE, testmode = TRUE)
 
   # for mapping files
   if (is.null(row.names)) {

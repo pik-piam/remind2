@@ -1,12 +1,14 @@
-ValidationKey: '217006800'
+ValidationKey: '223160847'
 AcceptedWarnings:
 - 'Warning: package ''.*'' was built under R version'
 - 'Warning: namespace ''.*'' is not available and has been replaced'
 - .*qpdf.* is needed for checks on size reduction of PDFs
 - .*following variables are expected in the piamInterfaces.*
+- Summation checks have revealed some gaps!*
 AcceptedNotes:
 - Imports includes .* non-default packages.
 - unable to verify current time
 - checking installed package size
+- Namespace in Imports field not imported from: ‘htmltools’
 AutocreateReadme: yes
 allowLinterWarnings: yes

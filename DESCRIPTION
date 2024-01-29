@@ -1,14 +1,15 @@
 Type: Package
 Package: remind2
 Title: The REMIND R package (2nd generation)
-Version: 1.112.0
-Date: 2023-06-07
+Version: 1.130.1
+Date: 2024-01-25
 Authors@R: c(
     person("Renato", "Rodrigues", , "renato.rodrigues@pik-potsdam.de", role = c("aut", "cre")),
     person("Lavinia", "Baumstark", role = "aut"),
     person("Falk", "Benke", role = "aut"),
     person("Jan Philipp", "Dietrich", role = "aut"),
     person("Alois", "Dirnaichner", role = "aut"),
+    person("Jakob", "Duerrwaechter", role = "aut"),
     person("Pascal", "Führlich", role = "aut"),
     person("Anastasis", "Giannousakis", role = "aut"),
     person("Robin", "Hasse", role = "aut"),
@@ -32,7 +33,8 @@ Authors@R: c(
     person("Björn", "Sörgel", role = "aut"),
     person("Mike", "Spahr", role = "aut"),
     person("Jessica", "Strefler", role = "aut"),
-    person("Philipp", "Verpoort", role = "aut")
+    person("Philipp", "Verpoort", role = "aut"),
+    person("Pascal", "Weigmann", role = "aut")
   )
 Description: Contains the REMIND-specific routines for data and model
     output manipulation.
@@ -41,7 +43,6 @@ URL: https://github.com/pik-piam/remind2
 Depends:
     magclass (>= 3.37)
 Imports:
-    RColorBrewer,
     abind,
     assertr,
     data.table,
@@ -51,10 +52,9 @@ Imports:
     gdxrrw,
     ggplot2,
     gms,
-    highcharter,
+    htmltools,
     iamc,
     knitr,
-    lubridate,
     lucode2 (>= 0.43.0),
     luplot,
     luscale,
@@ -62,7 +62,7 @@ Imports:
     madrat,
     mip (>= 0.139.1),
     openxlsx,
-    piamInterfaces (>= 0.0.62),
+    piamInterfaces (>= 0.1.2),
     plotly,
     quitte,
     readr,
@@ -71,7 +71,6 @@ Imports:
     rlang,
     rmarkdown,
     rmndt,
-    scales,
     tibble,
     tidyr,
     tidyselect,
@@ -90,6 +89,6 @@ Suggests:
 VignetteBuilder: 
     knitr
 Encoding: UTF-8
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Config/testthat/parallel: true
 Config/testthat/edition: 3
