@@ -1,7 +1,7 @@
 library(gdx)
 
 test_that("Test if REMIND reporting produces mandatory variables for ECEMF reporting", {
-  skip_if_not(as.logical(gdxrrw::igdx(silent = TRUE)), "gdxrrw is not initialized properly")
+  skip_on_ci()
 
   gdxPath <- file.path(tempdir(), "fulldata.gdx")
 

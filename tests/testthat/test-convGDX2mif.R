@@ -11,7 +11,7 @@ library(dplyr)
 library(gdx)
 
 test_that("Test if REMIND reporting is produced as it should and check data integrity", {
-  skip_if_not(as.logical(gdxrrw::igdx(silent = TRUE)), "gdxrrw is not initialized properly")
+  skip_on_ci()
 
   # add GDXs for comparison here:
   gdxPaths <- NULL
