@@ -1396,7 +1396,7 @@ if (!is.null(vm_plasticsCarbon)) {
                setNames(dimSums(vm_emiIndCCS[, , "co2cement_process"], dim = 3) * GtC_2_MtCO2,
                           "Carbon Management|Carbon Capture|Industry Process|+|Cement (Mt CO2/yr)"),
                # total co2 captured by DAC
-               setNames(-vm_emiCdrTeDetail[, , "dac"] * GtC_2_MtCO2,
+               setNames(dimSums(vm_ccs_cdr, na.rm = TRUE) * GtC_2_MtCO2,
                           "Carbon Management|Carbon Capture|+|DAC (Mt CO2/yr)"),
                # total co2 captured
                setNames(vm_co2capture * GtC_2_MtCO2,
@@ -1768,7 +1768,7 @@ if (!is.null(vm_plasticsCarbon)) {
                          "Emi|CO2|CDR|Materials|+|Plastics (Mt CO2/yr)"),
 
                # total DACCS
-               setNames(-out[, , "Carbon Management|Storage|+|DAC (Mt CO2/yr)"],
+               setNames(vm_emiCdrTeDetail[, , "dac"] * p_share_CCS * GtC_2_MtCO2,
                         "Emi|CO2|CDR|DACCS (Mt CO2/yr)"),
                # total EW
                # total co2 captured by EW
