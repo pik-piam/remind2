@@ -104,31 +104,6 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
      || (length(entySEbio) == length(entySEsyn) && all(entySEbio == entySEsyn)))
     entySEsyn <- c('seliqsyn', 'segasyn')
 
-
-  ### emissions variables from REMIND (see definitions in core/equations.gms)
-  # total GHG emissions
-  vm_co2eq <- readGDX(gdx, "vm_co2eq", field = "l", restore_zeros = F)[, t, ]
-  # total emissions by gas
-  vm_emiAllMkt <- readGDX(gdx, "vm_emiAllMkt", field = "l", restore_zeros = F)[, t, ]
-  # total energy emissions from pe2se and se2fe conversions
-  vm_emiTeDetailMkt <- readGDX(gdx, c("vm_emiTeDetailMkt","v_emiTeDetailMkt"), field = "l", restore_zeros = F)
-  # total energy emissions in REMIND
-  vm_emiTeMkt <- readGDX(gdx, c("vm_emiTeMkt","v_emiTeMkt"), field = "l", restore_zeros = F, format="first_found")[, t, ]
-  # emissions from MAC curves (non-energy emissions)
-  vm_emiMacSector <- readGDX(gdx, "vm_emiMacSector", field = "l", restore_zeros = F)[, t, ]
-  # exogenous emissions (SO2, BC, OC)
-  pm_emiExog <- readGDX(gdx, "pm_emiExog", field = "l", restore_zeros = F)
-  # F-Gases
-  vm_emiFgas <- readGDX(gdx, "vm_emiFgas", field = "l", restore_zeros = F)[, t, ]
-  # Emissions from MACs (currently: all emissions outside of energy CO2 emissions)
-  vm_emiMacSector <- readGDX(gdx, "vm_emiMacSector", field = "l", restore_zeros = F)
-  # energy extraction energy-related CO2 emissions
-  v_emiEnFuelEx <- readGDX(gdx, "v_emiEnFuelEx", field = "l", restore_zeros = F)
-  # set to zero if not available
-  if (is.null(v_emiEnFuelEx)) {
-    v_emiEnFuelEx <- vm_emiMacSector[, , "co2"] * 0
-  }
-
   ### for emissions of energy system technologies
   # emission factors of technologies
   pm_emifac <- readGDX(gdx, "pm_emifac", restore_zeros = F)[, t, ]
@@ -190,6 +165,11 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
     vm_emiCdrTeDetail <- mbind(v33_emiDAC, v33_emiEW)
     vm_emiCdrTeDetail <- setNames(vm_emiCdrTeDetail, c("dac", "weathering"))
   }
+
+  # captured CO2 from CDR activities
+  vm_ccs_cdr <- readGDX(gdx, "vm_ccs_cdr", field = "l", restore_zeros = F)[, t, ]
+  # captured CO2 from natural gas used for DAC
+  co2capture_DAC_energy <- dimSums(vm_ccs_cdr, na.rm = TRUE) + vm_emiCdrTeDetail[, , "dac"]
   # stored CO2
   vm_co2CCS <- readGDX(gdx, "vm_co2CCS", field = "l", restore_zeros = F)[, t, ]
   # CO2 captured by industry sectors
@@ -201,8 +181,41 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
   # variable to release captured CO2 when no CCU capacities are standing anymore vent captured CO2
   v_co2capturevalve <- readGDX(gdx, "v_co2capturevalve", field = "l", restore_zeros = F)[, t, ]
 
+  # compute share of stored carbon from total captured carbon
+  p_share_CCS <- dimSums(vm_co2CCS, dim = 3, na.rm = T) / dimSums(vm_co2capture, dim = 3)
+  p_share_CCS[is.infinite(p_share_CCS)] <- 0
+  p_share_CCS[is.na(p_share_CCS)] <- 0
+
   # maximum annual CO2 storage potential assumed
   max_geolStorage <-  readGDX(gdx, "vm_co2CCS", field = "up", restore_zeros = F)[, t, ]  # CO2 captured per industry subsector
+
+  ### emissions variables from REMIND (see definitions in core/equations.gms)
+  # total GHG emissions
+  vm_co2eq <- readGDX(gdx, "vm_co2eq", field = "l", restore_zeros = F)[, t, ]
+  # total emissions by gas
+  vm_emiAllMkt <- readGDX(gdx, "vm_emiAllMkt", field = "l", restore_zeros = F)[, t, ]
+  # discount energy emissions from CDR activities that have been captured
+  vm_emiAllMkt[, , "co2.ETS"] <- vm_emiAllMkt[, , "co2.ETS"] - co2capture_DAC_energy * (1 - p_share_CCS)
+  # total energy emissions from pe2se and se2fe conversions
+  vm_emiTeDetailMkt <- readGDX(gdx, c("vm_emiTeDetailMkt","v_emiTeDetailMkt"), field = "l", restore_zeros = F)
+  # total energy emissions in REMIND
+  vm_emiTeMkt <- readGDX(gdx, c("vm_emiTeMkt","v_emiTeMkt"), field = "l", restore_zeros = F, format="first_found")[, t, ]
+  # discount energy emissions from CDR activities that have been captured
+  vm_emiTeMkt[, , "co2.ETS"] <- vm_emiTeMkt[, , "co2.ETS"] - co2capture_DAC_energy * (1 - p_share_CCS)
+  # emissions from MAC curves (non-energy emissions)
+  vm_emiMacSector <- readGDX(gdx, "vm_emiMacSector", field = "l", restore_zeros = F)[, t, ]
+  # exogenous emissions (SO2, BC, OC)
+  pm_emiExog <- readGDX(gdx, "pm_emiExog", field = "l", restore_zeros = F)
+  # F-Gases
+  vm_emiFgas <- readGDX(gdx, "vm_emiFgas", field = "l", restore_zeros = F)[, t, ]
+  # Emissions from MACs (currently: all emissions outside of energy CO2 emissions)
+  vm_emiMacSector <- readGDX(gdx, "vm_emiMacSector", field = "l", restore_zeros = F)
+  # energy extraction energy-related CO2 emissions
+  v_emiEnFuelEx <- readGDX(gdx, "v_emiEnFuelEx", field = "l", restore_zeros = F)
+  # set to zero if not available
+  if (is.null(v_emiEnFuelEx)) {
+    v_emiEnFuelEx <- vm_emiMacSector[, , "co2"] * 0
+  }
 
   # CO2 captured per industry subsector
   # NOTE: The parameter pm_IndstCO2Captured was calculated without taking into
@@ -401,12 +414,6 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
   # (splitting q_emiTeMkt into supply-side and demand-side)
   # pe2se,extraction,CCU -> supply-side
   # se2fe,industryCCS -> demand-side
-
-
-  # compute share of stored carbon from total captured carbon
-  p_share_CCS <- dimSums(vm_co2CCS, dim = 3, na.rm = T) / dimSums(vm_co2capture, dim = 3)
-  p_share_CCS[is.infinite(p_share_CCS)] <- 0
-  p_share_CCS[is.na(p_share_CCS)] <- 0
 
   sel_vm_emiTeDetailMkt_cco2 <- if(getSets(vm_emiTeDetailMkt)[[6]] == "emiAll"){
     mselect(vm_emiTeDetailMkt, emiAll = "cco2")
