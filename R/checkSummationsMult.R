@@ -5,9 +5,9 @@
 #'
 #' @param mifData object containing all the reporting information
 #' @param file name of a file the summation check results should be written to. If NULL results will be attached as attribute to mifData
-#' @param summationsFile single or multiple (as vector) files that describes the required summation groups (see 
+#' @param summationsFile single or multiple (as vector) files that describes the required summation groups (see
 #' @param testthat boolean whether called by tests, turns some messages into warnings
-#' @returns the object given in mifData with results of summation checks attached as attribute if 
+#' @returns the object given in mifData with results of summation checks attached as attribute if
 #'
 #' @author David Klein, Oliver Richters, Michaja Pehl
 #'
@@ -16,15 +16,15 @@
 #' @importFrom piamInterfaces checkSummations
 #' @importFrom utils write.csv
 
-.reportSummationErrors <- function(msg, testthat) {
+checkSummationsMult <- function(mifData, file = NULL, summationsFile = "extractVariableGroups", testthat = FALSE) {
+  .reportSummationErrors <- function(msg, testthat) {
     if (!any(grepl('All summation checks were fine', msg))) {
       msgtext <- paste(msg, collapse = '\n')
       if (isTRUE(testthat)) warning(msgtext) else message(msgtext)
     }
   }
 
-checkSummationsMult <- function(mifData, file = NULL, summationsFile = "extractVariableGroups", testthat = FALSE) {
-    sumChecks <- NULL
+  sumChecks <- NULL
     capture.output(
       for (sF in summationsFile) {
         tmp <- checkSummations(mifFile = mifData, dataDumpFile = NULL, outputDirectory = NULL,
@@ -32,7 +32,7 @@ checkSummationsMult <- function(mifData, file = NULL, summationsFile = "extractV
         sumChecks <- bind_rows(sumChecks, tmp)
       },
       type = 'message'
-    ) %>% 
+    ) %>%
     .reportSummationErrors(testthat = testthat)
     if (!is.null(sumChecks)) sumChecks <- filter(sumChecks, abs(.data$diff) >= 1.5e-8)
 
