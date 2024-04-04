@@ -14,6 +14,7 @@
 #' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
 #' @param gdx_refpolicycost reference-gdx for policy costs, a GDX as created by readGDX, or the file name of a gdx
 #' @param testthat boolean whether called by tests, turns some messages into warnings
+#' @param checkSummations boolean whether summations should be checked(default TRUE)
 #' @author Lavinia Baumstark
 #' @examples
 #'
@@ -28,7 +29,7 @@
 
 convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
                         t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
-                        gdx_refpolicycost = gdx_ref, testthat = FALSE) {
+                        gdx_refpolicycost = gdx_ref, testthat = FALSE, checkSummations = TRUE) {
 
   # Define region subsets
   regionSubsetList <- toolRegionSubsets(gdx)
@@ -132,55 +133,20 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
 
   checkVarNames(getNames(output, dim = 3))
 
-  .reportSummationErrors <- function(msg, testthat) {
-    if (!any(grepl('All summation checks were fine', msg))) {
-      msgtext <- paste(msg, collapse = '\n')
-      if (isTRUE(testthat)) warning(msgtext) else message(msgtext)
-    }
+  # perform summation check using two summationFiles
+  if (checkSummations) {
+    summationsFile <- c("extractVariableGroups",
+                        system.file('extdata/additional_summation_checks.csv', package = 'remind2'))
+    output <- checkSummationsMult(mifData = output, file = file, summationsFile = summationsFile, testthat = testthat)
   }
-
-  capture.output(
-    sumChecks <- checkSummations(
-      mifFile = output, dataDumpFile = NULL, outputDirectory = NULL,
-      summationsFile = "extractVariableGroups",
-      absDiff = 1.5e-8, relDiff = 1e-8, roundDiff = TRUE
-    ) %>%
-      filter(abs(.data$diff) >= 1.5e-8),
-    type = 'message') %>%
-    .reportSummationErrors(testthat = testthat)
-
-  capture.output(sumChecks <- checkSummations(
-    mifFile = output, dataDumpFile = NULL, outputDirectory = NULL,
-    summationsFile = system.file('extdata/additional_summation_checks.csv',
-                                 package = 'remind2'),
-    absDiff = 1.5e-8, relDiff = 1e-8, roundDiff = TRUE) %>%
-      filter(abs(.data$diff) >= 1.5e-8) %>%
-      bind_rows(sumChecks),
-    type = 'message'
-  ) %>%
-    .reportSummationErrors(testthat = testthat)
 
   # either write the *.mif or return the magpie object
   if (!is.null(file)) {
     write.report(output, file = file, ndigit = 7)
     # write same reporting without "+" or "++" in variable names
     deletePlus(file, writemif = TRUE)
-
-    # write additional file on summation errors if needed
-    if (nrow(sumChecks) > 0) {
-      summation_errors_file <- sub('(\\.[^.]+)$', '_summation_errors.csv', file)
-      warning("Summation checks have revealed some gaps! See file ",
-              summation_errors_file)
-      write.csv(sumChecks, summation_errors_file, quote = FALSE, row.names = FALSE)
-    }
   }
   else {
-    # return summation errors as attribute
-    if (nrow(sumChecks) > 0) {
-      warning("Summation checks have revealed some gaps! ",
-              "See `summation_errors` attribute on output for details.")
-      attr(output, 'summation_errors') <- sumChecks
-    }
     return(output)
   }
 }
