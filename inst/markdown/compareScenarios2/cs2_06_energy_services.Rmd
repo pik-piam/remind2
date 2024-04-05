@@ -157,8 +157,7 @@ showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
 ```{r ES Transport}
 items <- c(
   "ES|Transport|Pass pCap",
-  "ES|Transport|Pass|Road|LDV pCap",
-  "ES|Transport|Pass|non-LDV pCap")
+  "ES|Transport|Pass|Road|LDV pCap")
 showMultiLinePlots(data, items)
 showMultiLinePlotsByVariable(data, items, "GDP|PPP pCap")
 ```
@@ -285,26 +284,6 @@ items <- c(
   "Sales|Transport|Bus|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
-```
-
-### non-LDV Vehicles Stock - TransportComplex
-```{r non-LDV Vehicles Stock}
-tot <- "Services and Products|Transport|non-LDV|Stock|uedit"
-items <- c(
-  "Services and Products|Transport|non-LDV|Stock|apCarDiT",
-  "Services and Products|Transport|non-LDV|Stock|apcarDiEffT",
-  "Services and Products|Transport|non-LDV|Stock|apcarDiEffH2T")
-showAreaAndBarPlots(data, items, tot, scales = "fixed")
-```
-
-### non-LDV Vehicles Sales - TransportComplex
-```{r non-LDV Vehicles Sales}
-tot <- "Services and Products|Transport|non-LDV|Sales|uedit"
-items <- c(
-  "Services and Products|Transport|non-LDV|Sales|apCarDiT",
-  "Services and Products|Transport|non-LDV|Sales|apcarDiEffT",
-  "Services and Products|Transport|non-LDV|Sales|apcarDiEffH2T")
-showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
 ## Industry Production

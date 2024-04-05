@@ -470,10 +470,6 @@ items <- c(
   "FE|Transport|LDV|Hydrogen",
   "FE|Transport|LDV|Gases",
   "FE|Transport|LDV|Liquids",
-  "FE|Transport|non-LDV|Electricity",
-  "FE|Transport|non-LDV|Hydrogen",
-  "FE|Transport|non-LDV|Gases",  
-  "FE|Transport|non-LDV|Liquids",
   NULL
 )
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
