@@ -266,6 +266,7 @@ reportLCOE <- function(gdx, output.type = "both") {
 
     # 2.2 secondary fuel cost
     Fuel.Price <- mbind(pm_PEPrice, pm_SEPrice) * 1e12 # convert from trUSD2005/TWa to USD2005/TWa [note: this already includes the CO2 price]
+    Fuel.Price <- matchRegions(Fuel.Price, vm_prodSe, fill = NA)
     pm_SecFuel <- pm_prodCouple[, , getNames(pm_prodCouple)[pm_prodCouple[reg1, , ] < 0]] # keep only second fuel consumption, not co-production
 
     SecFuelTechs <- intersect(getNames(pm_SecFuel, dim = 3), pc2te$all_te) # determine all te that have couple production
@@ -274,6 +275,7 @@ reportLCOE <- function(gdx, output.type = "both") {
     te_annual_secFuel_cost <- new.magpie(getRegions(te_inv_annuity), ttot_from2005, getNames(te_inv_annuity), fill = 0)
 
     # calculate secondary fuel cost for pe2se
+
     te_annual_secFuel_cost[, , SecFuelTechs_pe2se] <- setNames(dimSums(-pm_SecFuel[, , SecFuelTechs_pe2se] * Fuel.Price[, ttot_from2005, getNames(pm_SecFuel, dim = 4)] *
       vm_prodSe[, ttot_from2005, SecFuelTechs_pe2se], dim = 3.4), SecFuelTechs_pe2se)
     # calculate secondary fuel cost for ccsinje
@@ -1077,7 +1079,6 @@ reportLCOE <- function(gdx, output.type = "both") {
     # bind PE and SE prices and convert from tr USD 2005/TWa to USD2015/MWh
     Fuel.Price <- mbind(pm_PEPrice, pm_SEPrice)[, , fuels] * 1e12 / s_twa2mwh * 1.2
 
-
     # Fuel price for the time period for which LCOE are calculated
     df.Fuel.Price <- as.quitte(Fuel.Price) %>%
       select(region, period, all_enty, value) %>%
@@ -1267,6 +1268,8 @@ reportLCOE <- function(gdx, output.type = "both") {
         p33_fedem[, , "dac.fehes"] <- p33_dac_fedem_heat[, , "fehes"]
       }
 
+
+      Fuel.Price <- matchRegions(Fuel.Price, p33_fedem, fill = NA)
       # capital cost in trUSD2005/GtC -> convert to USD2015/tCO2
       LCOD[, , "Investment Cost"] <- vm_costTeCapital[, , "dac"] * 1.2 / 3.66 / vm_capFac[, , "dac"] * p_teAnnuity[, , "dac"] * 1e3
       LCOD[, , "OMF Cost"] <- pm_data_omf[, , "dac"] * vm_costTeCapital[, , "dac"] * 1.2 / 3.66 / vm_capFac[, , "dac"] * 1e3
