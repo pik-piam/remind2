@@ -24,6 +24,7 @@
 #' @importFrom gdx readGDX
 #' @importFrom magclass mbind write.report
 #' @importFrom piamInterfaces checkSummations checkVarNames
+#' @importFrom piamutils deletePlus
 #' @importFrom utils write.csv capture.output
 
 convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
@@ -125,6 +126,10 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
     message("function reportSDPVariables does not work and is skipped")
   }
 
+  # Report climate assessment variables & merge with output
+  message("running reportClimate...")
+  output <- mbind(output, reportClimate(gdx, output))
+
   # Add dimension names "scenario.model.variable"
   getSets(output)[3] <- "variable"
   output <- add_dimension(output,dim=3.1,add = "model",nm = "REMIND")
@@ -135,7 +140,7 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   .reportSummationErrors <- function(msg, testthat) {
     if (!any(grepl('All summation checks were fine', msg))) {
       msgtext <- paste(msg, collapse = '\n')
-      if (isTRUE(testthat)) warning(msgtext) else message(msgtext)
+      if (isTRUE(testthat)) warning("### Analyzing ", basename(gdx), ":\n", msgtext) else message(msgtext)
     }
   }
 
