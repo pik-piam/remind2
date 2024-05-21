@@ -120,7 +120,6 @@ reportFE <- function(gdx, regionSubsetList = NULL,
     seliq <- c("seliqfos","seliqbio")
     segas <- c("segafos","segabio")
   }
-  ##
 
 
   ####### Realisation specific Variables ##########
