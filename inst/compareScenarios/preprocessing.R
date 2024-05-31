@@ -50,7 +50,6 @@ pCapVariables <- tribble(
   "UE|Buildings|Heating", "GJ/yr", 1e9,
   "ES|Transport|Pass", "km/yr", 1e9,
   "ES|Transport|Pass|Road|LDV", "km/yr", 1e9,
-  "ES|Transport|Pass|non-LDV", "km/yr", 1e9,
   "ES|Transport|Pass|Road|LDV|BEV", "km/yr", 1e9,
   "ES|Transport|Pass|Road|LDV|FCEV", "km/yr", 1e9,
   "ES|Transport|Pass|Road|LDV|Gases", "km/yr", 1e9,
