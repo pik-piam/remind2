@@ -168,7 +168,7 @@ items <- c(
   "ES|Transport|Pass|Road|LDV|BEV pCap",
   "ES|Transport|Pass|Road|LDV|FCEV pCap",
   "ES|Transport|Pass|Road|LDV|Gases pCap",
-  "ES|Transport|Pass|Road|LDV|Hybrid Electric pCap",
+  "ES|Transport|Pass|Road|LDV|Hybrid electric pCap",
   "ES|Transport|Pass|Road|LDV|Liquids pCap")
 showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
 ```
@@ -193,13 +193,13 @@ showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
 
 ### LDV Vehicles Stock - EDGE-T
 ```{r LDV Vehicles Stock - EDGE-T}
-tot <- "Stock|Transport|LDV"
+tot <- "Stock|Transport|Pass|Road|LDV"
 items <- c(
-  "Stock|Transport|LDV|BEV",
-  "Stock|Transport|LDV|Hybrid Electric",  
-  "Stock|Transport|LDV|FCEV",
-  "Stock|Transport|LDV|NG",
-  "Stock|Transport|LDV|Liquids",
+  "Stock|Transport|Pass|Road|LDV|BEV",
+  "Stock|Transport|Pass|Road|LDV|Hybrid electric",  
+  "Stock|Transport|Pass|Road|LDV|FCEV",
+  "Stock|Transport|Pass|Road|LDV|Gases",
+  "Stock|Transport|Pass|Road|LDV|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
@@ -216,13 +216,13 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 
 ### LDV Vehicles Sales - EDGE-T
 ```{r LDV Vehicles Sales - EDGE-T}
-tot <- "Sales|Transport|LDV"
+tot <- "Sales|Transport|Pass|Road|LDV"
 items <- c(
-  "Sales|Transport|LDV|BEV",  
-  "Sales|Transport|LDV|Hybrid Electric",
-  "Sales|Transport|LDV|FCEV",  
-  "Sales|Transport|LDV|NG",
-  "Sales|Transport|LDV|Liquids",
+  "Sales|Transport|Pass|Road|LDV|BEV",  
+  "Sales|Transport|Pass|Road|LDV|Hybrid electric",
+  "Sales|Transport|Pass|Road|LDV|FCEV",  
+  "Sales|Transport|Pass|Road|LDV|Gases",
+  "Sales|Transport|Pass|Road|LDV|Liquids",
   NULL
 )
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
@@ -240,48 +240,48 @@ showAreaAndBarPlots(data, items, tot, scales = "fixed")
 
 ### Truck Stock - EDGE-T
 ```{r Truck Stock}
-tot <- "Stock|Transport|Truck"
+tot <- "Stock|Transport|Freight|Road"
 items <- c(
-  "Stock|Transport|Truck|Electric",  
-  "Stock|Transport|Truck|FCEV",
-  "Stock|Transport|Truck|NG",
-  "Stock|Transport|Truck|Liquids",
+  "Stock|Transport|Freight|Road|Electric",  
+  "Stock|Transport|Freight|Road|FCEV",
+  "Stock|Transport|Freight|Road|Gases",
+  "Stock|Transport|Freight|Road|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
 ### Truck Sales - EDGE-T
 ```{r Truck Sales}
-tot <- "Sales|Transport|Truck"
+tot <- "Sales|Transport|Freight|Road"
 items <- c(
-  "Sales|Transport|Truck|Electric",  
-  "Sales|Transport|Truck|FCEV",
-  "Sales|Transport|Truck|NG",
-  "Sales|Transport|Truck|Liquids",
+  "Sales|Transport|Freight|Road|Electric",  
+  "Sales|Transport|Freight|Road|FCEV",
+  "Sales|Transport|Freight|Road|Gases",
+  "Sales|Transport|Freight|Road|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
 ### Bus Stock - EDGE-T
 ```{r Bus Stock}
-tot <- "Stock|Transport|Bus"
+tot <- "Stock|Transport|Pass|Road|Bus"
 items <- c(
-  "Stock|Transport|Bus|Electric",
-  "Stock|Transport|Bus|FCEV",
-  "Stock|Transport|Bus|NG",
-  "Stock|Transport|Bus|Liquids",
+  "Stock|Transport|Pass|Road|Bus|Electric",
+  "Stock|Transport|Pass|Road|Bus|FCEV",
+  "Stock|Transport|Pass|Road|Bus|Gases",
+  "Stock|Transport|Pass|Road|Bus|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
 ### Bus Sales - EDGE-T
 ```{r Bus Sales}
-tot <- "Sales|Transport|Bus"
+tot <- "Sales|Transport|Pass|Road|Bus"
 items <- c(
-  "Sales|Transport|Bus|Electric",  
-  "Sales|Transport|Bus|FCEV",
-  "Sales|Transport|Bus|NG",
-  "Sales|Transport|Bus|Liquids",
+  "Sales|Transport|Pass|Road|Bus|Electric",  
+  "Sales|Transport|Pass|Road|Bus|FCEV",
+  "Sales|Transport|Pass|Road|Bus|Gases",
+  "Sales|Transport|Pass|Road|Bus|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```

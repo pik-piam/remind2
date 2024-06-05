@@ -379,9 +379,9 @@ items_synliq <- c(
   "FE|Transport|Pass|Road|Bus|Liquids|Hydrogen",
   "FE|Transport|Freight|Rail|Liquids|Hydrogen",
   "FE|Transport|Pass|Rail|Liquids|Hydrogen",
-  "FE|Transport|Pass|Aviation|Domestic|Liquids|Hydrogen",
-  "FE|Transport|Pass|Aviation|International|Liquids|Hydrogen",
-  "FE|Transport|Freight|International Shipping|Liquids|Hydrogen",
+  "FE|Transport|Pass|Domestic Aviation|Liquids|Hydrogen",
+  "FE|Transport|Bunkers|Pass|International Aviation|Liquids|Hydrogen",
+  "FE|Transport|Bunkers|Freight|International Shipping|Liquids|Hydrogen",
   NULL
 )
 
@@ -397,9 +397,9 @@ items_bioliq <- c(
   "FE|Transport|Pass|Road|Bus|Liquids|Biomass",
   "FE|Transport|Freight|Rail|Liquids|Biomass",
   "FE|Transport|Pass|Rail|Liquids|Biomass",
-  "FE|Transport|Pass|Aviation|Domestic|Liquids|Biomass",
-  "FE|Transport|Pass|Aviation|International|Liquids|Biomass",
-  "FE|Transport|Freight|International Shipping|Liquids|Biomass",
+  "FE|Transport|Pass|Domestic Aviation|Liquids|Biomass",
+  "FE|Transport|Bunkers|Pass|International Aviation|Liquids|Biomass",
+  "FE|Transport|Bunkers|Freight|International Shipping|Liquids|Biomass",
   NULL
 )
 
@@ -424,21 +424,21 @@ showLinePlots(data, "FE|Transport|Electricity|Share")
 ### Basics -- w/o Bunkers
 
 ```{r Basics -- w/o Bunkers}
-tot <- "FE|Transport|w/o Bunkers"
+tot <- "FE|Transport"
 items <- c(
-  "FE|Transport|w/o Bunkers|Electricity",
-  "FE|Transport|w/o Bunkers|Hydrogen",  
-  "FE|Transport|w/o Bunkers|Gases",
-  "FE|Transport|w/o Bunkers|Liquids",
+  "FE|Transport|Electricity",
+  "FE|Transport|Hydrogen",  
+  "FE|Transport|Gases",
+  "FE|Transport|Liquids",
   NULL
 )
 items2 <- c(
-  "FE|Transport|w/o Bunkers|Electricity",
-  "FE|Transport|w/o Bunkers|Hydrogen",
-  "FE|Transport|w/o Bunkers|Gases",
-  "FE|Transport|w/o Bunkers|Liquids|Biomass",
-  "FE|Transport|w/o Bunkers|Liquids|Fossil",
-  "FE|Transport|w/o Bunkers|Liquids|Hydrogen",
+  "FE|Transport|Electricity",
+  "FE|Transport|Hydrogen",
+  "FE|Transport|Gases",
+  "FE|Transport|Liquids|Biomass",
+  "FE|Transport|Liquids|Fossil",
+  "FE|Transport|Liquids|Hydrogen",
   NULL
 )
 ```
@@ -481,6 +481,6 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 tot <- "FE|Transport"
 items <- c(
   "FE|Transport|Bunkers",
-  "FE|Transport|w/o Bunkers")
+  "FE|Transport")
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```

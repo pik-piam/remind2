@@ -534,7 +534,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
   out <- mbind(out, var_without_Bunkers, var_with_Bunkers)
   ##
   out <- mbind(out,
-    setNames(out[, , "FE|Transport|++|ESR (EJ/yr)"], "FE|Transport|w/o Bunkers (EJ/yr)"),
+    setNames(out[, , "FE|Transport|++|ESR (EJ/yr)"], "FE|Transport (EJ/yr)"),
     setNames(out[, , "FE|Transport|++|Outside ETS and ESR (EJ/yr)"], "FE|Transport|Bunkers (EJ/yr)")
   )
  out <- mbind(out,
