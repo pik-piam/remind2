@@ -478,7 +478,7 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ### Bunkers
 
 ```{r FE Transport Bunkers}
-tot <- "FE|Transport"
+tot <- "FE|Transport with bunkers"
 items <- c(
   "FE|Transport|Bunkers",
   "FE|Transport")
