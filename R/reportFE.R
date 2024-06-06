@@ -517,7 +517,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
       getNames(out)[grep("FE\\|Transport\\|ESR", getNames(out))],
       function(x) {
         setNames(out[, , x], gsub("FE\\|Transport\\|ESR",
-                                  "FE\\|Transport\\|w/o Bunkers", x))
+                                  "FE\\|Transport", x))
       }
     )
   )
