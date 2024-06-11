@@ -25,11 +25,11 @@
 #' @importFrom tibble as_tibble
 #' @importFrom piamutils deletePlus
 
-reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
+reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL, basicmode = FALSE,
                       t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)) {
 
   # emissions calculation requires information from other reporting functions
-  if (is.null(output)) {
+  if (is.null(output) & !basicmode) {
     message("reportEmi executes reportFE")
     output <- mbind(output, reportFE(gdx, regionSubsetList = regionSubsetList, t = t))
   }
@@ -122,6 +122,9 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   if (is.null(v_emiEnFuelEx)) {
     v_emiEnFuelEx <- vm_emiMacSector[, , "co2"] * 0
   }
+
+# This is the normal use of the function in the REMIND postprocessing
+if (!basicmode) {
 
   ### for emissions of energy system technologies
   # emission factors of technologies
@@ -3057,6 +3060,106 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   out <- mbind(out, out.cumul)
 
+# START OF BASICMODE
+# if basicmode is TRUE, we need only a subset of reported emissions.
+# This is meant to be used for the climate assessment, which has to be run
+# inside REMIND before some of the energy system variables are defined
+# 
+# Most of the code here comes from the normal function. The only real difference is
+# that Emi|CO2|Energy and Industrial Processes is calculated from the difference between
+# total and LUC emission.
+} else {
+out <- NULL
+
+#### Markets for total CO2 emissions
+sel_vm_emiAllMkt_co2 <- if (getSets(vm_emiAllMkt)[[3]] == "emiTe") {
+mselect(vm_emiAllMkt, emiTe = "co2")
+} else {
+mselect(vm_emiAllMkt, all_enty = "co2")
+}
+
+# Basic Total CO2 emissions
+out <- mbind(out, setNames(dimSums(sel_vm_emiAllMkt_co2, dim = 3) * GtC_2_MtCO2, "Emi|CO2 (Mt CO2/yr)")
+)
+# Basic Land-use change CO2 emissions
+  out <- mbind(out, setNames(dimSums(vm_emiMacSector[, , "co2luc"], dim = 3) * GtC_2_MtCO2, "Emi|CO2|+|Land-Use Change (Mt CO2/yr)"))
+
+# Basic Get Energy and Industrial Processes from the difference between total and Land-use change emissions, for climate-assessment
+out <- mbind(
+    out,
+    setNames(out[, , "Emi|CO2 (Mt CO2/yr)"] - out[, , "Emi|CO2|+|Land-Use Change (Mt CO2/yr)"],
+    "Emi|CO2|Energy and Industrial Processes (Mt CO2/yr)"
+    ))
+
+#  Basic Non-CO2 GHG Emissions 
+
+  # join mac mapping of sectors and markets
+  mac.map <- right_join(emiMac2sector, macSector2emiMkt, by = "all_enty")
+
+  # create magpie array with MAC emissions per sector, market and gas
+  # MAC emissions comprise non-energy CO2, CH4, N2O emissions
+  EmiMAC <- new.magpie(
+    getRegions(vm_emiMacSector),
+    getYears(vm_emiMacSector),
+    paste(
+      mac.map$all_enty,
+      mac.map$emi_sectors,
+      mac.map$all_emiMkt,
+      mac.map[[if ("emiAll" %in% names(mac.map)) "emiAll" else "all_enty1"]],
+      sep = "."))
+  getSets(EmiMAC) <- c("region", "year", "macsector", "sector", "emiMkt", "gas") # rename dimensions for sake of understanding
+  EmiMAC[, , mac.map$all_enty] <- vm_emiMacSector[, , mac.map$all_enty]
+
+### Basic Energy CH4 and N2O emissions, by markets -------
+  sel_vm_emiTeDetailMkt_ch4 <- if (getSets(vm_emiTeDetailMkt)[[6]] == "emiAll") {
+    mselect(vm_emiTeDetailMkt, emiAll = "ch4")
+  } else {
+    mselect(vm_emiTeDetailMkt, all_enty2 = "ch4")
+  }
+
+  sel_vm_emiTeDetailMkt_n2o <- if (getSets(vm_emiTeDetailMkt)[[6]] == "emiAll") {
+    mselect(vm_emiTeDetailMkt, emiAll = "n2o")
+  } else {
+    mselect(vm_emiTeDetailMkt, all_enty2 = "n2o")
+  }
+
+  out <- mbind(out,
+               # total CH4 emissions
+               setNames(dimSums(mselect(EmiMAC, gas = "ch4"), dim = 3)
+                          + dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3),
+                          "Emi|CH4 (Mt CH4/yr)"),
+               # total N2O emissions
+               setNames((dimSums(mselect(EmiMAC, gas = "n2o"), dim = 3)
+                           +  dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3)) * MtN2_to_ktN2O,
+                          "Emi|N2O (kt N2O/yr)")
+  )
+
+  ### Basic PFCs ----
+  out <- mbind(out,
+               setNames(vm_emiFgas[, , "emiFgasCF4"],      "Emi|CF4 (kt CF4/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasC2F6"],     "Emi|C2F6 (kt C2F6/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasC6F14"],    "Emi|C6F14 (kt C6F14/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC"],      "Emi|HFC (kt HFC134a-equiv/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC125"],   "Emi|HFC|HFC125 (kt HFC125/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC134a"],  "Emi|HFC|HFC134a (kt HFC134a/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC143a"],  "Emi|HFC|HFC143a (kt HFC143a/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC227ea"], "Emi|HFC|HFC227ea (kt HFC227ea/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC23"],    "Emi|HFC|HFC23 (kt HFC23/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC245fa"], "Emi|HFC|HFC245fa (kt HFC245fa/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC32"],    "Emi|HFC|HFC32 (kt HFC32/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasHFC43-10"], "Emi|HFC|HFC43-10 (kt HFC43-10/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasPFC"],      "Emi|PFC (kt CF4-equiv/yr)"),
+               setNames(vm_emiFgas[, , "emiFgasSF6"],      "Emi|SF6 (kt SF6/yr)")
+  )
+
+### Basic F-Gases (Mt CO2eq)
+  out <- mbind(out,
+             # F-Gases 
+               setNames(vm_emiFgas[, , "emiFgasTotal"],
+                        "Emi|GHG|+|F-Gases (Mt CO2eq/yr)")
+  )
+}
+                      
   getSets(out)[3] <- "variable"
   return(out)
 }
