@@ -379,9 +379,9 @@ items_synliq <- c(
   "FE|Transport|Pass|Road|Bus|Liquids|Hydrogen",
   "FE|Transport|Freight|Rail|Liquids|Hydrogen",
   "FE|Transport|Pass|Rail|Liquids|Hydrogen",
-  "FE|Transport|Pass|Aviation|Domestic|Liquids|Hydrogen",
-  "FE|Transport|Pass|Aviation|International|Liquids|Hydrogen",
-  "FE|Transport|Freight|International Shipping|Liquids|Hydrogen",
+  "FE|Transport|Pass|Domestic Aviation|Liquids|Hydrogen",
+  "FE|Transport|Bunkers|Pass|International Aviation|Liquids|Hydrogen",
+  "FE|Transport|Bunkers|Freight|International Shipping|Liquids|Hydrogen",
   NULL
 )
 
@@ -397,9 +397,9 @@ items_bioliq <- c(
   "FE|Transport|Pass|Road|Bus|Liquids|Biomass",
   "FE|Transport|Freight|Rail|Liquids|Biomass",
   "FE|Transport|Pass|Rail|Liquids|Biomass",
-  "FE|Transport|Pass|Aviation|Domestic|Liquids|Biomass",
-  "FE|Transport|Pass|Aviation|International|Liquids|Biomass",
-  "FE|Transport|Freight|International Shipping|Liquids|Biomass",
+  "FE|Transport|Pass|Domestic Aviation|Liquids|Biomass",
+  "FE|Transport|Bunkers|Pass|International Aviation|Liquids|Biomass",
+  "FE|Transport|Bunkers|Freight|International Shipping|Liquids|Biomass",
   NULL
 )
 
