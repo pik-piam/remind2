@@ -25,6 +25,7 @@
 #' @importFrom tibble as_tibble
 #' @importFrom tidyselect everything
 #' @importFrom madrat toolAggregate
+#' @importFrom data.table :=
 #'
 
 reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,

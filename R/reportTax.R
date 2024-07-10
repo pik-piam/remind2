@@ -73,7 +73,6 @@ reportTax <- function(gdx,output=NULL,regionSubsetList=NULL,t=c(seq(2005,2060,5)
     Industry       = commonFinalEnergyVariables,
     Transportation = c(
       "Liquids|LDV"     = "fepet",
-      "Liquids|non-LDV" = "fedie",
       Gases             = "fegat",
       Hydrogen          = "feh2t",
       Electricity       = "feelt"
@@ -151,12 +150,10 @@ reportTax <- function(gdx,output=NULL,regionSubsetList=NULL,t=c(seq(2005,2060,5)
   # transportation liquids aggregations
   out <- mbind(
     out,
-    setNames(out[,,"Taxes|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"]     + out[,,"Taxes|Final Energy|Transportation|Liquids|non-LDV (billion US$2005/yr)"]    , "Taxes|Final Energy|Transportation|Liquids (billion US$2005/yr)"),
-    setNames(out[,,"Subsidies|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"] + out[,,"Subsidies|Final Energy|Transportation|Liquids|non-LDV (billion US$2005/yr)"], "Subsidies|Final Energy|Transportation|Liquids (billion US$2005/yr)"),
-    setNames((out[,,"Tax rate|Final Energy|Transportation|Liquids|LDV (US$2005/GJ)"]*out[,,"Taxes|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"] + out[,,"Tax rate|Final Energy|Transportation|Liquids|non-LDV (US$2005/GJ)"]*out[,,"Taxes|Final Energy|Transportation|Liquids|non-LDV (billion US$2005/yr)"])/
-               (out[,,"Taxes|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"]     + out[,,"Taxes|Final Energy|Transportation|Liquids|non-LDV (billion US$2005/yr)"]) , "Tax rate|Final Energy|Transportation|Liquids (US$2005/GJ)"),
-    setNames((out[,,"Subsidy Rate|Final Energy|Transportation|Liquids|LDV (US$2005/GJ)"]*out[,,"Subsidies|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"] + out[,,"Subsidy Rate|Final Energy|Transportation|Liquids|non-LDV (US$2005/GJ)"]*out[,,"Subsidies|Final Energy|Transportation|Liquids|non-LDV (billion US$2005/yr)"])/
-               (out[,,"Subsidies|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"]     + out[,,"Subsidies|Final Energy|Transportation|Liquids|non-LDV (billion US$2005/yr)"]) , "Subsidy Rate|Final Energy|Transportation|Liquids (US$2005/GJ)")
+    setNames(out[,,"Taxes|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"]       , "Taxes|Final Energy|Transportation|Liquids (billion US$2005/yr)"),
+    setNames(out[,,"Subsidies|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"] , "Subsidies|Final Energy|Transportation|Liquids (billion US$2005/yr)"),
+    setNames((out[,,"Tax rate|Final Energy|Transportation|Liquids|LDV (US$2005/GJ)"]*out[,,"Taxes|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"]) , "Tax rate|Final Energy|Transportation|Liquids (US$2005/GJ)"),
+    setNames((out[,,"Subsidy Rate|Final Energy|Transportation|Liquids|LDV (US$2005/GJ)"]*out[,,"Subsidies|Final Energy|Transportation|Liquids|LDV (billion US$2005/yr)"]) , "Subsidy Rate|Final Energy|Transportation|Liquids (US$2005/GJ)")
   )
 
   # total taxes/subsidies final energy

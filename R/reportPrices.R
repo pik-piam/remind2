@@ -342,7 +342,6 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
       fe = c(
         fehos = "Liquids",
         fepet = "LDV|Liquids",
-        fedie = "non-LDV|Liquids",
         fesos = "Solids",
         feels = "Electricity",
         feelt = "Electricity",
@@ -360,7 +359,6 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
         fegas = "Stationary|Gases",
         fehes = "Stationary|Heat",
         fepet = "Transport|LDV|Liquids",
-        fedie = "Transport|non-LDV|Liquids",
         feelt = "Transport|Electricity",
         feh2t = "Transport|Hydrogen",
         fegat = "Transport|Gases"
@@ -943,12 +941,7 @@ reportPrices <- function(gdx, output=NULL, regionSubsetList=NULL,
                "Price|Final Energy|Industry|Solids (US$2005/GJ)"       = "FE|Industry|Solids (EJ/yr)"
                )
 
-  # transport-specific mappings depending on realization
-  if (module2realisation["transport",2] == "complex") {
-    int2ext <- c(int2ext,
-                 "Price|Final Energy|Transport|Liquids|HDV (US$2005/GJ)"       = "FE|Transport|non-LDV|Liquids (EJ/yr)",
-                 "Price|Final Energy|Transport|Liquids|LDV (US$2005/GJ)"       = "FE|Transport|LDV|Liquids (EJ/yr)")
-  } else if (module2realisation["transport",2] == "edge_esm") {
+ if (module2realisation["transport",2] == "edge_esm") {
     int2ext <- c(int2ext,
                  "Price|Final Energy|Transport|Liquids|HDV (US$2005/GJ)"       = "FE|Transport|Diesel Liquids (EJ/yr)",
                  "Price|Final Energy|Transport|Liquids|LDV (US$2005/GJ)"       = "FE|Transport|Pass|Liquids (EJ/yr)")
