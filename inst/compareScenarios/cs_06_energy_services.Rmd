@@ -179,7 +179,7 @@ items <- c(
   "ES|Transport|Pass|Road|LDV|BEV",
   "ES|Transport|Pass|Road|LDV|FCEV",
   "ES|Transport|Pass|Road|LDV|Gases",
-  "ES|Transport|Pass|Road|LDV|Hybrid Electric",
+  "ES|Transport|Pass|Road|LDV|Hybrid electric",
   "ES|Transport|Pass|Road|LDV|Liquids")
 showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
 ```
@@ -235,9 +235,9 @@ showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
 tot <- "Stock|Transport|Pass|Road|LDV"
 items <- c(
   "Stock|Transport|Pass|Road|LDV|BEV",
-  "Stock|Transport|Pass|Road|LDV|Hybrid Electric",  
+  "Stock|Transport|Pass|Road|LDV|Hybrid electric",  
   "Stock|Transport|Pass|Road|LDV|FCEV",
-  "Stock|Transport|Pass|Road|LDV|NG",
+  "Stock|Transport|Pass|Road|LDV|Gases",
   "Stock|Transport|Pass|Road|LDV|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
@@ -248,9 +248,9 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 tot <- "Stock|Transport|LDV pCap"
 items <- c(
   "Stock|Transport|LDV|BEV pCap",
-  "Stock|Transport|LDV|Hybrid Electric pCap",  
+  "Stock|Transport|LDV|Hybrid electric pCap",  
   "Stock|Transport|LDV|FCEV pCap",
-  "Stock|Transport|LDV|NG pCap",
+  "Stock|Transport|LDV|Gases pCap",
   "Stock|Transport|LDV|Liquids pCap",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
@@ -271,9 +271,9 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 tot <- "Sales|Transport|Pass|Road|LDV"
 items <- c(
   "Sales|Transport|Pass|Road|LDV|BEV",  
-  "Sales|Transport|Pass|Road|LDV|Hybrid Electric",
+  "Sales|Transport|Pass|Road|LDV|Hybrid electric",
   "Sales|Transport|Pass|Road|LDV|FCEV",  
-  "Sales|Transport|Pass|Road|LDV|NG",
+  "Sales|Transport|Pass|Road|LDV|Gases",
   "Sales|Transport|Pass|Road|LDV|Liquids",
   NULL
 )
@@ -296,7 +296,7 @@ tot <- "Stock|Transport|Freight|Road"
 items <- c(
   "Stock|Transport|Freight|Road|Electric",  
   "Stock|Transport|Freight|Road|FCEV",
-  "Stock|Transport|Freight|Road|NG",
+  "Stock|Transport|Freight|Road|Gases",
   "Stock|Transport|Freight|Road|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
@@ -308,7 +308,7 @@ tot <- "Sales|Transport|Freight|Road"
 items <- c(
   "Sales|Transport|Freight|Road|Electric",  
   "Sales|Transport|Freight|Road|FCEV",
-  "Sales|Transport|Freight|Road|NG",
+  "Sales|Transport|Freight|Road|Gases",
   "Sales|Transport|Freight|Road|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
@@ -320,7 +320,7 @@ tot <- "Stock|Transport|Pass|Road|Bus"
 items <- c(
   "Stock|Transport|Pass|Road|Bus|Electric",
   "Stock|Transport|Pass|Road|Bus|FCEV",
-  "Stock|Transport|Pass|Road|Bus|NG",
+  "Stock|Transport|Pass|Road|Bus|Gases",
   "Stock|Transport|Pass|Road|Bus|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
@@ -332,7 +332,7 @@ tot <- "Sales|Transport|Pass|Road|Bus"
 items <- c(
   "Sales|Transport|Pass|Road|Bus|Electric",  
   "Sales|Transport|Pass|Road|Bus|FCEV",
-  "Sales|Transport|Pass|Road|Bus|NG",
+  "Sales|Transport|Pass|Road|Bus|Gases",
   "Sales|Transport|Pass|Road|Bus|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
