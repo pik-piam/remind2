@@ -559,7 +559,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
   if(tran_mod == "edge_esm") {
     vm_demFeForEs <- readGDX(gdx,name = c("vm_demFeForEs"), field="l", restore_zeros=FALSE,format= "first_found",react = "silent")[,t,]*TWa_2_EJ
   }
-  
+
   # CES nodes, convert from TWa to EJ
   vm_cesIO <- readGDX(gdx, name=c("vm_cesIO"), field="l", restore_zeros=FALSE,format= "first_found")[,t,]*TWa_2_EJ
 
@@ -654,7 +654,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
                                     dim = 3, na.rm = TRUE),
                             "UE|Buildings (EJ/yr)"))
     }
-  } 
+  }
 
   # Industry Module ----
   ## FE demand ----
@@ -928,17 +928,17 @@ reportFE <- function(gdx, regionSubsetList = NULL,
       setNames(dimSums(vm_demFeForEs_trnsp[,,"esh2t_frgt_sm",pmatch=TRUE],dim=3,na.rm=T),"FE|Transport|Freight|Short-Medium distance|Hydrogen (EJ/yr)"),
       setNames(dimSums(vm_demFeForEs_trnsp[,,"_frgt_",pmatch=TRUE],dim=3,na.rm=T),"FE|Transport|Freight (EJ/yr)"),
       setNames(dimSums(vm_demFeForEs_trnsp[,,"_pass_",pmatch=TRUE],dim=3,na.rm=T),"FE|Transport|Pass (EJ/yr)"),
-      setNames(dimSums(vm_cesIO[,,"entrp_frgt_",pmatch=TRUE],dim=3,na.rm=T)/TWa_2_EJ * 1e3, # remove EJ conversion factor, conv. trillion to billion tkm
+      setNames(dimSums(vm_cesIO[,,"entrp_frgt_",pmatch=TRUE],dim=3,na.rm=T) * 1e3, # remove EJ conversion factor, conv. trillion to billion tkm
                "ES|Transport|Freight (billion tkm/yr)"),
-      setNames(dimSums(vm_cesIO[,,"entrp_pass_",pmatch=TRUE],dim=3,na.rm=T)/TWa_2_EJ * 1e3, # trillion to billion pkm
+      setNames(dimSums(vm_cesIO[,,"entrp_pass_",pmatch=TRUE],dim=3,na.rm=T) * 1e3, # trillion to billion pkm
                "ES|Transport|Pass (billion pkm/yr)"),
-      setNames(dimSums(vm_cesIO[,,"entrp_frgt_sm",pmatch=TRUE],dim=3,na.rm=T)/TWa_2_EJ * 1e3, # trillion to billion tkm
+      setNames(dimSums(vm_cesIO[,,"entrp_frgt_sm",pmatch=TRUE],dim=3,na.rm=T) * 1e3, # trillion to billion tkm
                "ES|Transport|Freight|Short-Medium distance (billion tkm/yr)"),
-      setNames(dimSums(vm_cesIO[,,"entrp_pass_sm",pmatch=TRUE],dim=3,na.rm=T)/TWa_2_EJ * 1e3, # trillion to billion pkm
+      setNames(dimSums(vm_cesIO[,,"entrp_pass_sm",pmatch=TRUE],dim=3,na.rm=T) * 1e3, # trillion to billion pkm
                "ES|Transport|Pass|Short-Medium distance (billion pkm/yr)"),
-      setNames(dimSums(vm_cesIO[,,"entrp_frgt_lo",pmatch=TRUE],dim=3,na.rm=T)/TWa_2_EJ * 1e3, # trillion to billion tkm
+      setNames(dimSums(vm_cesIO[,,"entrp_frgt_lo",pmatch=TRUE],dim=3,na.rm=T) * 1e3, # trillion to billion tkm
                "ES|Transport|Freight|Long distance (billion tkm/yr)"),
-      setNames(dimSums(vm_cesIO[,,"entrp_pass_lo",pmatch=TRUE],dim=3,na.rm=T)/TWa_2_EJ * 1e3, # trillion to billion pkm
+      setNames(dimSums(vm_cesIO[,,"entrp_pass_lo",pmatch=TRUE],dim=3,na.rm=T) * 1e3, # trillion to billion pkm
                "ES|Transport|Pass|Long distance (billion pkm/yr)"))
 
 
