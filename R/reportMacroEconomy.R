@@ -66,6 +66,7 @@ reportMacroEconomy <- function(gdx, regionSubsetList = NULL,
   }
 
   steel_process_based <- "steel" %in% readGDX(gdx, "secInd37Prc", react='silent')
+  chemicals_process_based <- "chemicals" %in% readGDX(gdx, "secInd37Prc", react='silent') #TOCHECK:QIANZHI
 
   # choose the CES entries names for transport
   name_trsp <- c("fepet", "ueLDVt", "fedie", "ueHDVt", "feelt", "ueelTt")
@@ -249,20 +250,13 @@ reportMacroEconomy <- function(gdx, regionSubsetList = NULL,
 
 
   mrs.report <- c(mrs.report,
-
-
-
                   "feelhth_otherInd.fega_otherInd",
                   "feelhth_otherInd.feli_otherInd",
                   "feelhth_otherInd.feso_otherInd",
-                  "feelhth_chemicals.fega_chemicals",
-                  "feelhth_chemicals.feli_chemicals",
 
                   "feh2_otherInd.fega_otherInd",
                   "feh2_otherInd.feli_otherInd",
                   "feh2_otherInd.feso_otherInd",
-                  "feh2_chemicals.fega_chemicals",
-                  "feh2_chemicals.feli_chemicals",
                   "feh2_cement.fega_cement",
                   "feh2_cement.feso_cement",
                   "feh2_cement.feli_cement")
@@ -273,6 +267,15 @@ reportMacroEconomy <- function(gdx, regionSubsetList = NULL,
                   )
   }
 
+  #TOCHECK:QIANZHI
+  if (!chemicals_process_based) {
+    mrs.report <- append(mrs.report,
+                  "feelhth_chemicals.fega_chemicals",
+                  "feelhth_chemicals.feli_chemicals",
+                  "feh2_chemicals.fega_chemicals",
+                  "feh2_chemicals.feli_chemicals"
+                  )
+  } 
   }
 
   CES.mrs <- collapseDim(setNames(o01_CESmrs[,,mrs.report],
@@ -295,6 +298,13 @@ reportMacroEconomy <- function(gdx, regionSubsetList = NULL,
                     setNames(CES.price[,,"Internal|CES Function|CES Price|feel_steel_secondary (US$2005/GJ)"] /
                                CES.price[,,"Internal|CES Function|CES Price|feso_steel (US$2005/GJ)"],
                              "Internal|CES Function|MRS|feel_steel_secondary|feso_steel (ratio)"))
+  }
+  #TOCHECK:QIANZHI
+  if (!chemicals_process_based) {
+   CES.mrs <- mbind( CES.mrs,
+                   setNames(CES.price[,,"Internal|CES Function|CES Price|feelhth_chemicals (US$2005/GJ)"] /
+                              CES.price[,,"Internal|CES Function|CES Price|feso_chemicals (US$2005/GJ)"],
+                            "Internal|CES Function|MRS|feelhth_chemicals|feso_chemicals (ratio)"))
   }
   }
 

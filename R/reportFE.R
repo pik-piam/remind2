@@ -143,6 +143,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
 
   any_process_based <- length(readGDX(gdx, "secInd37Prc", react='silent')) > 0.
   steel_process_based <- "steel" %in% readGDX(gdx, "secInd37Prc", react='silent')
+  chemicals_process_based <- "chemicals" %in% readGDX(gdx, "secInd37Prc", react='silent') #TOCHECK:QIANZHI
 
 
 
@@ -571,6 +572,9 @@ reportFE <- function(gdx, regionSubsetList = NULL,
     o37_ProdIndRoute[is.na(o37_ProdIndRoute)] = 0.
     o37_demFeIndRoute <- readGDX(gdx, name=c("o37_demFeIndRoute"), restore_zeros=FALSE, format="first_found", react='silent')[,t,] * TWa_2_EJ
     o37_demFeIndRoute[is.na(o37_demFeIndRoute)] = 0.
+
+    v37_matFlow <- readGDX(gdx, name=c("v37_matFlow"), field="l", restore_zeros=FALSE,format= "first_found")[,t,] 
+    v37_matFlow [is.na(v37_matFlow )] = 0.
     # mapping of process to output materials
     tePrc2ue <- readGDX(gdx, "tePrc2ue", restore_zeros=FALSE)
   }
@@ -837,6 +841,64 @@ reportFE <- function(gdx, regionSubsetList = NULL,
           ))
       }
 
+      #TOCHECK:QIANZHI
+      if (chemicals_process_based) {
+
+        # Electricity use by route
+        mixer <- tribble(
+          ~variable,                                                ~all_enty,  ~all_te,  ~route,                   ~secInd37,
+          "FE|Industry|Chemicals|+++|CHEM-SOL (EJ/yr)",              NULL,       NULL,     "ChemRo_Sol",             "chemicals",
+          "FE|Industry|Chemicals|+++|CHEM-NG  (EJ/yr)",              NULL,       NULL,     "ChemRo_NG",              "chemicals",
+          "FE|Industry|Chemicals|+++|CHEM-LIQ  (EJ/yr)",             NULL,       NULL,     "ChemRo_Liq",             "chemicals",
+          "FE|Industry|Chemicals|+++|CHEM-H2   (EJ/yr)",             NULL,       NULL,     "ChemRo_H2",              "chemicals",
+          "FE|Industry|Chemicals|+++|STCR-GAS (EJ/yr)",              NULL,       NULL,     "StCrNG_Ro",              "chemicals",
+          "FE|Industry|Chemicals|+++|STCR-LIQ (EJ/yr)",              NULL,       NULL,     "StCrLiq_Ro",             "chemicals",
+          "FE|Industry|Chemicals|+++|MESY-SOL-GREYH2 (EJ/yr)",       NULL,       NULL,     "MeSyRo_Sol_greyh2",      "chemicals",
+          "FE|Industry|Chemicals|+++|MESY-SOL-GREENH2 (EJ/yr)",      NULL,       NULL,     "MeSyRo_Sol_greenh2",     "chemicals",
+          "FE|Industry|Chemicals|+++|MESY-GAS (EJ/yr)",              NULL,       NULL,     "MeSyRo_NG",              "chemicals",
+          "FE|Industry|Chemicals|+++|MESY-LIQ (EJ/yr)",              NULL,       NULL,     "MeSyRo_Liq",             "chemicals",
+          "FE|Industry|Chemicals|+++|MESY-H2 (EJ/yr)",               NULL,       NULL,     "MeSyRo_H2",              "chemicals",
+          "FE|Industry|Chemicals|+++|MESY-SOL-CCS (EJ/yr)",          NULL,       NULL,     "MeSyRo_Sol_ccs",         "chemicals",
+          "FE|Industry|Chemicals|+++|MESY-GAS-CCS (EJ/yr)",          NULL,       NULL,     "MeSyRo_NG_ccs",          "chemicals",
+          "FE|Industry|Chemicals|+++|MESY-LIQ-CCS (EJ/yr)",          NULL,       NULL,     "MeSyRo_Liq_ccs",         "chemicals",
+          "FE|Industry|Chemicals|+++|AMSY-COAL (EJ/yr)",             NULL,       NULL,     "AmSyRo_Coal",            "chemicals",
+          "FE|Industry|Chemicals|+++|AMSY-GAS (EJ/yr)",              NULL,       NULL,     "AmSyRo_NG",              "chemicals",
+          "FE|Industry|Chemicals|+++|AMSY-LIQ (EJ/yr)",              NULL,       NULL,     "AmSyRo_Liq",             "chemicals",
+          "FE|Industry|Chemicals|+++|AMSY-COAL-CCS (EJ/yr)",         NULL,       NULL,     "AmSyRo_Coal_ccs",        "chemicals",
+          "FE|Industry|Chemicals|+++|AMSY-GAS-CCS (EJ/yr)",          NULL,       NULL,     "AmSyRo_NG_ccs",          "chemicals",
+          "FE|Industry|Chemicals|+++|AMSY-LIQ-CCS (EJ/yr)",          NULL,       NULL,     "AmSyRo_Liq_ccs",         "chemicals",
+          "FE|Industry|Chemicals|+++|AMSY-H2 (EJ/yr)",               NULL,       NULL,     "AmSyRo_H2",              "chemicals",
+          "FE|Industry|Chemicals|+++|MtOMtA (EJ/yr)",                NULL,       NULL,     "MtOMtA_Ro",              "chemicals",
+          "FE|Industry|Chemicals|+++|FertProd (EJ/yr)",              NULL,       NULL,     "FertProd_Ro",            "chemicals")
+
+        out <- mbind(
+          c(list(out), # pass a list of magpie objects
+            .select_sum_name_multiply(o37_demFeIndRoute, .mixer_to_selector(mixer))
+          ))
+
+      } else {
+
+        # mapping of industrial output to energy production factors in CES tree
+        ces_eff_target_dyn37 <- readGDX(gdx, "ces_eff_target_dyn37")
+
+        # energy production factors for primary and secondary steel
+        en.ppfen.chemicals <- ces_eff_target_dyn37 %>%
+          filter(.data$all_in == "ue_chemicals") %>%
+          pull('all_in1')
+
+        mixer <- tribble(
+          ~variable,                                                                                     ~all_in,
+          "FE|Industry|Chemicals|Electricity|+|Mechanical work and low-temperature heat (EJ/yr)",        "feelwlth_chemicals",
+          "FE|Industry|Chemicals|Electricity|+|High-temperature heat (EJ/yr)",                           "feelhth_chemicals",
+          "FE|Industry|Chemicals|++|Primary (EJ/yr)",                                                    en.ppfen.chemicals)
+
+        # calculate and bind to out
+        out <- mbind(
+          c(list(out), # pass a list of magpie objects
+            .select_sum_name_multiply(vm_cesIO, .mixer_to_selector(mixer))
+          ))
+      }
+
       mixer <- tribble(
         ~variable,                                                                                     ~all_in,
         "FE|Industry|Chemicals|Electricity|+|Mechanical work and low-temperature heat (EJ/yr)",        "feelwlth_chemicals",
@@ -879,7 +941,6 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         )
       )
 
-
       # reporting of process-based industry production per process-route
       if (steel_process_based) {
         mixer <- tribble(
@@ -894,6 +955,61 @@ reportFE <- function(gdx, regionSubsetList = NULL,
 
         out <- mbind(c(list(out),
                      .select_sum_name_multiply(o37_ProdIndRoute, .mixer_to_selector(mixer), factor=1e3))) # factor 1e3 converts Gt/yr to Mt/yr
+      }
+
+      #TOCHECK:QIANZHI
+      if (chemicals_process_based) {
+
+        mixer <- tribble(
+          ~variable,                                                             ~all_te,             ~opmoPrc,
+          "Production|Industry|Chemicals|+|CHEM-SOL (Mt/yr)",                  "ChemSol",           "standard",
+          "Production|Industry|Chemicals|+|CHEM-NG (Mt/yr)",                    "ChemNG",           "standard",
+          "Production|Industry|Chemicals|+|CHEM-LIQ (Mt/yr)",                  "ChemLiq",           "standard",
+          "Production|Industry|Chemicals|+|CHEM-H2 (Mt/yr)",                    "ChemH2",           "standard",
+          "Production|Industry|Chemicals|+|MESY-SOL-GREYH2 (Mt/yr)",           "MeSySol",             "greyh2",
+          "Production|Industry|Chemicals|+|MESY-SOL-GREENH2 (Mt/yr)",          "MeSySol",            "greenh2",
+          "Production|Industry|Chemicals|+|MESY-GAS (Mt/yr)",                   "MeSyNG",           "standard",
+          "Production|Industry|Chemicals|+|MESY-LIQ (Mt/yr)",                  "MeSyLiq",           "standard",
+          "Production|Industry|Chemicals|+|MESY-H2 (Mt/yr)",                    "MeSyH2",           "standard",
+          "Production|Industry|Chemicals|+|MESY-SOL-CCS (Mt/yr)",            "MeSySolcc",             "greyh2",
+          "Production|Industry|Chemicals|+|MESY-GAS-CCS (Mt/yr)",             "MeSyNGcc",           "standard",
+          "Production|Industry|Chemicals|+|MESY-LIQ-CCS (Mt/yr)",            "MeSyLiqcc",           "standard",
+          "Production|Industry|Chemicals|+|AMSY-COAL (Mt/yr)",                "AmSyCoal",           "standard",
+          "Production|Industry|Chemicals|+|AMSY-GAS (Mt/yr)",                   "AmSyNG",           "standard",
+          "Production|Industry|Chemicals|+|AMSY-LIQ (Mt/yr)",                  "AmSyLiq",           "standard",
+          "Production|Industry|Chemicals|+|AMSY-COAL-CCS (Mt/yr)",          "AmSyCoalcc",           "standard",
+          "Production|Industry|Chemicals|+|AMSY-GAS-CCS (Mt/yr)",             "AmSyNGcc",           "standard",
+          "Production|Industry|Chemicals|+|AMSY-H2 (Mt/yr)",                    "AmSyH2",           "standard")
+
+        out <- mbind(
+          c(list(out), # pass a list of magpie objects
+            .select_sum_name_multiply(vm_outflowPrc, .mixer_to_selector(mixer), factor=1e3)
+          ))
+
+       mixer <- tribble(
+         ~variable,                                                    ~mat,            ~route,
+         "Production|Industry|Chemicals|+|MtOMtA (Mt/yr)",             "HVC",           "MtOMtA_Ro",
+         "Production|Industry|Chemicals|+|FertProd (Mt/yr)",           "Fertilizer",    "FertProd_Ro",
+         "Production|Industry|Chemicals|+|STCR-GAS (Mt/yr)",           "HVC",           "StCrNG_Ro",
+         "Production|Industry|Chemicals|+|STCR-LIQ (Mt/yr)",           "HVC",           "StCrLiq_Ro",
+       )
+
+       out <- mbind(c(list(out),
+                    .select_sum_name_multiply(o37_ProdIndRoute, .mixer_to_selector(mixer), factor=1e3))) # factor 1e3 converts Gt/yr to Mt/yr
+
+      mixer <- tribble(
+        ~variable,                                                    ~all_enty,
+        "Production|Industry|Chemicals|Otherchem (Mt/yr)",            "OtherChem",
+        "Production|Industry|Chemicals|HVC (Mt/yr)",                  "HVC",
+        "Production|Industry|Chemicals|Fertilizer (Mt/yr)",           "Fertilizer",
+        "Production|Industry|Chemicals|Methanol (Mt/yr)",             "MethFinal",
+        "Production|Industry|Chemicals|Ammonia (Mt/yr)",              "AmmoFinal")
+
+      out <- mbind(
+        c(list(out), # pass a list of magpie objects
+          .select_sum_name_multiply(v37_matFlow, .mixer_to_selector(mixer), factor=1e3)
+        ))
+
       }
     }
   }
