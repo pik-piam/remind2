@@ -94,7 +94,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
 
   v_adjustteinv_avg <- collapseNames(readGDX(gdx, name = c("o_avgAdjCostInv"), field = "l", format = "first_found")[, y, ])
   if (is.null(v_adjustteinv_avg)) {
-    v_adjustteinv_avg <- v_investcost[,,]*0
+    v_adjustteinv_avg <- v_investcost[, , ] * 0
   }
 
   # build reporting ----
@@ -117,7 +117,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
     "tnrs" = "Electricity|Nuclear",
     "spv" = "Electricity|Solar|PV",
     "csp" = "Electricity|Solar|CSP",
-	  "h2turb" = "Electricity|Hydrogen",
+          "h2turb" = "Electricity|Hydrogen",
     "storspv" = "Electricity|Storage|Battery|For PV",
     "storcsp" = "Electricity|Storage|Battery|For CSP",
     "biogas" = "Gases|Biomass|w/o CC",
@@ -168,14 +168,16 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
     techmap[["refdip"]] <- "Liquids|Fossil|Oil"
   }
 
-  if ("windoff" %in% te) {
+  if ("windon" %in% te) {
+    techmap <- append(techmap, c("windon" = "Electricity|Wind|Onshore",
+                                 "storwindon" = "Electricity|Storage|Battery|For Wind Onshore",
+                                 "windoff" = "Electricity|Wind|Offshore",
+                                 "storwindoff" = "Electricity|Storage|Battery|For Wind Offshore"))
+  } else {
     techmap <- append(techmap, c("wind" = "Electricity|Wind|Onshore",
                                  "storwind" = "Electricity|Storage|Battery|For Wind Onshore",
                                  "windoff" = "Electricity|Wind|Offshore",
                                  "storwindoff" = "Electricity|Storage|Battery|For Wind Offshore"))
-  }  else {
-    techmap <- append(techmap, c("wind" = "Electricity|Wind",
-                                 "storwind" = "Electricity|Storage|Battery|For Wind"))
   }
 
   bar_and <- function(str) {
@@ -218,12 +220,8 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
       int2ext[[report_str("Electricity|Storage|Battery|For PV", category, unit)]] <- report_str("Electricity|Solar|PV", unit = "EJ/yr", predicate = "SE")
       int2ext[[report_str("Electricity|Storage|Battery|For CSP", category, unit)]] <- report_str("Electricity|Solar|CSP", unit = "EJ/yr", predicate = "SE")
 
-      if ("windoff" %in% te) {
-        int2ext[[report_str("Electricity|Storage|Battery|For Wind Onshore", category, unit)]] <- report_str("Electricity|Wind|Onshore", unit = "EJ/yr", predicate = "SE")
-        int2ext[[report_str("Electricity|Storage|Battery|For Wind Offshore", category, unit)]] <- report_str("Electricity|Wind|Offshore", unit = "EJ/yr", predicate = "SE")
-      } else {
-        int2ext[[report_str("Electricity|Storage|Battery|For Wind", category, unit)]] <- report_str("Electricity|Wind", unit = "EJ/yr", predicate = "SE")
-      }
+      int2ext[[report_str("Electricity|Storage|Battery|For Wind Onshore", category, unit)]] <- report_str("Electricity|Wind|Onshore", unit = "EJ/yr", predicate = "SE")
+      int2ext[[report_str("Electricity|Storage|Battery|For Wind Offshore", category, unit)]] <- report_str("Electricity|Wind|Offshore", unit = "EJ/yr", predicate = "SE")
 
     } else if (all(map %in% carmap)) {
       ## cars need a special mapping, too
@@ -245,14 +243,14 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
   ## capital costs ----
 
   category <- "Capital Costs"
-  unit <- "US$2005/kW"
+  unit <- "US$2017/kW"
   factor <- 1000.
 
   tmp <- bind_category(tmp, v_investcost, category, unit, factor, techmap)
   int2ext <- get_global_mapping(category, unit, techmap)
-  
+
   if (CDR_mod != "off") {
-    unit <- "US$2005/t CO2 yr"
+    unit <- "US$2017/t CO2/yr"
     factor <- 1000 / 3.6
     tmp <- bind_category(tmp, v_investcost, category, unit, factor, cdrmap)
     int2ext <- c(int2ext, get_global_mapping(category, unit, cdrmap))
@@ -261,7 +259,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
   ### Capital cost including adjustment cost ----
   if (!is.null(v_adjustteinv_avg)) {
     category <- "Capital Costs|w/ Adj Costs"
-    unit <- "US$2005/kW"
+    unit <- "US$2017/kW"
     factor <- 1000.
 
     tmp <- bind_category(tmp, v_investcost + v_adjustteinv_avg, category, unit, factor, techmap)
@@ -269,13 +267,13 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
   }
 
   if (tran_mod == "complex") {
-    unit <- "US$2005/veh"
+    unit <- "US$2017/veh"
     tmp <- bind_category(tmp, v_investcost + v_adjustteinv_avg, category, unit, factor, carmap)
     int2ext <- c(int2ext, get_global_mapping(category, unit, carmap))
   }
 
   if (CDR_mod != "off") {
-    unit <- "US$2005/t CO2 yr"
+    unit <- "US$2017/t CO2/yr"
     factor <- 1000 / 3.6
     tmp <- bind_category(tmp, v_investcost + v_adjustteinv_avg, category, unit, factor, cdrmap)
     int2ext <- c(int2ext, get_global_mapping(category, unit, cdrmap))
@@ -291,7 +289,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
 
   in_dataeta <- c("bioigccc", "bioigcc", "igccc", "igcc", "pc", "ngccc", "ngcc", "ngt")
 
-  tech_exclude <- techmap[setdiff(names(techmap), 'tnrs')]   # exclude nuclear
+  tech_exclude <- techmap[setdiff(names(techmap), "tnrs")]   # exclude nuclear
 
   for (key in names(tech_exclude)) {
     if (key %in% in_dataeta) {
@@ -324,14 +322,14 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
 
   ## o&m fix costs ----
   category <- "OM Cost|fixed"
-  unit <- "US$2005/kW/yr"
+  unit <- "US$2017/kW/yr"
   tmp <- bind_category(tmp, omf * v_investcost, category, unit, 1000.)
   int2ext <- c(int2ext, get_global_mapping(category, unit, techmap))
 
   if (tran_mod == "complex") {
     ## op costs for cars ###
     category <- "Op Costs"
-    unit <- "US$2005/veh/yr"
+    unit <- "US$2017/veh/yr"
     tmp <- bind_category(tmp, omf * v_investcost, category, unit, 1000., carmap)
     int2ext <- c(int2ext, get_global_mapping(category, unit, carmap))
   }
@@ -339,14 +337,14 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
   if (CDR_mod != "off") {
     ## op costs for CDR technologies ###
     category <- "OM Cost|fixed"
-    unit <- "US$2005/t CO2 yr"
+    unit <- "US$2017/t CO2/yr"
     tmp <- bind_category(tmp, omf * v_investcost, category, unit, 1000 / 3.66, cdrmap)
     int2ext <- c(int2ext, get_global_mapping(category, unit, cdrmap))
   }
 
   ## o&m variable costs ----
   category <- "OM Cost|variable"
-  unit <- "US$2005/GJ"
+  unit <- "US$2017/GJ"
   tmp <- bind_category(tmp, omv, category, unit, 1000. / 31.7098)
   int2ext <- c(int2ext, get_global_mapping(category, unit, techmap))
 
@@ -366,7 +364,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
   tmp_GLO <- new.magpie("GLO", getYears(tmp), magclass::getNames(tmp), fill = 0)
 
   for (i2e in names(int2ext)) {
-    tmp_GLO["GLO", , i2e] <- toolAggregate(tmp[, , i2e], rel= map, weight = output[map$region, , int2ext[[i2e]]])
+    tmp_GLO["GLO", , i2e] <- toolAggregate(tmp[, , i2e], rel = map, weight = output[map$region, , int2ext[[i2e]]])
   }
   tmp <- mbind(tmp, tmp_GLO)
 
