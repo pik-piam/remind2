@@ -301,17 +301,17 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
 #### FE mix Non-metallic minerals
-```{r FE mix Non-metallic minerals}
-tot <- "FE|Industry|Non-metallic minerals"
-items <- c(
-  "FE|Industry|Electricity|Non-metallic minerals",
-  "FE|Industry|Hydrogen|Non-metallic minerals",  
-  "FE|Industry|Heat|Non-metallic minerals",  
-  "FE|Industry|Gases|Non-metallic minerals",
-  "FE|Industry|Liquids|Non-metallic minerals",
-  "FE|Industry|Solids|Non-metallic minerals")
-showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
-```
+ ```{r FE mix Non-metallic minerals}
+ tot <- "FE|Industry|Non-metallic minerals"
+ items <- c(
+   "FE|Industry|Electricity|Non-metallic minerals",
+   "FE|Industry|Hydrogen|Non-metallic minerals",  
+   "FE|Industry|Heat|Non-metallic minerals",  
+   "FE|Industry|Gases|Non-metallic minerals",
+   "FE|Industry|Liquids|Non-metallic minerals",
+   "FE|Industry|Solids|Non-metallic minerals")
+ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+ ```
 
 #### FE mix Chemicals
 ```{r FE mix Chemicals}

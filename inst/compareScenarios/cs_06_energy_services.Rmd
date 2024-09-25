@@ -549,7 +549,7 @@ showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
 
 ### Chemicals mix by route using process-based chemicals modeling
 ```{r Chemicals mix by route}
-if ("Production|Industry|Chemicals|CHEM-OLD" %in% levels(data$variable)){ # if process-based chemicals is used
+if ("Production|Industry|Chemicals|CHEM-SOL" %in% levels(data$variable)){ # if process-based chemicals is used
   tot <- "Production|Industry|Chemicals"
   items <- c(
     "Production|Industry|Chemicals|CHEM-SOL",
@@ -590,7 +590,7 @@ showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
 
 ### Ohter chemicals mix by route using process-based chemicals modeling
 ```{r Ohter chemicals mix by route}
-if ("Production|Industry|Chemicals|CHEM-OLD" %in% levels(data$variable)){ # if process-based chemicals is used
+if ("Production|Industry|Chemicals|CHEM-SOL" %in% levels(data$variable)){ # if process-based chemicals is used
   tot <- "Production|Industry|Chemicals"
   items <- c(
     "Production|Industry|Chemicals|CHEM-SOL",

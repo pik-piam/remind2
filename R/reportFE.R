@@ -962,10 +962,6 @@ reportFE <- function(gdx, regionSubsetList = NULL,
 
         mixer <- tribble(
           ~variable,                                                             ~all_te,             ~opmoPrc,
-          "Production|Industry|Chemicals|+|CHEM-SOL (Mt/yr)",                  "ChemSol",           "standard",
-          "Production|Industry|Chemicals|+|CHEM-NG (Mt/yr)",                    "ChemNG",           "standard",
-          "Production|Industry|Chemicals|+|CHEM-LIQ (Mt/yr)",                  "ChemLiq",           "standard",
-          "Production|Industry|Chemicals|+|CHEM-H2 (Mt/yr)",                    "ChemH2",           "standard",
           "Production|Industry|Chemicals|+|MESY-SOL-GREYH2 (Mt/yr)",           "MeSySol",             "greyh2",
           "Production|Industry|Chemicals|+|MESY-SOL-GREENH2 (Mt/yr)",          "MeSySol",            "greenh2",
           "Production|Industry|Chemicals|+|MESY-GAS (Mt/yr)",                   "MeSyNG",           "standard",
@@ -987,7 +983,11 @@ reportFE <- function(gdx, regionSubsetList = NULL,
           ))
 
        mixer <- tribble(
-         ~variable,                                                    ~mat,            ~route,
+         ~variable,                                                    ~mat,            ~route, 
+         "Production|Industry|Chemicals|+|CHEM-SOL (Mt/yr)",           "OtherChem",     "ChemRo_Sol",
+         "Production|Industry|Chemicals|+|CHEM-NG (Mt/yr)",            "OtherChem",     "ChemRo_NG",
+         "Production|Industry|Chemicals|+|CHEM-LIQ (Mt/yr)",           "OtherChem",     "ChemRo_Liq",
+         "Production|Industry|Chemicals|+|CHEM-H2 (Mt/yr)",            "OtherChem",     "ChemRo_H2", 
          "Production|Industry|Chemicals|+|MtOMtA (Mt/yr)",             "HVC",           "MtOMtA_Ro",
          "Production|Industry|Chemicals|+|FertProd (Mt/yr)",           "Fertilizer",    "FertProd_Ro",
          "Production|Industry|Chemicals|+|STCR-GAS (Mt/yr)",           "HVC",           "StCrNG_Ro",
