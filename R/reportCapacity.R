@@ -10,6 +10,8 @@
 #' be created.
 #' @param t temporal resolution of the reporting, default:
 #' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
+#' @param gdx_ref a GDX object as created by readGDX, or the path to a gdx of the reference run.
+#' It is used to guarantee consistency for Moving Avg prices before cm_startyear
 #'
 #' @return MAgPIE object - contains the capacity variables
 #' @author Lavinia Baumstark, Christoph Bertram
@@ -24,7 +26,9 @@
 #' @importFrom magclass mbind setNames getSets getSets<- as.magpie
 #' @importFrom dplyr %>% filter mutate
 
-reportCapacity <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)) {
+reportCapacity <- function(gdx, regionSubsetList = NULL,
+                           t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
+                           gdx_ref = gdx_ref) {
   # read sets
   teall2rlf   <- readGDX(gdx, name = c("te2rlf", "teall2rlf"), format = "first_found")
   possibleRefineries <- c("refped", "refdip", "refliq")
@@ -43,13 +47,13 @@ reportCapacity <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5
   # read scalars
   sm_c_2_co2 <- as.vector(readGDX(gdx, "sm_c_2_co2"))
 
-
   # data preparation
   ttot <- as.numeric(as.vector(ttot))
   vm_cap      <- vm_cap[teall2rlf]
   vm_cap      <- vm_cap[, ttot, ]
   vm_deltaCap <- vm_deltaCap[teall2rlf]
   vm_deltaCap <- vm_deltaCap[, ttot, ]
+  vm_deltaCap <- modifyInvestmentVariables(vm_deltaCap)
   v_earlyreti <-   v_earlyreti[, ttot, ]
   t2005 <- ttot[ttot > 2004]
 
@@ -334,5 +338,22 @@ reportCapacity <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5
     tmp <- mbind(tmp, calc_regionSubset_sums(tmp, regionSubsetList))
 
   getSets(tmp)[3] <- "variable"
+
+  # reset values for years smaller than cm_startyear to avoid inconsistencies in cm_startyear - 5
+  cm_startyear <- as.integer(readGDX(gdx, name = "cm_startyear", format = "simplest"))
+  fixedYears <- getYears(tmp)[getYears(tmp, as.integer = TRUE) < cm_startyear]
+
+  if (!is.null(gdx_ref) && length(fixedYears) > 0) {
+    message("reportCapacity loads price for < cm_startyear from gdx_ref.")
+    ref <- try(reportCapacity(gdx_ref, regionSubsetList = regionSubsetList, t = t))
+    if (!inherits(ref, "try-error")) {
+      joinedNamesRep <- intersect(getNames(tmp), getNames(ref))
+      joinedRegions <- intersect(getItems(ref, dim = 1), getItems(tmp, dim = 1))
+      tmp[joinedRegions, fixedYears, joinedNamesRep] <- ref[joinedRegions, fixedYears, joinedNamesRep]
+    } else {
+      message("failed to run reportCapacity on gdx_ref")
+    }
+  }
+
   return(tmp)
 }
