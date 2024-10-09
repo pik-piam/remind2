@@ -1,3 +1,5 @@
+skip_on_covr()
+
 test_that("Check compareScenConf", {
   filemain <- file.path(tempdir(), "main.gms")
   writeLines(c('Parameter start "start" / 5 /;', 'start = 5;',

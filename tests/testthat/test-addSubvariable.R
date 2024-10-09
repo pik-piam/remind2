@@ -1,3 +1,6 @@
+
+skip_on_covr()
+
 test_that(".addSubvariable works", {
   int2ext <- c("Price|Final Energy (US$2017/GJ)" = "FE (EJ)")
   int2extafter <- c("Price|Final Energy (US$2017/GJ)" = "FE (EJ)",
