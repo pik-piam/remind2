@@ -20,6 +20,8 @@
 #' Can be either "average" (returns only average LCOE),
 #' "marginal" (returns only marginal LCOE), "both" (returns marginal and average LCOE) and
 #' and "marginal detail" (returns table to trace back how marginal LCOE are calculated).
+#' @param gdx_ref a GDX object as created by readGDX, or the path to a gdx of the reference run.
+#' It is used to guarantee consistency for Moving Avg prices before cm_startyear
 #' @return MAgPIE object - LCOE calculated by model post-processing.
 #' Two types a) standing system LCOE b) new plant LCOE.
 #' @author Felix Schreyer, Robert Pietzcker, Lavinia Baumstark
@@ -36,7 +38,7 @@
 #' @importFrom quitte as.quitte overwrite getRegs getPeriods
 #' @importFrom tidyr spread gather expand fill
 
-reportLCOE <- function(gdx, output.type = "both") {
+reportLCOE <- function(gdx, output.type = "both", gdx_ref = NULL) {
   # test whether output.type defined
   if (!output.type %in% c("marginal", "average", "both", "marginal detail")) {
     print("Unknown output type. Please choose either marginal, average, both or marginal detail.")
@@ -138,9 +140,19 @@ reportLCOE <- function(gdx, output.type = "both") {
     pm_SEPrice <- readGDX(gdx, "pm_SEPrice", restore_zeros = FALSE)
 
     ## variables
-    vm_costInvTeDir <- readGDX(gdx, name = c("vm_costInvTeDir", "v_costInvTeDir", "v_directteinv"), field = "l", format = "first_found")[, ttot, ] ## Total direct Investment Cost in Timestep
-    vm_costInvTeAdj <- readGDX(gdx, name = c("vm_costInvTeAdj", "v_costInvTeAdj"), field = "l", format = "first_found")[, ttot, ] ## total adjustment cost in period
-    vm_deltaCap   <- readGDX(gdx, name = c("vm_deltaCap"), field = "l", format = "first_found")[, ttot, ]
+
+    ## Total direct Investment Cost in Timestep
+    vm_costInvTeDir <- readGDX(gdx, name = c("vm_costInvTeDir", "v_costInvTeDir", "v_directteinv"), field = "l", format = "first_found")[, ttot, ]
+    vm_costInvTeDir <- modifyInvestmentVariables(vm_costInvTeDir)
+
+    ## total adjustment cost in period
+    vm_costInvTeAdj <- readGDX(gdx, name = c("vm_costInvTeAdj", "v_costInvTeAdj"), field = "l", format = "first_found")[, ttot, ]
+    vm_costInvTeAdj <- modifyInvestmentVariables(vm_costInvTeAdj)
+
+    # capacity additions per year
+    vm_deltaCap <- readGDX(gdx, name = c("vm_deltaCap"), field = "l", format = "first_found")[, ttot, ]
+    vm_deltaCap <- modifyInvestmentVariables(vm_deltaCap)
+
     vm_demPe      <- readGDX(gdx, name = c("vm_demPe", "v_pedem"), field = "l", restore_zeros = FALSE, format = "first_found")
     v_investcost  <- readGDX(gdx, name = c("vm_costTeCapital", "v_costTeCapital", "v_investcost"), field = "l", format = "first_found")[, ttot, ]
     vm_cap        <- readGDX(gdx, name = c("vm_cap"), field = "l", format = "first_found")
@@ -1597,13 +1609,24 @@ reportLCOE <- function(gdx, output.type = "both") {
   LCOE.out.inclGlobal[getRegions(LCOE.out), , ] <- LCOE.out
   LCOE.out.inclGlobal["GLO", , ] <- dimSums(LCOE.out, dim = 1) / length(getRegions(LCOE.out))
 
-
-
-  if (output.type %in% c("marginal detail")) {
-    return(df.LCOE)
+  if (output.type  == "marginal detail") {
+    out <- df.LCOE
   } else {
-    return(LCOE.out.inclGlobal)
+    out <- LCOE.out.inclGlobal
   }
 
-  return(LCOE.out)
+  # reset values for years smaller than cm_startyear to avoid inconsistencies in cm_startyear - 5
+  if (is.null(gdx_ref)) {
+    cm_startyear <- as.integer(readGDX(gdx, name = "cm_startyear", format = "simplest"))
+    out <- fixOnRef(
+      x = out,
+      gdx_ref = gdx_ref,
+      startYear = cm_startyear,
+      reportFunc = reportLCOE,
+      reportArgs = list(output.type = output.type)
+    )
+  }
+
+  return(out)
+
 }
