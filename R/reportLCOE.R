@@ -56,7 +56,7 @@ reportLCOE <- function(gdx, output.type = "both") {
   v32_storloss <- readGDX(gdx, "v32_storloss", field = "l")
 
   if (is.null(vm_capFac) || is.null(qm_balcapture) || is.null(vm_co2CCS) ||
-        is.null(pm_emifac) || is.null(v32_storloss)) {
+      is.null(pm_emifac) || is.null(v32_storloss)) {
     print("The gdx file is too old for generating a LCOE reporting...returning NULL")
     return(new.magpie(cells_and_regions = "GLO",
                       years = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)))
@@ -351,10 +351,14 @@ reportLCOE <- function(gdx, output.type = "both") {
 
     # same as for storage cost only with grid technologies: "gridwind", "gridspv", "gridcsp"
     # only "gridwind" technology active, wind requires 1.5 * the gridwind capacities as spv and csp
-
     grid_factor_tech <- new.magpie(names = te2grid$all_te, fill = 1)
     getSets(grid_factor_tech)[3] <- "all_te"
-    grid_factor_tech[, , "wind"] <- 1.5
+
+    # added for backwards compatibility
+    if ("wind" %in% getNames(grid_factor_tech)) {
+      grid_factor_tech[, , "wind"] <- 1.5
+    }
+
     grid_factor_tech[, , "windon"] <- 1.5
     grid_factor_tech[, , "windoff"] <- 3.0
 
