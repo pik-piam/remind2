@@ -1,4 +1,4 @@
-skip_on_covr()
+skip_on_cran()
 
 # uncomment to skip test
 # skip("Skip GDX test")

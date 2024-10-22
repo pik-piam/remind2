@@ -1,5 +1,5 @@
 
-skip_on_covr()
+skip_on_cran()
 
 test_that(".addSubvariable works", {
   int2ext <- c("Price|Final Energy (US$2017/GJ)" = "FE (EJ)")

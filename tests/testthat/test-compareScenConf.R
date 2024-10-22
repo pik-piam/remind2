@@ -1,4 +1,4 @@
-skip_on_covr()
+skip_on_cran()
 
 test_that("Check compareScenConf", {
   filemain <- file.path(tempdir(), "main.gms")
