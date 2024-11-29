@@ -109,6 +109,11 @@ showAreaAndBarPlots(data, items2, tot, orderVars = "user", scales = "fixed")
 ```
 
 ### FE Buildings Line Plots
+```{r Buildings}
+showLinePlots(data, "FE|Buildings",
+              histModelsExclude = paste("IEA ETP", c("2DS", "B2DS", "RTS")))
+```
+
 #### Electricity
 ```{r Electricity}
 showLinePlots(data, "FE|Buildings|Electricity")
@@ -127,6 +132,8 @@ showLinePlots(data, "FE|Buildings|Gases")
 #### Solids
 ```{r Solids}
 showLinePlots(data, "FE|Buildings|Solids")
+showLinePlots(data, "FE|Buildings|Solids|Biomass")
+showLinePlots(data, "FE|Buildings|Solids|Fossil")
 ```
 
 #### Hydrogen
@@ -191,7 +198,11 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 showAreaAndBarPlots(data, items2, tot, orderVars = "user", scales = "fixed")
 ```
 
-#### FE Industry Line Plots
+### FE Industry Line Plots
+```{r Industry}
+showLinePlots(data, "FE|Industry")
+```
+
 #### Electricity
 ```{r Electricity}
 showLinePlots(data, "FE|Industry|Electricity")
@@ -522,6 +533,9 @@ showAreaAndBarPlots(data, items_bioliq, tot_bioliq, orderVars = "user", scales =
 ```
 
 ### FE Transport w/ Bunkers - Line Plots
+```{r Transport}
+showLinePlots(data, "FE|Transport")
+```
 
 #### Electricity
 ```{r Electricity}
