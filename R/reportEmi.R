@@ -1868,7 +1868,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
                # non-supply side novel CDR, should I rename to Emi|CO2|+|non-Pe2Se CDR (Mt CO2/yr)
                setNames( out[, , "Emi|CO2|CDR (Mt CO2/yr)"]
                          - out[, , "Emi|CO2|CDR|Land-Use Change (Mt CO2/yr)"]
-                         - out[, , "Emi|CO2|CDR|BECCS (Mt CO2/yr)"],
+                         - out[, , "Emi|CO2|CDR|BECCS|Pe2Se (Mt CO2/yr)"],
                          "Emi|CO2|+|non-BECCS CDR (Mt CO2/yr)")
   )
   
