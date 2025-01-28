@@ -875,7 +875,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
                             "Emi|CO2|Energy|Demand|Transport|+|Liquids (Mt CO2/yr)"),
                  setNames((dimSums(mselect(EmiFeCarrier, all_enty1 = c("fegat"), emi_sectors = "trans"), dim = 3)) * GtC_2_MtCO2,
                             "Emi|CO2|Energy|Demand|Transport|+|Gases (Mt CO2/yr)"),
-                 # CDR Anne
+                 # CDR
                  setNames((dimSums(mselect(EmiFeCarrier, all_enty1 = c("fedie"), emi_sectors = "CDR"), dim = 3)) * GtC_2_MtCO2,
                           "Emi|CO2|Energy|Demand|CDR|+|Liquids (Mt CO2/yr)"),
                  setNames((dimSums(mselect(EmiFeCarrier, all_enty1 = c("fegas"), emi_sectors = "CDR"), dim = 3)
@@ -1130,7 +1130,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
                   - vm_emiIndCCS[, , "co2cement_process"]*(1-p_share_CCS)
                   # deduce co2 captured by calcination for cdr technology oae which is not stored but used for CCU (synfuels)
                   # -> gets accounted in industrial process emissions
-                  - s33_capture_rate * dimSums(v33_co2emi_non_atm_calcination, dim = 3)
+                  - s33_capture_rate * dimSums(v33_co2emi_non_atm_calcination, dim = 3)*(1-p_share_CCS)
                   ) * GtC_2_MtCO2,
                   "Emi|CO2|+|Energy (Mt CO2/yr)")
   )
@@ -1147,7 +1147,9 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
                           # add captured CO2 from cement process which is not stored but used for CCU
                           + vm_emiIndCCS[, , "co2cement_process"]*(1-p_share_CCS)
                           # add chemical process emissions
-                          + dimSums(EmiProcess_Feedstocks, dim = 3)*(1-p_share_CCS)
+                          + dimSums(EmiProcess_Feedstocks, dim = 3)
+                          # add unavoidable calcination emissions from OAE due to <100% capture rate
+                          + (1-s33_capture_rate) * dimSums(v33_co2emi_non_atm_calcination, dim = 3)
                           # add captured CO2 from OAE calcination which is not stored but used for CCU
                           + s33_capture_rate * dimSums(v33_co2emi_non_atm_calcination, dim = 3)*(1-p_share_CCS)
                           ) * GtC_2_MtCO2,
@@ -1169,13 +1171,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     out <- mbind(out,
                # land-use change CO2
                setNames(dimSums(vm_emiMacSector[, , "co2luc"], dim = 3) * GtC_2_MtCO2,
-                        "Emi|CO2|+|Land-Use Change (Mt CO2/yr)"),
-               # negative emissions from (non-BECCS) CDR (DACCS, EW)
-               # BUG Anne is not correct anymore, has to be calculated with CDR variables including OAE
-               setNames((
-                  vm_emiCdr_co2 - vm_emiCdrTeDetail[, , "dac"] * (1 - p_share_CCS)
-               ) * GtC_2_MtCO2,
-                        "Emi|CO2|+|non-BECCS CDR (Mt CO2/yr)")
+                        "Emi|CO2|+|Land-Use Change (Mt CO2/yr)")
     )
 
 
@@ -1821,12 +1817,11 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
               setNames(vm_emiCdrTeDetail[, , "oae_el"] * GtC_2_MtCO2,
                       "Emi|CO2|CDR|gross OAE|Ocean Uptake|+|electric calciner (Mt CO2/yr)"),
               # OAE process emissions
-              # Anne continue to rename variables
+              # Anne continue to rename variables and continue OAE variables after we have a decision on where to account calcination emissions
               setNames(out[, , "Carbon Management|Carbon Capture|CDR sector|OAE|+|Calcination (Mt CO2/yr)"]
                       - out[, , "Carbon Management|Storage|CDR sector|OAE|+|Calcination (Mt CO2/yr)"],
                       "Emi|CO2|CDR|gross OAE|Calcination emissions (Mt CO2/yr)"),
               # OAE released emissions that were captured either from calcination or energy
-              # BUG can we simplify that? with more specific CarMa variables? like net-gross
               setNames(out[, , "Carbon Management|Carbon Capture|+|OAE calcination (Mt CO2/yr)"]
                       - out[, , "Carbon Management|Storage|+|OAE calcination (Mt CO2/yr)"]
                       + dimSums(vm_cco2_cdr_fromFE[, , te_oae33], dim = 3)
