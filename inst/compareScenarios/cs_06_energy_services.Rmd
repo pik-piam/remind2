@@ -574,7 +574,8 @@ if ("Production|Industry|Chemicals|CHEM-SOL" %in% levels(data$variable)){ # if p
     "Production|Industry|Chemicals|AMSY-LIQ-CCS",
     "Production|Industry|Chemicals|AMSY-H2",
     "Production|Industry|Chemicals|MtOMtA",
-    "Production|Industry|Chemicals|FertProd")
+    "Production|Industry|Chemicals|FertProd",
+    "Production|Industry|Chemicals|FertProd-H2")
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
   dscens <- data %>%
@@ -593,9 +594,8 @@ showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
 if ("Production|Industry|Chemicals|CHEM-SOL" %in% levels(data$variable)){ # if process-based chemicals is used
   tot <- "Production|Industry|Chemicals"
   items <- c(
-    "Production|Industry|Chemicals|CHEM-SOL",
-    "Production|Industry|Chemicals|CHEM-NG",
-    "Production|Industry|Chemicals|CHEM-LIQ",
+    "Production|Industry|Chemicals|CHEM-OLD",
+    "Production|Industry|Chemicals|CHEM-ELS",
     "Production|Industry|Chemicals|CHEM-H2")
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
@@ -622,6 +622,27 @@ if ("Production|Industry|Chemicals|AMSY-COAL" %in% levels(data$variable)){ # if 
     "Production|Industry|Chemicals|AMSY-GAS-CCS",
     "Production|Industry|Chemicals|AMSY-LIQ-CCS",
     "Production|Industry|Chemicals|AMSY-H2")
+  # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
+  # Therefore, filter data by scenarios that have the 'items' variables.
+  dscens <- data %>%
+    filter(.data$variable %in% items, .data$scenario != "historical") %>%
+    droplevels() %>%
+    pull('scenario') %>%
+    unique()
+  droute <- data %>%
+    filter(.data$scenario %in% dscens)
+showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
+}
+```
+
+### Fertilizer mix by route using process-based chemicals modeling
+```{r Fertilizer mix by route}
+if ("Production|Industry|Chemicals|AMSY-COAL" %in% levels(data$variable)){ # if process-based chemicals is used
+  tot <- "Production|Industry|Chemicals"
+  items <- c(
+    "Production|Industry|Chemicals|FertProd",
+    "Production|Industry|Chemicals|FertProd-H2")
+
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
   dscens <- data %>%

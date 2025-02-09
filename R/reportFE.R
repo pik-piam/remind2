@@ -749,11 +749,11 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         # technologies and operation modes that belong to primary and secondary steel
         teOpmoSteelPrimary <- tePrc2ue %>%
           filter(.data$all_in == "ue_steel_primary")
-        teSteelPrimary <- teOpmoSteelPrimary %>% pull('tePrc')
+        teSteelPrimary <- teOpmoSteelPrimary %>% pull('all_te')
         opmoSteelPrimary <- teOpmoSteelPrimary %>% pull('opmoPrc')
         teOpmoSteelSecondary <- tePrc2ue %>%
           filter(.data$all_in == "ue_steel_secondary")
-        teSteelSecondary <- teOpmoSteelSecondary %>% pull('tePrc')
+        teSteelSecondary <- teOpmoSteelSecondary %>% pull('all_te')
         opmoSteelSecondary <- teOpmoSteelSecondary %>% pull('opmoPrc')
 
         # Electricity uses by primary/secondary steel
@@ -817,9 +817,8 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         # Electricity use by route
         mixer <- tribble(
           ~variable,                                                ~all_enty,  ~all_te,  ~route,                   ~secInd37,
-          "FE|Industry|Chemicals|+++|CHEM-SOL (EJ/yr)",              NULL,       NULL,     "ChemRo_Sol",             "chemicals",
-          "FE|Industry|Chemicals|+++|CHEM-NG  (EJ/yr)",              NULL,       NULL,     "ChemRo_NG",              "chemicals",
-          "FE|Industry|Chemicals|+++|CHEM-LIQ  (EJ/yr)",             NULL,       NULL,     "ChemRo_Liq",             "chemicals",
+          "FE|Industry|Chemicals|+++|CHEM-OLD (EJ/yr)",              NULL,       NULL,     "ChemRo_Old",             "chemicals",
+          "FE|Industry|Chemicals|+++|CHEM-ELS  (EJ/yr)",             NULL,       NULL,     "ChemRo_Elec",             "chemicals",
           "FE|Industry|Chemicals|+++|CHEM-H2   (EJ/yr)",             NULL,       NULL,     "ChemRo_H2",              "chemicals",
           "FE|Industry|Chemicals|+++|STCR-GAS (EJ/yr)",              NULL,       NULL,     "StCrNG_Ro",              "chemicals",
           "FE|Industry|Chemicals|+++|STCR-LIQ (EJ/yr)",              NULL,       NULL,     "StCrLiq_Ro",             "chemicals",
@@ -839,7 +838,8 @@ reportFE <- function(gdx, regionSubsetList = NULL,
           "FE|Industry|Chemicals|+++|AMSY-LIQ-CCS (EJ/yr)",          NULL,       NULL,     "AmSyRo_Liq_ccs",         "chemicals",
           "FE|Industry|Chemicals|+++|AMSY-H2 (EJ/yr)",               NULL,       NULL,     "AmSyRo_H2",              "chemicals",
           "FE|Industry|Chemicals|+++|MtOMtA (EJ/yr)",                NULL,       NULL,     "MtOMtA_Ro",              "chemicals",
-          "FE|Industry|Chemicals|+++|FertProd (EJ/yr)",              NULL,       NULL,     "FertProd_Ro",            "chemicals")
+          "FE|Industry|Chemicals|+++|FertProd (EJ/yr)",              NULL,       NULL,     "FertProd_Ro",            "chemicals",
+          "FE|Industry|Chemicals|+++|FertProd-H2 (EJ/yr)",           NULL,       NULL,     "FertProdH2_Ro",          "chemicals")
 
         out <- mbind(
           c(list(out), # pass a list of magpie objects
@@ -954,12 +954,12 @@ reportFE <- function(gdx, regionSubsetList = NULL,
 
        mixer <- tribble(
          ~variable,                                                    ~mat,            ~route, 
-         "Production|Industry|Chemicals|+|CHEM-SOL (Mt/yr)",           "OtherChem",     "ChemRo_Sol",
-         "Production|Industry|Chemicals|+|CHEM-NG (Mt/yr)",            "OtherChem",     "ChemRo_NG",
-         "Production|Industry|Chemicals|+|CHEM-LIQ (Mt/yr)",           "OtherChem",     "ChemRo_Liq",
+         "Production|Industry|Chemicals|+|CHEM-OLD (Mt/yr)",           "OtherChem",     "ChemRo_Old",
+         "Production|Industry|Chemicals|+|CHEM-ELS (Mt/yr)",           "OtherChem",     "ChemRo_Elec",
          "Production|Industry|Chemicals|+|CHEM-H2 (Mt/yr)",            "OtherChem",     "ChemRo_H2", 
          "Production|Industry|Chemicals|+|MtOMtA (Mt/yr)",             "HVC",           "MtOMtA_Ro",
          "Production|Industry|Chemicals|+|FertProd (Mt/yr)",           "Fertilizer",    "FertProd_Ro",
+         "Production|Industry|Chemicals|+|FertProd-H2 (Mt/yr)",        "Fertilizer",    "FertProdH2_Ro",
          "Production|Industry|Chemicals|+|STCR-GAS (Mt/yr)",           "HVC",           "StCrNG_Ro",
          "Production|Industry|Chemicals|+|STCR-LIQ (Mt/yr)",           "HVC",           "StCrLiq_Ro",
        )
