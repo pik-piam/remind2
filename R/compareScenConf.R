@@ -1,15 +1,18 @@
 #' take two REMIND scenario-config*.csv files and print the difference,
 #' comparing it to a default.cfg
+#' Can also be used for piamInterfaces mapping files with row.names=NULL and expanddata=FALSE.
 #'
 #' @param fileList vector containing one csv file paths or two paths as c(oldfile, newfile)
 #' If one, searches same filename in defaultPath. If NULL, user can select
-#' @param remindPath path to REMIND directory containing main.gms
-#' @param row.names column in csv used for row.names. Use NULL for mapping files
+#' @param remindPath path to REMIND directory containing main.gms. Used for extracting the
+#'        default configuration and find a file for comparison if only one config file is supplied in fileList
+#' @param row.names column in csv used for row.names. Defaults to 1.
+#'        Use NULL for mapping files which either picks the 'variable' column or uses the first two columns.
 #' @param renamedCols vector with old and new column names such as c("old1" = "new1", "old2" = "new2"))
 #' @param renamedRows vector with old and new row names such as c("old3" = "new3", "old3" = "new4", "old5" = "new5"))
 #'        the "old" name can also remain in the new file, if you generated a variant
 #' @param printit boolean switch (default: TRUE) whether function prints its output
-#' @param expanddata fill empty cells with default values
+#' @param expanddata fill empty cells with default values. Use FALSE for mapping files
 #' @author Oliver Richters
 #' @examples
 #'
@@ -78,11 +81,11 @@ compareScenConf <- function(fileList = NULL, remindPath = "/p/projects/rd3mod/gi
   settings1 <- readCheckScenarioConfig(fileList[[1]], remindPath = remindPath, fillWithDefault = TRUE, testmode = TRUE)
   settings2 <- readCheckScenarioConfig(fileList[[2]], remindPath = remindPath, fillWithDefault = TRUE, testmode = TRUE)
 
-  # for mapping files use "Variable" if exists, else combine first two columns
+  # for mapping files use "variable" if exists, else combine first two columns
   if (is.null(row.names)) {
-    if ("Variable" %in% intersect(colnames(settings1), colnames(settings2))) {
-      rownames(settings1) <- make.unique(settings1[, "Variable"])
-      rownames(settings2) <- make.unique(settings2[, "Variable"])
+    if ("variable" %in% intersect(colnames(settings1), colnames(settings2))) {
+      rownames(settings1) <- make.unique(settings1[, "variable"], sep = " ")
+      rownames(settings2) <- make.unique(settings2[, "variable"], sep = " ")
     } else {
       rownames(settings1) <- make.unique(paste0(settings1[, 1], ": ", settings1[, 2]))
       rownames(settings2) <- make.unique(paste0(settings2[, 1], ": ", settings2[, 2]))
@@ -110,7 +113,7 @@ compareScenConf <- function(fileList = NULL, remindPath = "/p/projects/rd3mod/gi
     settings1[, c] <- if (is.null(cfg$gms[[c]])) NA else cfg$gms[[c]]
   }
   jointCols <- intersect(names(settings1), names(settings2))
-  m <- c(m, "", "Changes in the scenarios:")
+  m <- c(m, "", "Changes in the rows:")
   for (s in scenarios) {
     if (s %in% intersect(c(rownames(settings1), renamedRows), rownames(settings2))) {
       # scenario name, oldname -> newname if renamed

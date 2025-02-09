@@ -117,7 +117,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
     "tnrs" = "Electricity|Nuclear",
     "spv" = "Electricity|Solar|PV",
     "csp" = "Electricity|Solar|CSP",
-          "h2turb" = "Electricity|Hydrogen",
+    "h2turb" = "Electricity|Hydrogen",
     "storspv" = "Electricity|Storage|Battery|For PV",
     "storcsp" = "Electricity|Storage|Battery|For CSP",
     "biogas" = "Gases|Biomass|w/o CC",
@@ -144,9 +144,9 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
 
   if (tran_mod == "complex") {
     carmap <- c(
-      "apCarPeT" = "Transport|Pass|Road|LDV|ICE",
-      "apCarElT" = "Transport|Pass|Road|LDV|EV",
-      "apCarH2T" = "Transport|Pass|Road|LDV|H2")
+                "apCarPeT" = "Transport|Pass|Road|LDV|ICE",
+                "apCarElT" = "Transport|Pass|Road|LDV|EV",
+                "apCarH2T" = "Transport|Pass|Road|LDV|H2")
   } else {
     carmap <- c()
   }
@@ -157,7 +157,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
 
   if (CDR_mod != "off") {
     cdrmap <- c("dac" = "DAC",
-      "ccsinje" = "CO2 Storage")
+                "ccsinje" = "CO2 Storage")
   } else {
     cdrmap <- c()
   }
@@ -356,7 +356,6 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
   ## delete "+" and "++" from variable names
   output <- deletePlus(output)
 
-
   # add global values ----
   map <- data.frame(region = getRegions(tmp), world = "GLO", stringsAsFactors = FALSE)
   y <- Reduce(intersect, list(getYears(tmp), getYears(output)))
@@ -390,6 +389,67 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
 
   tmp[is.na(tmp)] <- 0  # tmp is NA if weight is zero for all regions within the GLO or the specific region aggregation. Therefore, we replace all NAs with zeros.
 
+
+  # EW reporting: add info on rocks for enhanced weathering ----
+  tmp2 <- NULL
+  ## calculate totals of rocks spread
+  v33_EW_onfield <- readGDX(gdx, "v33_EW_onfield", restore_zeros = FALSE, field = "l", format = "first_found")[, t, ] # [Gt rock]
+  v33_EW_onfield_total <- dimSums(v33_EW_onfield, dim = 3)             # aggregate total rocks spread [Gt rock]
+  v33_EW_onfield_byClimateGrade <- dimSums(v33_EW_onfield, dim = 3.2)  # rocks spread by climate grade, aggregated across transportation grades [Gt rock]
+
+  ## calculate totals of rocks weathering on fields in each period
+  v33_EW_onfield_tot <- readGDX(gdx, "v33_EW_onfield_tot", restore_zeros = FALSE, field = "l", format = "first_found")[, t, ] # [Gt rock]
+  v33_EW_onfield_tot_total <- dimSums(v33_EW_onfield_tot, dim = 3)            # total of rocks weathering on fields  [Gt rock]
+  v33_EW_onfield_tot_byClimateGrade <- dimSums(v33_EW_onfield_tot, dim = 3.2) # rocks weathering on field by climate grade, aggregated across transportation grades [Gt rock]
+
+  tmp2 <- mbind(
+    setNames(v33_EW_onfield_total                 * 1000,  "CDR|Rocks spread (Mt rocks/yr)"),
+    setNames(v33_EW_onfield_byClimateGrade[, , "1"] * 1000,  "CDR|Rocks spread|+|warm regions (Mt rocks/yr)"),
+    setNames(v33_EW_onfield_byClimateGrade[, , "2"] * 1000,  "CDR|Rocks spread|+|temperate regions (Mt rocks/yr)"),
+    setNames(v33_EW_onfield_tot_total             * 1000,  "CDR|Rocks weathering (Mt rocks)"),
+    setNames(v33_EW_onfield_tot_byClimateGrade[, , "1"] * 1000,  "CDR|Rocks weathering|+|warm regions (Mt rocks)"),
+    setNames(v33_EW_onfield_tot_byClimateGrade[, , "2"] * 1000,  "CDR|Rocks weathering|+|temperate regions (Mt rocks)")
+  )
+
+  ## add global and regional sums
+  tmp2 <- mbind(tmp2, dimSums(tmp2, dim = 1))
+
+  if (!is.null(regionSubsetList))
+    tmp2 <- mbind(tmp2, calc_regionSubset_sums(tmp2, regionSubsetList))
+
+  ## combine main reporting and EW ----
+  tmp2 <- magclass::matchDim(tmp2, tmp, dim = c(1, 2))
+  tmp <- mbind(tmp, tmp2)
+
+  # OAE reporting: add info on quicklime and slacked lime needed for OAE ----
+  tmp3 <- NULL
+  te_oae33 <- readGDX(gdx, "te_oae33", react = "silent")
+  
+  if (!is.null(te_oae33)) {
+   ## read data and calculate total across technologies
+  vm_emiCdrTeDetail_oae <- readGDX(gdx, "vm_emiCdrTeDetail", restore_zeros = FALSE, field = "l", format = "first_found")[, t, te_oae33] # [Gt C ocean uptake]
+  vm_emiCdrTeDetail_oae <- dimSums(vm_emiCdrTeDetail_oae, dim = 3)     # GtC ocean uptake summed over the two oae technologies
+  
+  s33_OAE_efficiency <- readGDX(gdx, "s33_OAE_efficiency") # tC / tCaO
+
+  tmp3 <- mbind(
+    setNames(-vm_emiCdrTeDetail_oae / s33_OAE_efficiency * 1000,  "CDR|OAE quicklime (Mt CaO/yr)")
+  )
+  ## add global and regional sums
+  tmp3 <- mbind(tmp3, dimSums(tmp3, dim = 1))
+
+  if (!is.null(regionSubsetList))
+    tmp3 <- mbind(tmp3, calc_regionSubset_sums(tmp3, regionSubsetList))
+  } else {
+    tmp3 <- new.magpie(getRegions(tmp), getYears(tmp), "CDR|OAE quicklime (Mt CaO/yr)", fill = 0)
+  }
+
+  ## combine main reporting and OAE ----
+  tmp3 <- magclass::matchDim(tmp3, tmp, dim = c(1, 2))
+  tmp <- mbind(tmp, tmp3)
+
+
   getSets(tmp)[3] <- "variable"
+
   return(tmp)
 }

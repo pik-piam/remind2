@@ -84,6 +84,7 @@ tot <- "Emi|CO2"
 items <- c(
   "Emi|CO2|Land-Use Change",
   "Emi|CO2|Industrial Processes",
+  "Emi|CO2|Waste",
   "Emi|CO2|Energy|Demand|Transport",
   "Emi|CO2|Energy|Demand|Industry",
   "Emi|CO2|Energy|Demand|Buildings",
@@ -203,30 +204,10 @@ showLinePlots(data, "Emi|CO2|Industry")
 
 ### Waste Emissions
 
-#### Total Waste Emissions
-
-```{r total waste CO2}
-
-
-tot <- "Emi|CO2|Energy|Waste"
-items <- c(
-  "Emi|CO2|Energy|Waste|Feedstocks unknown fate",
-  "Emi|CO2|Energy|Waste|Plastics Incineration"
-  )
-
-showAreaAndBarPlots(data, items, tot, scales = "fixed")
-```
-
 #### Waste Emissions from Plastics-Incineration
 ```{r CO2 waste plastics incineration}
 
 showLinePlots(data, "Emi|CO2|Energy|Waste|Plastics Incineration")
-```
-
-#### Waste Emissions from Non-plastic Materials
-```{r CO2 waste non-plastic Materials}
-
-showLinePlots(data, "Emi|CO2|Energy|Waste|Feedstocks unknown fate")
 ```
 
 #### Waste Emissions Attributed to Electricity
@@ -251,6 +232,19 @@ showLinePlots(data, "Emi|CO2|Energy|Demand|Industry|Waste")
 ```{r CO2 waste attributed to buildings}
 
 showLinePlots(data, "Emi|CO2|Energy|Demand|Buildings|Waste")
+```
+
+#### Negative Waste Emissions from Non-incinerated Non-fossil Plastics
+```{r CO2 waste non-incinerated plastics}
+
+showLinePlots(data, "Emi|CO2|Waste|Non-Incinerated Plastic")
+```
+
+
+#### Waste Emissions from Non-plastic Materials (without energy recovery)
+```{r CO2 waste non-plastic Materials}
+
+showLinePlots(data, "Emi|CO2|Waste|Non-plastic Waste")
 ```
 
 
@@ -338,9 +332,11 @@ showLinePlots(data, "Emi|CO2|non-BECCS CDR")
 tot <- "Emi|CO2"
 items <- c(
   "Emi|CO2|Gross|Energy and Industrial Processes",
+  "Emi|CO2|Gross|Waste",
   "Emi|CO2|Land-Use Change",
   "Emi|CO2|CDR|BECCS",
-  "Emi|CO2|CDR|Industry CCS|Synthetic Fuels",
+  "Emi|CO2|CDR|Synthetic Fuels CCS",
+  "Emi|CO2|CDR|Materials",
   "Emi|CO2|CDR|DACCS",
   "Emi|CO2|CDR|OAE",
   "Emi|CO2|CDR|EW"
@@ -355,7 +351,8 @@ items <- c(
   "Emi|CO2|CDR|Land-Use Change",
   "Emi|CO2|CDR|BECCS|Pe2Se",
   "Emi|CO2|CDR|BECCS|Industry",
-  "Emi|CO2|CDR|Industry CCS|Synthetic Fuels",
+  "Emi|CO2|CDR|Synthetic Fuels CCS",
+  "Emi|CO2|CDR|Materials",
   "Emi|CO2|CDR|DACCS",
   "Emi|CO2|CDR|OAE",
   "Emi|CO2|CDR|EW"
@@ -383,6 +380,14 @@ cdrVars <-
 walk(cdrVars, showLinePlots, data = data)
 ```
 
+#### EW rock spreading
+```{r CO2 EW rock}
+items <- c(
+  "CDR|Rocks spread",
+  "CDR|Rocks weathering"
+)
+walk(items, showLinePlots, data = data)
+```
 
 ### Cumulated Emissions
 
@@ -413,10 +418,12 @@ walk(cdrVars, showLinePlots, data = data)
 tot <- "Emi|CO2|Cumulated"
 items <- c(
   "Emi|CO2|Cumulated|Gross|Energy and Industrial Processes",
+  "Emi|CO2|Cumulated|Gross|Waste",
   "Emi|CO2|Cumulated|Land-Use Change",
   "Emi|CO2|Cumulated|CDR|BECCS|Pe2Se",
   "Emi|CO2|Cumulated|CDR|BECCS|Industry",
   "Emi|CO2|Cumulated|CDR|Industry CCS|Synthetic Fuels",
+  "Emi|CO2|Cumulated|CDR|Materials",
   "Emi|CO2|Cumulated|CDR|DACCS",
   "Emi|CO2|Cumulated|CDR|OAE",
   "Emi|CO2|Cumulated|CDR|EW")

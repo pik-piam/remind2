@@ -94,6 +94,18 @@ showAreaAndBarPlotsPlus(data, "Carbon Management|Usage", scales = "fixed")
 
 # Materials
 
+
+## Total (carbonaceous) materials production
+
+```{r}
+showAreaAndBarPlots(data,
+                        vars = c("Carbon Management|Materials|Plastics",
+                                 "Carbon Management|Materials|Non-Plastics"),
+                        tot = "Carbon Management|Materials")
+```
+
+
+
 ## Total plastics production
 ```{r }
 showLinePlots(data, "Carbon Management|Materials|Plastics")
@@ -101,7 +113,7 @@ showLinePlots(data, "Carbon Management|Materials|Plastics")
 
 ## Plastics production by origin
 ```{r }
-showAreaAndBarPlots(data, 
+showAreaAndBarPlots(data,
                         vars = c("Carbon Management|Materials|Plastics|Fossil",
                                  "Carbon Management|Materials|Plastics|Biomass",
                                  "Carbon Management|Materials|Plastics|Synfuels"), 
@@ -110,8 +122,29 @@ showAreaAndBarPlots(data,
 
 ## Plastic waste by fate
 ```{r }
-showAreaAndBarPlots(data, 
+showAreaAndBarPlots(data,
                         vars = c("Carbon Management|Materials|Plastics|Waste|Incineration",
-                                 "Carbon Management|Materials|Plastics|Waste|Other destination"), 
+                                 "Carbon Management|Materials|Plastics|Waste|Other destination"),
                         scales = "fixed")
+```
+
+## Non-plastic waste by fate
+```{r }
+showAreaAndBarPlots(data,
+                        vars = c("Carbon Management|Materials|Non-Plastics|Incineration",
+                                 "Carbon Management|Materials|Non-Plastics|Other destination"),
+                        scales = "fixed")
+```
+
+## Feedstock Carbon by SE carrier and fate
+
+```{r}
+showAreaAndBarPlots(data,
+                    vars = c("Carbon Management|Feedstocks|Emitted|Fossil",
+                             "Carbon Management|Feedstocks|Emitted|Biomass",
+                             "Carbon Management|Feedstocks|Emitted|Synthetic",
+                             "Carbon Management|Feedstocks|Stored|Fossil",
+                             "Carbon Management|Feedstocks|Stored|Biomass",
+                             "Carbon Management|Feedstocks|Stored|Synthetic"),
+                    tot = "Carbon Management|Feedstocks")
 ```

@@ -3,7 +3,8 @@
 \name{compareScenConf}
 \alias{compareScenConf}
 \title{take two REMIND scenario-config*.csv files and print the difference,
-comparing it to a default.cfg}
+comparing it to a default.cfg
+Can also be used for piamInterfaces mapping files with row.names=NULL and expanddata=FALSE.}
 \usage{
 compareScenConf(
   fileList = NULL,
@@ -19,9 +20,11 @@ compareScenConf(
 \item{fileList}{vector containing one csv file paths or two paths as c(oldfile, newfile)
 If one, searches same filename in defaultPath. If NULL, user can select}
 
-\item{remindPath}{path to REMIND directory containing main.gms}
+\item{remindPath}{path to REMIND directory containing main.gms. Used for extracting the
+default configuration and find a file for comparison if only one config file is supplied in fileList}
 
-\item{row.names}{column in csv used for row.names. Use NULL for mapping files}
+\item{row.names}{column in csv used for row.names. Defaults to 1.
+Use NULL for mapping files which either picks the 'variable' column or uses the first two columns.}
 
 \item{renamedCols}{vector with old and new column names such as c("old1" = "new1", "old2" = "new2"))}
 
@@ -30,7 +33,7 @@ the "old" name can also remain in the new file, if you generated a variant}
 
 \item{printit}{boolean switch (default: TRUE) whether function prints its output}
 
-\item{expanddata}{fill empty cells with default values}
+\item{expanddata}{fill empty cells with default values. Use FALSE for mapping files}
 }
 \value{
 list with $allwarnings and $out
@@ -38,6 +41,7 @@ list with $allwarnings and $out
 \description{
 take two REMIND scenario-config*.csv files and print the difference,
 comparing it to a default.cfg
+Can also be used for piamInterfaces mapping files with row.names=NULL and expanddata=FALSE.
 }
 \examples{
 

@@ -10,6 +10,7 @@ items <- c(
   "Emi|CO2|Energy",
   "Emi|CO2|Industrial Processes",
   "Emi|CO2|Land-Use Change",
+  "Emi|CO2|Waste",
   "Emi|GHG|CH4",
   "Emi|GHG|N2O",
   "Emi|GHG|F-Gases",
@@ -31,12 +32,14 @@ items <- c(
   "Emi|GHG|Industrial Processes",
   "Emi|GHG|Agriculture",
   "Emi|GHG|Land-Use Change",
-  "Emi|GHG|Waste",
+  "Emi|GHG|Gross|Waste",
   "Emi|CO2|CDR|BECCS",
-  "Emi|CO2|CDR|Industry CCS|Synthetic Fuels",
+  "Emi|CO2|CDR|Synthetic Fuels CCS",
+  "Emi|CO2|CDR|Materials",
   "Emi|CO2|CDR|DACCS",
   "Emi|CO2|CDR|OAE",
-  "Emi|CO2|CDR|EW")
+  "Emi|CO2|CDR|EW",
+  "Emi|CO2|Accounted in Other Sectors via CCU")
 showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
@@ -53,6 +56,7 @@ tot <- "Emi|CO2"
 items <- c(
   "Emi|CO2|Land-Use Change",
   "Emi|CO2|Industrial Processes",
+  "Emi|CO2|Gross|Waste",
   "Emi|CO2|Energy|Demand|Transport",
   "Emi|CO2|Gross|Energy|Demand|Industry",
   "Emi|CO2|Energy|Demand|Buildings",
@@ -60,10 +64,12 @@ items <- c(
   "Emi|CO2|Gross|Energy|Supply|Non-electric",
   "Emi|CO2|Gross|Energy|Supply|Electricity",
   "Emi|CO2|CDR|BECCS",
-  "Emi|CO2|CDR|Industry CCS|Synthetic Fuels",
+  "Emi|CO2|CDR|Synthetic Fuels CCS",
+  "Emi|CO2|CDR|Materials",
   "Emi|CO2|CDR|DACCS",
   "Emi|CO2|CDR|OAE",
-  "Emi|CO2|CDR|EW")
+  "Emi|CO2|CDR|EW",
+  "Emi|CO2|Accounted in Other Sectors via CCU")
 showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
@@ -81,6 +87,7 @@ tot <- "Emi|CO2|Cumulated"
 items <- c(
   "Emi|CO2|Cumulated|Land-Use Change",
   "Emi|CO2|Cumulated|Industrial Processes",
+  "Emi|CO2|Cumulated|Gross|Waste",
   "Emi|CO2|Cumulated|Energy|Demand|Transport",
   "Emi|CO2|Cumulated|Gross|Energy|Demand|Industry",
   "Emi|CO2|Cumulated|Energy|Demand|Buildings",
@@ -89,6 +96,7 @@ items <- c(
   "Emi|CO2|Cumulated|Gross|Energy|Supply|Electricity",
   "Emi|CO2|Cumulated|CDR|BECCS",
   "Emi|CO2|Cumulated|CDR|Industry CCS|Synthetic Fuels",
+  "Emi|CO2|Cumulated|CDR|Materials",
   "Emi|CO2|Cumulated|CDR|DACCS",
   "Emi|CO2|Cumulated|CDR|OAE",
   "Emi|CO2|Cumulated|CDR|EW")

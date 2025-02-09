@@ -15,7 +15,10 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
 
   # GDXs for comparison.
   gdxList <- c("fulldata-SSP2-EU21-PkBudg650-release.gdx" = "https://rse.pik-potsdam.de/data/example/remind2_test-convGDX2MIF_SSP2-EU21-PkBudg650_2024-06-18_22.43.19.gdx",
-               "fulldata-SSP2-NPi-AMT.gdx"                = "https://rse.pik-potsdam.de/data/example/remind2_test-convGDX2MIF_SSP2-NPi-AMT.gdx")
+               "fulldata-SSP2-NPi-AMT.gdx"                = "https://rse.pik-potsdam.de/data/example/remind2_test-convGDX2MIF_SSP2-NPi-AMT.gdx",
+               # this gdx is from REMIND develop and tests the latest Emission reporting after breaking changes
+               # this gdx can be removed from remind2 with Release 3.5.0, as the changes will be then reflected in the former gdxes
+               "fulldata-SSP2-NPi-latest.gdx"             = "https://rse.pik-potsdam.de/data/example/remind2_test-convGDX2MIF_SSP2-NPi-latest.gdx")
 
   gdxPaths <- NULL
   for (i in seq_along(gdxList)) {
