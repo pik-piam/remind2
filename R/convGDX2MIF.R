@@ -99,8 +99,8 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
     gdx_refpolicycost <- gdx
   }
   if (file.exists(gdx_refpolicycost)) {
-    gdp_scen <- try(readGDX(gdx, "cm_GDPscen", react = "error"), silent = TRUE)
-    gdp_scen_ref <- try(readGDX(gdx_refpolicycost, "cm_GDPscen", react = "error"), silent = TRUE)
+    gdp_scen <- try(readGDX(gdx, c("cm_GDPpopScen","cm_GDPscen"), react = "error"), silent = TRUE)
+    gdp_scen_ref <- try(readGDX(gdx_refpolicycost, c("cm_GDPpopScen","cm_GDPscen"), react = "error"), silent = TRUE)
     if (!inherits(gdp_scen, "try-error") && !inherits(gdp_scen_ref, "try-error")) {
       if (gdp_scen[1] == gdp_scen_ref[1]) {
         if (gdx == gdx_refpolicycost) {
