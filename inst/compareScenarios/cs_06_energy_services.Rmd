@@ -1,5 +1,95 @@
 # Energy Services and Products
 
+## Summary of affluence indicators 
+```{r}
+indicators_general <- c(
+  "GDP|PPP pCap",
+  "FE pCap",
+  "Emi|CO2 pCap",
+  "Emi|CO2|CDR pCap"
+)
+indicators_buildings <- c(
+  "ES|Buildings|Floor Space pCap",
+  "UE|Buildings|Heating pCap",
+  "UE|Buildings|non-Heating|Electricity|Conventional pCap")
+indicators_transport <- c(
+  "Stock|Transport|Pass|Road|LDV pCap",
+  "ES|Transport|Pass|Road|LDV pCap",
+  "ES|Transport|Freight pCap")
+indicators_industry <- c(
+  "Production|Industry|Cement|per-capita",
+  "Production|Industry|Steel|per-capita",
+  "Value Added|Industry|Chemicals|per-capita") # "Value Added|Industry|Other Industry|per-capita"
+
+indicators <- c(indicators_general, indicators_buildings, indicators_transport, indicators_industry)
+```
+
+### Time domain
+```{r, results = 'asis'}
+for (i in indicators) {
+  cat("\n\n####", sub("(\\|per-capita)|( pCap)", "", i), "\n")
+  showLinePlots(data, i, scales = "free")
+}
+```
+
+### GDP domain, grouped regions
+```{r}
+showMultiLinePlotsByVariable(dIea, indicators_general,   "GDP|PPP pCap")
+showMultiLinePlotsByVariable(dIea, indicators_buildings, "GDP|PPP pCap")
+showMultiLinePlotsByVariable(dIea, indicators_transport, "GDP|PPP pCap")
+showMultiLinePlotsByVariable(dIea, indicators_industry,  "GDP|PPP pCap")
+```
+
+### GDP domain, separated regions
+```{r, results = 'asis'}
+
+dPlot <- full_join(
+  data %>%
+    select(scenario, region, variable, unit, period, value) %>%
+    filter(variable %in% indicators, scenario != "historical"),
+
+  data %>%
+    filter("GDP|per capita|PPP" == variable) %>%
+    select(scenario, region, period, GDP_pC = value),
+
+  c("scenario", "region", "period")
+)
+
+xLab <- data %>%
+  filter("GDP|per capita|PPP" == variable) %>%
+  distinct(variable, unit) %>%
+    mutate(label = paste0(variable, " [", unit, "]")) %>%
+    pull(label)
+
+for (i in indicators) {
+  cat("\n\n####", sub("(\\|per-capita)|( pCap)", "", i), "\n")
+
+  yLab <- dPlot %>%
+    filter(i == variable) %>%
+    distinct(variable, unit) %>%
+    mutate(label = paste0(variable, " [", unit, "]")) %>%
+    pull(label)
+
+  p <- ggplot(mapping = aes(x = GDP_pC, y = value, colour = scenario)) +
+    geom_line(data = dPlot %>%
+                filter(i == variable,
+                       getOption("mip.mainReg") == region) %>%
+                select(-region),
+              mapping = aes(linetype = "World")) +
+    scale_linetype_manual(values = c("World" = "dotted"), name = NULL) +
+    geom_line(data = dPlot %>%
+                filter(i == variable,
+                       getOption("mip.mainReg") != region)) +
+    scale_colour_discrete(name = NULL) +
+    facet_wrap(~region, scales = "fixed") +
+    expand_limits(x = 0, y = 0) +
+    labs(x = xLab, y = yLab) +
+    theme_minimal()
+  plot(p)
+}
+```
+
+
 ## Buildings
 ### FE mix
 ```{r FE demand from buildings by carriers}
