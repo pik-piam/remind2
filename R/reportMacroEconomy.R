@@ -243,10 +243,10 @@ reportMacroEconomy <- function(gdx, regionSubsetList = NULL,
     #TOCHECK:QIANZHI
     if (!chemicals_process_based) {
       mrs.report <- append(mrs.report,
-                    "feelhth_chemicals.fega_chemicals",
+                  c("feelhth_chemicals.fega_chemicals",
                     "feelhth_chemicals.feli_chemicals",
                     "feh2_chemicals.fega_chemicals",
-                    "feh2_chemicals.feli_chemicals"
+                    "feh2_chemicals.feli_chemicals")
       )
     } 
 
@@ -275,8 +275,8 @@ reportMacroEconomy <- function(gdx, regionSubsetList = NULL,
 
     if (!chemicals_process_based) {
       CES.mrs <- mbind( CES.mrs,
-                     setNames(CES.price[,,"Internal|CES Function|CES Price|feelhth_chemicals (US$2005/GJ)"] /
-                                 CES.price[,,"Internal|CES Function|CES Price|feso_chemicals (US$2005/GJ)"],
+                     setNames(CES.price[,,"Internal|CES Function|CES Price|feelhth_chemicals (US$2017/GJ)"] /
+                                 CES.price[,,"Internal|CES Function|CES Price|feso_chemicals (US$2017/GJ)"],
                                "Internal|CES Function|MRS|feelhth_chemicals|feso_chemicals (ratio)"))
     }
 
