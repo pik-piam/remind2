@@ -135,6 +135,7 @@ reportEnergyInvestment <- function(gdx, regionSubsetList = NULL,
   # build reporting
   tmp <- NULL
   tmp <- mbind(tmp, setNames(inv_se(ie = petyf, oe = "seel", pe2se, adjte, v_directteinv, v_adjustteinv),                   "Energy Investments|Electricity|Fossil (billion US$2017/yr)"))
+  tmp <- mbind(tmp, setNames(inv_se(ie = petyf, te = teccs, oe = "seel", pe2se, adjte, v_directteinv, v_adjustteinv),       "Energy Investments|Electricity|Fossil|w/o CCS (billion US$2017/yr)"))
   tmp <- mbind(tmp, setNames(inv_se(ie = "pecoal", oe = "seel", pe2se, adjte, v_directteinv, v_adjustteinv),                "Energy Investments|Electricity|+|Coal (billion US$2017/yr)"))
   tmp <- mbind(tmp, setNames(inv_se(ie = "pecoal", te = teccs, oe = "seel", pe2se, adjte, v_directteinv, v_adjustteinv),    "Energy Investments|Electricity|Coal|+|w/ CC (billion US$2017/yr)"))
   tmp <- mbind(tmp, setNames(inv_se(ie = "pecoal", te = tenoccs, oe = "seel", pe2se, adjte, v_directteinv, v_adjustteinv),  "Energy Investments|Electricity|Coal|+|w/o CC (billion US$2017/yr)"))
@@ -179,6 +180,9 @@ reportEnergyInvestment <- function(gdx, regionSubsetList = NULL,
   tmp <- mbind(tmp, setNames((inv_se(ie = pe2se$all_enty, oe = "seel", pe2se, adjte, v_directteinv, v_adjustteinv)
   + inv_se(ie = se2se$all_enty, oe = "seel", se2se, adjte, v_directteinv, v_adjustteinv, te = se2se$all_te)
     + inv_se(ie = NULL, oe = NULL, c("tdels", "tdelt", tenotransform), adjte, v_directteinv, v_adjustteinv, te = all_te)), "Energy Investments|Electricity (billion US$2017/yr)"))
+
+  tmp <- mbind(tmp, setNames((inv_se(ie = pe2se$all_enty, oe = "seel", pe2se, adjte, v_directteinv, v_adjustteinv)
+                              + inv_se(ie = se2se$all_enty, oe = "seel", se2se, adjte, v_directteinv, v_adjustteinv, te = se2se$all_te)), "Energy Investments|Electricity Generation (billion US$2017/yr)"))
 
   tmp <- mbind(tmp, setNames(inv_se(ie = pe2se$all_enty, oe = "seh2", pe2se, adjte, v_directteinv, v_adjustteinv)
   + inv_se(ie = "seel", oe = "seh2", se2se, adjte, v_directteinv, v_adjustteinv, te = se2se$all_te)
