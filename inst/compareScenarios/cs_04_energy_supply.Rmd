@@ -326,6 +326,23 @@ showLinePlots(data, "PE|Geothermal")
 
 ## SE Mix
 
+### SE Totals 
+
+```{r SE Totals}
+
+tot <- "SE"
+
+items <- c(
+  "SE|Electricity",
+  "SE|Heat",
+  "SE|Hydrogen",
+  "SE|Gases",
+  "SE|Liquids",
+  "SE|Solids",
+  NULL)
+showAreaAndBarPlots(data, items, tot, orderVars="user", scales = "fixed")
+```
+
 ### SE Electricity
 ```{r SE Electricity}
 
