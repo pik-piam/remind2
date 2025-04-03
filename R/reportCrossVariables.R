@@ -70,17 +70,13 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
                  * output[r,,"PE|Biomass|Residues (EJ/yr)"]
                  / dimSums(mselect(demPE,all_enty="pebiolc"),dim=3),   "SE|Electricity|Biomass|Residues (EJ/yr)"))
   tmp <- mbind(tmp,setNames(
-                   output[r,,"SE|Liquids|Biomass (EJ/yr)"]
-                 * output[r,,"PE|Biomass|1st Generation (EJ/yr)"]
-                 / output[r,,"PE|Biomass (EJ/yr)"],                     "SE|Liquids|Biomass|1st Generation (EJ/yr)"))
-  tmp <- mbind(tmp,setNames(
-                   output[r,,"SE|Liquids|Biomass (EJ/yr)"]
+                   output[r,,"SE|Liquids|Biomass|Cellulosic (EJ/yr)"]
                  * output[r,,"PE|Biomass|Residues (EJ/yr)"]
-                 / output[r,,"PE|Biomass (EJ/yr)"],                     "SE|Liquids|Biomass|Residues (EJ/yr)"))
+                 / dimSums(mselect(demPE,all_enty="pebiolc"),dim=3),    "SE|Liquids|Biomass|Cellulosic|++|Residues (EJ/yr)"))
   tmp <- mbind(tmp,setNames(
-                   output[r,,"SE|Liquids|Biomass (EJ/yr)"]
+                   output[r,,"SE|Liquids|Biomass|Cellulosic (EJ/yr)"]
                  * output[r,,"PE|Biomass|Energy Crops (EJ/yr)"]
-                 / output[r,,"PE|Biomass (EJ/yr)"],                     "SE|Liquids|Biomass|Energy Crops (EJ/yr)"))
+                 / dimSums(mselect(demPE,all_enty="pebiolc"),dim=3),    "SE|Liquids|Biomass|Cellulosic|++|Energy Crops (EJ/yr)"))
 
 
   tmp <- mbind(tmp,setNames(
@@ -348,7 +344,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
         # build magpie
         select('Region', 'Year', getSets(out, fulldim = FALSE)[3], 'Value') %>%
         `colnames<-`(c(getSets(out, fulldim = FALSE), 'Value')) %>%
-        as.magpie(spatial = 1, temporal = 2, data = 4)
+        as.magpie(spatial = 1, temporal = 2, datacol = 4)
     )
 
     # add per-GDP industry activity ----
@@ -390,7 +386,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
         # build magpie
         select('Region', 'Year', getSets(out, fulldim = FALSE)[3], 'Value') %>%
         `colnames<-`(c(getSets(out, fulldim = FALSE), 'Value')) %>%
-        as.magpie(spatial = 1, temporal = 2, data = 4)
+        as.magpie(spatial = 1, temporal = 2, datacol = 4)
     )
   }
 

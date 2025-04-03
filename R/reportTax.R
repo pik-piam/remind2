@@ -209,7 +209,7 @@ reportTax <- function(gdx,output=NULL,regionSubsetList=NULL,t=c(seq(2005,2060,5)
   out <- mbind(out, setNames(p21_taxrevNetNegEmi0,"Net Taxes|Net-negative emissions (billion US$2017/yr)"))
 
   # negative CO2 emissions for taxes
-  p21_emiALLco2neg0 <- readGDX(gdx, name=c("p21_emiALLco2neg0"), format= "first_found")[,t,]*1000
+  p21_emiALLco2neg0 <- readGDX(gdx, name=c("p21_emiALLco2neg0", "p21_emiAllco2neg0"), format= "first_found")[,t,]*1000
   out <- mbind(out, setNames(p21_emiALLco2neg0,"Net Taxes|Negative emissions (billion US$2017/yr)"))
 
   # final energy tax

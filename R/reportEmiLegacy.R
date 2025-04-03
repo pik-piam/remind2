@@ -278,7 +278,7 @@ reportEmiLegacy <- function(gdx, output = NULL, regionSubsetList = NULL,
     select(-'subsector_emissions', -'subsector_capture_share') %>%
     select(ttot = 't', all_regi = 'regi', all_enty = 'sety', all_enty1 = 'fety',
            'secInd37', all_emiMkt = 'emiMkt', 'value') %>%
-    as.magpie(spatial = 2, temporal = 1, data = ncol(.)) %>%
+    as.magpie(spatial = 2, temporal = 1, datacol = ncol(.)) %>%
     ifelse(is.finite(.), ., 0)   # replace NaN by 0
 
   rm(vm_emiIndCCS_tibble, subsector_total_emissions, pm_emifac_tibble)

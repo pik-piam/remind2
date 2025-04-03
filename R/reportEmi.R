@@ -300,7 +300,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     select(-"subsector_emissions", -"subsector_capture_share") %>%
     select(ttot = "t", all_regi = "regi", all_enty = "sety", all_enty1 = "fety",
            "secInd37", all_emiMkt = "emiMkt", "value") %>%
-    as.magpie(spatial = 2, temporal = 1, data = ncol(.)) %>%
+    as.magpie(spatial = 2, temporal = 1, datacol = ncol(.)) %>%
     ifelse(is.finite(.), ., 0)   # replace NaN by 0
 
   rm(vm_emiIndCCS_tibble, subsector_total_emissions, pm_emifac_tibble)
@@ -3054,34 +3054,29 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   }
 
-  # variable names for emission variables with bunkers, insert w/ Bunkers
-  names.wBunkers <- emi.vars.wBunkers
-  names.wBunkers <- gsub("Emi\\|CO2", "Emi|CO2|w/ Bunkers", names.wBunkers)
-  names.wBunkers <- gsub("Emi\\|GHG", "Emi|GHG|w/ Bunkers", names.wBunkers)
+  addBunkerString <- function(vars, add) {
+    vars <- deletePlus(vars)
+    vars <- gsub("^Emi\\|CO2", paste0("Emi|CO2|", add), vars)
+    vars <- gsub("^Emi\\|GHG", paste0("Emi|GHG|", add), vars)
+    return(vars)
+  }
 
-  # emissions variables with bunkers
+  # emissions variables with bunkers. Insert 'w/ Bunkers' into variable name
+  names.wBunkers <- addBunkerString(emi.vars.wBunkers, "w/ Bunkers")
   out.wBunkers <- setNames(out[, , emi.vars.wBunkers], names.wBunkers)
-  # remove all pluses from variables with bunkers the "Emi w/ Bunkers" variables do not cover sectors in which bunkers are not relevant and checking aggregation does not make sense
-  getNames(out.wBunkers) <- deletePlus(getNames(out.wBunkers))
 
-  # subtract bunkers for standard emissions variables for regional values
-  regs.wo.glob <- getRegions(out)
-  regs.wo.glob <- regs.wo.glob[regs.wo.glob != "GLO"]
-  out[regs.wo.glob, , emi.vars.wBunkers] <- out[regs.wo.glob, , emi.vars.wBunkers] - out[regs.wo.glob, , "Emi|CO2|Energy|Demand|Transport|International Bunkers (Mt CO2/yr)"]
+  # emissions variables without bunkers. Insert 'w/o Bunkers' into variable name
+  names.woBunkers <- addBunkerString(emi.vars.wBunkers, "w/o Bunkers")
+  var.bunker <- "Emi|CO2|Energy|Demand|Transport|International Bunkers (Mt CO2/yr)"
+  out.woBunkers <- setNames(out[, , emi.vars.wBunkers] - out[, , var.bunker], names.woBunkers)
 
-  out <- mbind(out, out.wBunkers)
+  names.wIntraRegionBunkers <- addBunkerString(emi.vars.wBunkers, "w/ Intra-region Bunkers")
+  regs.wo.glob <- getRegions(out)[! getRegions(out) == "GLO"]
+  out.irBunkers <- out[, , emi.vars.wBunkers]
+  out.irBunkers[regs.wo.glob, , ] <- out.irBunkers[regs.wo.glob, , ] - out[regs.wo.glob, , var.bunker]
+  out.irBunkers <- setNames(out.irBunkers, names.wIntraRegionBunkers)
 
-  # adding intra-regional bunker variables
-  names.wIntraRegionBunkers <- emi.vars.wBunkers
-  names.wIntraRegionBunkers <- gsub("Emi\\|CO2", "Emi|CO2|w/ Intra-region Bunkers", names.wIntraRegionBunkers)
-  names.wIntraRegionBunkers <- gsub("Emi\\|GHG", "Emi|GHG|w/ Intra-region Bunkers", names.wIntraRegionBunkers)
-
-  # emissions variables with bunkers
-  out.wIntraRegionBunkers <- setNames(out[, , emi.vars.wBunkers], names.wIntraRegionBunkers)
-  # remove all pluses from variables with intra reg bunkers
-  getNames(out.wIntraRegionBunkers) <- deletePlus(getNames(out.wIntraRegionBunkers))
-
-  out <- mbind(out, out.wIntraRegionBunkers)
+  out <- mbind(out, out.wBunkers, out.woBunkers, out.irBunkers)
 
   # 10. Cumulative Emissions ----
 

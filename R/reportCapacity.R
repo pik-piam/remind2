@@ -29,7 +29,7 @@
 
 reportCapacity <- function(gdx, regionSubsetList = NULL,
                            t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
-                           gdx_ref = gdx_ref) {
+                           gdx_ref = gdx) {
   # read sets
   teall2rlf <- readGDX(gdx, name = c("te2rlf", "teall2rlf"), format = "first_found")
   ttot <- readGDX(gdx, name = "ttot")

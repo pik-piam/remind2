@@ -46,7 +46,7 @@ require(tidyr)
   mutate(year = 2000 + (1:n())) \%>\%
   ungroup() \%>\%
   select(year, variable, value) \%>\%
-  as.magpie(spatial = 0, temporal = 1, data = 3))
+  as.magpie(spatial = 0, temporal = 1, datacol = 3))
 
 tests <- list(list("Share.*\\\\((\%|Percent)\\\\)$", low = 0, up = 100))
 
