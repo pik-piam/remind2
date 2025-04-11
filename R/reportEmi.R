@@ -10,8 +10,9 @@
 #' be created.
 #' @param t temporal resolution of the reporting, default:
 #' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
+#' @param extraData path to extra data files to be used in the reporting
 #'
-#' @author Felix Schreyer
+#' @author Felix Schreyer, Anne Merfort
 #' @examples
 #' \dontrun{
 #' reportEmi(gdx)
@@ -24,10 +25,9 @@
 #' @importFrom madrat toolAggregate
 #' @importFrom tibble as_tibble
 #' @importFrom piamutils deletePlus
-#' @importFrom digest digest
-
 reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
-                      t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)) {
+                      t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
+                      extraData) {
 
   # emissions calculation requires information from other reporting functions
   if (is.null(output)) {
@@ -366,8 +366,8 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
                as.list() %>%
                # exclude list entries that are NULL
                Filter(function(x) {
- !is.null(x[[1]])
- }, x = .) %>%
+                 !is.null(x[[1]])
+                 }, x = .) %>%
                # coerce character vector elements one level up
                lapply(unlist))
       )
@@ -406,23 +406,22 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # read historical shares of waste energy use derived from IEA energy balances
 
-  # create hash for regionmapping
-  region_hash <- digest::digest(sort(readGDX(gdx, "all_regi")), "xxhash32")
-
-  # assign waste share file for regionmapping
-  # currently only regionmapping H12 and EU21 are supported
-  # for further regionmappings, please create new WasteShare files via mrremind::calcWasteEnergyUseShares()
-  WasteShares_file <- switch(region_hash,
-                             "69585993" = "WasteShares_H12.cs4r",
-                             "8c818b67" = "WasteShares_EU21.cs4r")
-  if (is.null(WasteShares_file)) {
-    stop("No waste shares data found for regions in .gdx file.")
+  if (!file.exists(file.path(extraData, "emi_waste_shares.cs4r"))) {
+    stop("Auxiliary file 'emi_waste_shares.cs4r' not found")
   }
 
-  WasteShares <- read.csv(system.file("extdata", WasteShares_file,
-                                      package = "remind2"),
-                          header = FALSE, comment.char = "*") %>%
-    as.magpie()
+  WasteShares <- read.csv(
+    file.path(extraData, "emi_waste_shares.cs4r"),
+    sep = ",", skip = 4, header = FALSE
+  ) %>% as.magpie(temporal = 1, spatial = 2)
+
+  # check if regional resolution matches
+  all_regi <- readGDX(gdx, "all_regi")
+  if (length(setdiff(all_regi, getItems(WasteShares, dim = 1))) != 0 ||
+      length(setdiff(getItems(WasteShares, dim = 1), all_regi)) != 0
+  ) {
+    stop("Regional resolution in 'emi_waste_shares.cs4r' and gdx do not match.")
+  }
 
   # take shares from 2019 to distribute waste incineration emissions over sectors for all years
   WasteShares <- magclass::collapseDim(WasteShares[, "y2019", ])

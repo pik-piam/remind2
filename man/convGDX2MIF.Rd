@@ -11,7 +11,8 @@ convGDX2MIF(
   scenario = "default",
   t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
   gdx_refpolicycost = gdx_ref,
-  testthat = FALSE
+  testthat = FALSE,
+  extraData = NULL
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)}
 \item{gdx_refpolicycost}{reference-gdx for policy costs, a GDX as created by readGDX, or the file name of a gdx}
 
 \item{testthat}{boolean whether called by tests, turns some messages into warnings}
+
+\item{extraData}{optional path to extra data files to be used in the reporting}
 }
 \description{
 Read in all information from GDX file and create

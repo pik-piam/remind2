@@ -41,6 +41,7 @@
 #' }
 #'
 #' \dontrun{View(variablesAsList("path/to/scenario.mif"))}
+#' @importFrom dplyr across
 #' @export
 variablesAsList <- function(
     x,
