@@ -413,34 +413,69 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
-#### FE mix Chemicals using process-based Chemicals modeling by route
-```{r FE mix Chemical route}
-if ("FE|Industry|Chemicals|CHEM-OLD" %in% levels(data$variable)){ # if process-based chemical is used
+#### FE mix Chemicals Products using process-based Chemicals modeling by route
+```{r FE mix Chemical Products}
+if ("FE|Industry|Chemicals|Other Chemicals|Conventional" %in% levels(data$variable)){ # if process-based chemical is used
   tot <- "FE|Industry|Chemicals"
   items <- c(
-    "FE|Industry|Chemicals|CHEM-OLD",
-    "FE|Industry|Chemicals|CHEM-ELC",
-    "FE|Industry|Chemicals|CHEM-H2",
-    "FE|Industry|Chemicals|STCR-GAS",
-    "FE|Industry|Chemicals|STCR-LIQ",
-    "FE|Industry|Chemicals|MESY-SOL-GREYH2",
-    "FE|Industry|Chemicals|MESY-SOL-GREENH2",
-    "FE|Industry|Chemicals|MESY-GAS",
-    "FE|Industry|Chemicals|MESY-LIQ",
-    "FE|Industry|Chemicals|MESY-H2",
-    "FE|Industry|Chemicals|MESY-SOL-CCS",
-    "FE|Industry|Chemicals|MESY-GAS-CCS",
-    "FE|Industry|Chemicals|MESY-LIQ-CCS",
-    "FE|Industry|Chemicals|AMSY-COAL",
-    "FE|Industry|Chemicals|AMSY-GAS",
-    "FE|Industry|Chemicals|AMSY-LIQ",
-    "FE|Industry|Chemicals|AMSY-COAL-CCS",
-    "FE|Industry|Chemicals|AMSY-GAS-CCS",
-    "FE|Industry|Chemicals|AMSY-LIQ-CCS",
-    "FE|Industry|Chemicals|AMSY-H2",
-    "FE|Industry|Chemicals|MtOMtA",
-    "FE|Industry|Chemicals|FertProd",
-    "FE|Industry|Chemicals|FertProd-H2")
+    "FE|Industry|Chemicals|Other Chemicals",
+    "FE|Industry|Chemicals|hvc",
+    "FE|Industry|Chemicals|Fertilizer",
+    "FE|Industry|Chemicals|Methanol Final",
+    "FE|Industry|Chemicals|Ammonia Final")
+  # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
+  # Therefore, filter data by scenarios that have the 'items' variables.
+  dscens <- data %>%
+    filter(.data$variable %in% items, .data$scenario != "historical") %>%
+    droplevels() %>%
+    pull('scenario') %>%
+    unique()
+  droute <- data %>%
+    filter(.data$scenario %in% dscens)
+showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
+}
+```
+
+#### FE mix Chemicals using process-based Chemicals modeling by route
+```{r FE mix Chemical route}
+if ("FE|Industry|Chemicals|Other Chemicals|Conventional" %in% levels(data$variable)){ # if process-based chemical is used
+  tot <- "FE|Industry|Chemicals"
+  items <- c(
+    "FE|Industry|Chemicals|Other Chemicals|Conventional",
+    "FE|Industry|Chemicals|Other Chemicals|Electrified",
+    "FE|Industry|Chemicals|Other Chemicals|H2-based",
+    "FE|Industry|Chemicals|hvc|From liquids-based steam cracker",
+    "FE|Industry|Chemicals|hvc|From gas-based steam cracker",
+    "FE|Industry|Chemicals|hvc|From solids-based methanol",
+    "FE|Industry|Chemicals|hvc|From gas-based methanol",
+    "FE|Industry|Chemicals|hvc|From liquids-based methanol",
+    "FE|Industry|Chemicals|hvc|From solids and green hydrogen-based methanol",
+    "FE|Industry|Chemicals|hvc|From solids-based methanol with CC",
+    "FE|Industry|Chemicals|hvc|From gas-based methanol with CC",
+    "FE|Industry|Chemicals|hvc|From liquids-based methanol with CC",
+    "FE|Industry|Chemicals|hvc|From green hydogren-based methanol",
+    "FE|Industry|Chemicals|Fertilizer|From solids-based ammonia",
+    "FE|Industry|Chemicals|Fertilizer|From gas-based ammonia",
+    "FE|Industry|Chemicals|Fertilizer|From liquids-based ammonia",
+    "FE|Industry|Chemicals|Fertilizer|From solids-based ammonia with CC",
+    "FE|Industry|Chemicals|Fertilizer|From gas-based ammonia with CC",
+    "FE|Industry|Chemicals|Fertilizer|From liquids-based ammonia with CC",
+    "FE|Industry|Chemicals|Fertilizer|From green hydrogen-based ammonia",
+    "FE|Industry|Chemicals|Methanol Final|Solids-based",
+    "FE|Industry|Chemicals|Methanol Final|Gas-based",
+    "FE|Industry|Chemicals|Methanol Final|Liquids-based",
+    "FE|Industry|Chemicals|Methanol Final|Solids and green hydrogen-based",
+    "FE|Industry|Chemicals|Methanol Final|Solids-based with CC",
+    "FE|Industry|Chemicals|Methanol Final|Gas-based with CC",
+    "FE|Industry|Chemicals|Methanol Final|Liquids-based with CC",
+    "FE|Industry|Chemicals|Methanol Final|Green hydrogen-based",
+    "FE|Industry|Chemicals|Ammonia Final|Solids-based",
+    "FE|Industry|Chemicals|Ammonia Final|Gas-based",
+    "FE|Industry|Chemicals|Ammonia Final|Liquids-based",
+    "FE|Industry|Chemicals|Ammonia Final|Solids-based with CC",
+    "FE|Industry|Chemicals|Ammonia Final|Gas-based with CC",
+    "FE|Industry|Chemicals|Ammonia Final|Liquids-based with CC",
+    "FE|Industry|Chemicals|Ammonia Final|Green hydrogen-based")
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
   dscens <- data %>%
@@ -456,18 +491,16 @@ showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
 
 #### FE mix Ammonia using process-based Chemicals modeling by route
 ```{r FE mix Ammonia route}
-if ("FE|Industry|Chemicals|CHEM-OLD" %in% levels(data$variable)){ # if process-based chemical is used
-  tot <- "FE|Industry|Chemicals"
+if ("FE|Industry|Chemicals|Ammonia|Gas-based" %in% levels(data$variable)){ # if process-based chemical is used
+  tot <- "FE|Industry|Chemicals|Ammonia"
   items <- c(
-    "FE|Industry|Chemicals|AMSY-COAL",
-    "FE|Industry|Chemicals|AMSY-GAS",
-    "FE|Industry|Chemicals|AMSY-LIQ",
-    "FE|Industry|Chemicals|AMSY-COAL-CCS",
-    "FE|Industry|Chemicals|AMSY-GAS-CCS",
-    "FE|Industry|Chemicals|AMSY-LIQ-CCS",
-    "FE|Industry|Chemicals|AMSY-H2",
-    "FE|Industry|Chemicals|FertProd",
-    "FE|Industry|Chemicals|FertProd-H2")
+    "FE|Industry|Chemicals|Ammonia|Solids-based",
+    "FE|Industry|Chemicals|Ammonia|Gas-based",
+    "FE|Industry|Chemicals|Ammonia|Liquids-based",
+    "FE|Industry|Chemicals|Ammonia|Solids-based with CC",
+    "FE|Industry|Chemicals|Ammonia|Gas-based with CC",
+    "FE|Industry|Chemicals|Ammonia|Liquids-based with CC",
+    "FE|Industry|Chemicals|Ammonia|Green hydrogen-based")
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
   dscens <- data %>%
@@ -482,18 +515,94 @@ showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
 ```
 
 #### FE mix Methanol using process-based Chemicals modeling by route
-```{r FE mix Methanol route}
-if ("FE|Industry|Chemicals|CHEM-OLD" %in% levels(data$variable)){ # if process-based chemical is used
-  tot <- "FE|Industry|Chemicals"
+```{r FE mix Methanol Final route}
+if ("FE|Industry|Chemicals|Methanol|Gas-based" %in% levels(data$variable)){ # if process-based chemical is used
+  tot <- "FE|Industry|Chemicals|Methanol"
   items <- c(
-    "FE|Industry|Chemicals|MESY-SOL-GREYH2",
-    "FE|Industry|Chemicals|MESY-SOL-GREENH2",
-    "FE|Industry|Chemicals|MESY-GAS",
-    "FE|Industry|Chemicals|MESY-LIQ",
-    "FE|Industry|Chemicals|MESY-H2",
-    "FE|Industry|Chemicals|MESY-SOL-CCS",
-    "FE|Industry|Chemicals|MESY-GAS-CCS",
-    "FE|Industry|Chemicals|MESY-LIQ-CCS")
+    "FE|Industry|Chemicals|Methanol|Solids-based",
+    "FE|Industry|Chemicals|Methanol|Gas-based",
+    "FE|Industry|Chemicals|Methanol|Liquids-based",
+    "FE|Industry|Chemicals|Methanol|Solids and green hydrogen-based",
+    "FE|Industry|Chemicals|Methanol|Solids-based with CC",
+    "FE|Industry|Chemicals|Methanol|Gas-based with CC",
+    "FE|Industry|Chemicals|Methanol|Liquids-based with CC",
+    "FE|Industry|Chemicals|Methanol|Green hydrogen-based")
+  # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
+  # Therefore, filter data by scenarios that have the 'items' variables.
+  dscens <- data %>%
+    filter(.data$variable %in% items, .data$scenario != "historical") %>%
+    droplevels() %>%
+    pull('scenario') %>%
+    unique()
+  droute <- data %>%
+    filter(.data$scenario %in% dscens)
+showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
+}
+```
+
+#### FE mix Fertilizer using process-based Chemicals modeling by route
+```{r FE mix Fertilizer route}
+if ("FE|Industry|Chemicals|Fertilizer|From gas-based ammonia" %in% levels(data$variable)){ # if process-based chemical is used
+  tot <- "FE|Industry|Chemicals|Fertilizer"
+  items <- c(
+    "FE|Industry|Chemicals|Fertilizer|From solids-based ammonia",
+    "FE|Industry|Chemicals|Fertilizer|From gas-based ammonia",
+    "FE|Industry|Chemicals|Fertilizer|From liquids-based ammonia",
+    "FE|Industry|Chemicals|Fertilizer|From solids-based ammonia with CC",
+    "FE|Industry|Chemicals|Fertilizer|From gas-based ammonia with CC",
+    "FE|Industry|Chemicals|Fertilizer|From liquids-based ammonia with CC",
+    "FE|Industry|Chemicals|Fertilizer|From green hydrogen-based ammonia")
+  # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
+  # Therefore, filter data by scenarios that have the 'items' variables.
+  dscens <- data %>%
+    filter(.data$variable %in% items, .data$scenario != "historical") %>%
+    droplevels() %>%
+    pull('scenario') %>%
+    unique()
+  droute <- data %>%
+    filter(.data$scenario %in% dscens)
+showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
+}
+```
+
+#### FE mix Ammonia Final using process-based Chemicals modeling by route
+```{r FE mix Ammonia Final route}
+if ("FE|Industry|Chemicals|Ammonia Final|Gas-based" %in% levels(data$variable)){ # if process-based chemical is used
+  tot <- "FE|Industry|Chemicals|Ammonia Final"
+  items <- c(
+    "FE|Industry|Chemicals|Ammonia Final|Solids-based",
+    "FE|Industry|Chemicals|Ammonia Final|Gas-based",
+    "FE|Industry|Chemicals|Ammonia Final|Liquids-based",
+    "FE|Industry|Chemicals|Ammonia Final|Solids-based with CC",
+    "FE|Industry|Chemicals|Ammonia Final|Gas-based with CC",
+    "FE|Industry|Chemicals|Ammonia Final|Liquids-based with CC",
+    "FE|Industry|Chemicals|Ammonia Final|Green hydrogen-based")
+  # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
+  # Therefore, filter data by scenarios that have the 'items' variables.
+  dscens <- data %>%
+    filter(.data$variable %in% items, .data$scenario != "historical") %>%
+    droplevels() %>%
+    pull('scenario') %>%
+    unique()
+  droute <- data %>%
+    filter(.data$scenario %in% dscens)
+showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
+}
+```
+
+#### FE mix Methanol Final using process-based Chemicals modeling by route
+```{r FE mix Methanol Final route}
+if ("FE|Industry|Chemicals|Methanol Final|Gas-based" %in% levels(data$variable)){ # if process-based chemical is used
+  tot <- "FE|Industry|Chemicals|Methanol Final"
+  items <- c(
+    "FE|Industry|Chemicals|Methanol Final|Solids-based",
+    "FE|Industry|Chemicals|Methanol Final|Gas-based",
+    "FE|Industry|Chemicals|Methanol Final|Liquids-based",
+    "FE|Industry|Chemicals|Methanol Final|Solids and green hydrogen-based",
+    "FE|Industry|Chemicals|Methanol Final|Solids-based with CC",
+    "FE|Industry|Chemicals|Methanol Final|Gas-based with CC",
+    "FE|Industry|Chemicals|Methanol Final|Liquids-based with CC",
+    "FE|Industry|Chemicals|Methanol Final|Green hydrogen-based")
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
   dscens <- data %>%
@@ -509,12 +618,12 @@ showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
 
 #### FE mix Otherchem using process-based Chemicals modeling by route
 ```{r FE mix Otherchem route}
-if ("FE|Industry|Chemicals|CHEM-OLD" %in% levels(data$variable)){ # if process-based chemical is used
-  tot <- "FE|Industry|Chemicals"
+if ("FE|Industry|Chemicals|Other Chemicals|Conventional" %in% levels(data$variable)){ # if process-based chemical is used
+  tot <- "FE|Industry|Chemicals|Other Chemicals"
   items <- c(
-    "FE|Industry|Chemicals|CHEM-OLD",
-    "FE|Industry|Chemicals|CHEM-ELC",
-    "FE|Industry|Chemicals|CHEM-H2")
+    "FE|Industry|Chemicals|Other Chemicals|Conventional",
+    "FE|Industry|Chemicals|Other Chemicals|Electrified",
+    "FE|Industry|Chemicals|Other Chemicals|H2-based")
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
   dscens <- data %>%
@@ -528,14 +637,21 @@ showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
 }
 ```
 
-#### FE mix HVC using process-based Chemicals modeling by route
-```{r FE mix HVC route}
-if ("FE|Industry|Chemicals|CHEM-OLD" %in% levels(data$variable)){ # if process-based chemical is used
-  tot <- "FE|Industry|Chemicals"
+#### FE mix hvc using process-based Chemicals modeling by route
+```{r FE mix hvc route}
+if ("FE|Industry|Chemicals|hvc|From liquids-based steam cracker" %in% levels(data$variable)){ # if process-based chemical is used
+  tot <- "FE|Industry|Chemicals|hvc"
   items <- c(
-    "FE|Industry|Chemicals|STCR-GAS",
-    "FE|Industry|Chemicals|STCR-LIQ",
-    "FE|Industry|Chemicals|MtOMtA")
+    "FE|Industry|Chemicals|hvc|From liquids-based steam cracker",
+    "FE|Industry|Chemicals|hvc|From gas-based steam cracker",
+    "FE|Industry|Chemicals|hvc|From solids-based methanol",
+    "FE|Industry|Chemicals|hvc|From gas-based methanol",
+    "FE|Industry|Chemicals|hvc|From liquids-based methanol",
+    "FE|Industry|Chemicals|hvc|From solids and green hydrogen-based methanol",
+    "FE|Industry|Chemicals|hvc|From solids-based methanol with CC",
+    "FE|Industry|Chemicals|hvc|From gas-based methanol with CC",
+    "FE|Industry|Chemicals|hvc|From liquids-based methanol with CC",
+    "FE|Industry|Chemicals|hvc|From green hydogren-based methanol")
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
   dscens <- data %>%

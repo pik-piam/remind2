@@ -540,7 +540,7 @@ if ("Production|Industry|Chemicals|Other Chemicals" %in% levels(data$variable)){
   tot <- "Production|Industry|Chemicals"
   items <- c(
     "Production|Industry|Chemicals|Other Chemicals",
-    "Production|Industry|Chemicals|HVC",
+    "Production|Industry|Chemicals|hvc",
     "Production|Industry|Chemicals|Methanol Final",
     "Production|Industry|Chemicals|Ammonia Final",
     "Production|Industry|Chemicals|Methanol",
@@ -630,21 +630,21 @@ showAreaAndBarPlots(droute, items, tot, orderVars="user", scales = "fixed")
 }
 ```
 
-### HVC mix by route using process-based chemicals modeling
-```{r HVC mix by route}
-if ("Production|Industry|Chemicals|HVC|From liquids-based steam cracker" %in% levels(data$variable)){ # if process-based chemicals is used
-  tot <- "Production|Industry|Chemicals|HVC"
+### hvc mix by route using process-based chemicals modeling
+```{r hvc mix by route}
+if ("Production|Industry|Chemicals|hvc|From liquids-based steam cracker" %in% levels(data$variable)){ # if process-based chemicals is used
+  tot <- "Production|Industry|Chemicals|hvc"
   items <- c(
-    "Production|Industry|Chemicals|HVC|From liquids-based steam cracker",
-    "Production|Industry|Chemicals|HVC|From gas-based steam cracker",
-    "Production|Industry|Chemicals|HVC|From solids-based methanol",
-    "Production|Industry|Chemicals|HVC|From gas-based methanol",
-    "Production|Industry|Chemicals|HVC|From liquids-based methanol",
-    "Production|Industry|Chemicals|HVC|From solids and green hydrogen-based methanol",
-    "Production|Industry|Chemicals|HVC|From solids-based methanol with CC",
-    "Production|Industry|Chemicals|HVC|From gas-based methanol with CC",
-    "Production|Industry|Chemicals|HVC|From liquids-based methanol with CC",
-    "Production|Industry|Chemicals|HVC|From green hydogren-based methanol")
+    "Production|Industry|Chemicals|hvc|From liquids-based steam cracker",
+    "Production|Industry|Chemicals|hvc|From gas-based steam cracker",
+    "Production|Industry|Chemicals|hvc|From solids-based methanol",
+    "Production|Industry|Chemicals|hvc|From gas-based methanol",
+    "Production|Industry|Chemicals|hvc|From liquids-based methanol",
+    "Production|Industry|Chemicals|hvc|From solids and green hydrogen-based methanol",
+    "Production|Industry|Chemicals|hvc|From solids-based methanol with CC",
+    "Production|Industry|Chemicals|hvc|From gas-based methanol with CC",
+    "Production|Industry|Chemicals|hvc|From liquids-based methanol with CC",
+    "Production|Industry|Chemicals|hvc|From green hydogren-based methanol")
   # Non-process based scenarios have tot variable, but not items, which leads to errors in display;
   # Therefore, filter data by scenarios that have the 'items' variables.
   dscens <- data %>%

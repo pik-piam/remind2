@@ -804,99 +804,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
       en.ppfen.sec.steel <- ces_eff_target_dyn37 %>%
         filter(.data$all_in == "ue_steel_secondary") %>%
         pull('all_in1')
-
-      #TOCHECK:QIANZHI
-      if (chemicals_process_based) {
-
-        # Electricity use by route
-        routes_otherChem  <- c("otherChem_old", "otherChem_elec", "otherChem_h2")
-        routes_HVC        <- c("HVC_stCrLiq", "HVC_stCrNg", "HVC_meSol", "HVC_meNg", "HVC_meLiq", "HVC_meSol_gh2", "HVC_meSol_cc", "HVC_meNg_cc", "HVC_meLiq_cc", "HVC_meh2")
-        routes_fertilizer <- c("fertilizer_amSol", "fertilizer_amNg", "fertilizer_amLiq", "fertilizer_amSol_cc", "fertilizer_amNg_cc", "fertilizer_amLiq_cc", "fertilizer_amh2")
-        routes_meFinal    <- c("meFinal_sol", "meFinal_ng", "meFinal_liq", "meFinal_sol_gh2", "meFinal_sol_cc", "meFinal_ng_cc", "meFinal_liq_cc", "meFinal_h2")
-        routes_ammoFInal  <- c("amFinal_sol", "amFinal_ng", "amFinal_liq", "amFinal_sol_cc", "amFinal_ng_cc", "amFinal_liq_cc", "amFinal_h2")
  
-        mixer <- tribble(
-          ~variable,                                        ~all_enty, ~all_te, ~route,            ~secInd37,
-         "FE|Industry|Chemicals|++|Other Chemicals (EJ/yr)", NULL,      NULL,    routes_otherChem,  "chemicals",
-         "FE|Industry|Chemicals|++|HVC (EJ/yr)",             NULL,      NULL,    routes_HVC,        "chemicals",
-         "FE|Industry|Chemicals|++|Fertilizer (EJ/yr)",      NULL,      NULL,    routes_fertilizer, "chemicals",
-         "FE|Industry|Chemicals|++|Methanol Final (EJ/yr)",  NULL,      NULL,    routes_meFinal,    "chemicals",
-         "FE|Industry|Chemicals|++|Ammonia Final (EJ/yr)",   NULL,      NULL,    routes_ammoFInal,  "chemicals")
- 
-        out <- mbind(
-          c(list(out), # pass a list of magpie objects
-            .select_sum_name_multiply(o37_demFeIndRoute, .mixer_to_selector(mixer))
-          ))
- 
-        mixer <- tribble(
-         ~variable,                                                                          ~all_enty, ~all_te, ~route,                 ~secInd37,
-         "FE|Industry|Chemicals|Other Chemicals|+|Conventional (EJ/yr)",                      NULL,      NULL,    "otherChem_old",        "chemicals",
-         "FE|Industry|Chemicals|Other Chemicals|+|Electrified (EJ/yr)",                       NULL,      NULL,    "otherChem_elec",       "chemicals",
-         "FE|Industry|Chemicals|Other Chemicals|+|H2-based (EJ/yr)",                          NULL,      NULL,    "otherChem_h2",         "chemicals",
- 
-         "FE|Industry|Chemicals|HVC|+|From liquids-based steam cracker (EJ/yr)",              NULL,      NULL,    "HVC_stCrLiq",          "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From gas-based steam cracker (EJ/yr)",                  NULL,      NULL,    "HVC_stCrNg",           "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From solids-based methanol (EJ/yr)",                    NULL,      NULL,    "HVC_meSol",            "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From gas-based methanol (EJ/yr)",                       NULL,      NULL,    "HVC_meNg",             "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From liquids-based methanol (EJ/yr)",                   NULL,      NULL,    "HVC_meLiq",            "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From solids and green hydrogen-based methanol (EJ/yr)", NULL,      NULL,    "HVC_meSol_gh2",        "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From solids-based methanol with CC (EJ/yr)",            NULL,      NULL,    "HVC_meSol_cc",         "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From gas-based methanol with CC (EJ/yr)",               NULL,      NULL,    "HVC_meNg_cc",          "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From liquids-based methanol with CC (EJ/yr)",           NULL,      NULL,    "HVC_meLiq_cc",         "chemicals",
-         "FE|Industry|Chemicals|HVC|+|From green hydogren-based methanol (EJ/yr)",            NULL,      NULL,    "HVC_meh2",             "chemicals",
- 
-         "FE|Industry|Chemicals|Fertilizer|+|From solids-based ammonia (EJ/yr)",              NULL,      NULL,    "fertilizer_amSol",     "chemicals",
-         "FE|Industry|Chemicals|Fertilizer|+|From gas-based ammonia (EJ/yr)",                 NULL,      NULL,    "fertilizer_amNg",      "chemicals",
-         "FE|Industry|Chemicals|Fertilizer|+|From liquids-based ammonia (EJ/yr)",             NULL,      NULL,    "fertilizer_amLiq",     "chemicals",
-         "FE|Industry|Chemicals|Fertilizer|+|From solids-based ammonia with CC (EJ/yr)",      NULL,      NULL,    "fertilizer_amSol_cc",  "chemicals",
-         "FE|Industry|Chemicals|Fertilizer|+|From gas-based ammonia with CC (EJ/yr)",         NULL,      NULL,    "fertilizer_amNg_cc",   "chemicals",
-         "FE|Industry|Chemicals|Fertilizer|+|From liquids-based ammonia with CC (EJ/yr)",     NULL,      NULL,    "fertilizer_amLiq_cc",  "chemicals",
-         "FE|Industry|Chemicals|Fertilizer|+|From green hydrogen-based ammonia (EJ/yr)",      NULL,      NULL,    "fertilizer_amh2",      "chemicals",
- 
-         "FE|Industry|Chemicals|Methanol Final|+|Solids-based (EJ/yr)",                       NULL,      NULL,    "meFinal_sol",          "chemicals",
-         "FE|Industry|Chemicals|Methanol Final|+|Gas-based (EJ/yr)",                          NULL,      NULL,    "meFinal_ng",           "chemicals",
-         "FE|Industry|Chemicals|Methanol Final|+|Liquids-based (EJ/yr)",                      NULL,      NULL,    "meFinal_liq",          "chemicals",
-         "FE|Industry|Chemicals|Methanol Final|+|Solids and green hydrogen-based (EJ/yr)",    NULL,      NULL,    "meFinal_sol_gh2",      "chemicals",
-         "FE|Industry|Chemicals|Methanol Final|+|Solids-based with CC (EJ/yr)",               NULL,      NULL,    "meFinal_sol_cc",       "chemicals",
-         "FE|Industry|Chemicals|Methanol Final|+|Gas-based with CC (EJ/yr)",                  NULL,      NULL,    "meFinal_ng_cc",        "chemicals",
-         "FE|Industry|Chemicals|Methanol Final|+|Liquids-based with CC (EJ/yr)",              NULL,      NULL,    "meFinal_liq_cc",       "chemicals",
-         "FE|Industry|Chemicals|Methanol Final|+|Green hydrogen-based (EJ/yr)",               NULL,      NULL,    "meFinal_h2",           "chemicals",
- 
-         "FE|Industry|Chemicals|Ammonia Final|+|Solids-based (EJ/yr)",                        NULL,      NULL,    "amFinal_sol",          "chemicals",
-         "FE|Industry|Chemicals|Ammonia Final|+|Gas-based (EJ/yr)",                           NULL,      NULL,    "amFinal_ng",           "chemicals",
-         "FE|Industry|Chemicals|Ammonia Final|+|Liquids-based (EJ/yr)",                       NULL,      NULL,    "amFinal_liq",          "chemicals",
-         "FE|Industry|Chemicals|Ammonia Final|+|Solids-based with CC (EJ/yr)",                NULL,      NULL,    "amFinal_sol_cc",       "chemicals",
-         "FE|Industry|Chemicals|Ammonia Final|+|Gas-based with CC (EJ/yr)",                   NULL,      NULL,    "amFinal_ng_cc",        "chemicals",
-         "FE|Industry|Chemicals|Ammonia Final|+|Liquids-based with CC (EJ/yr)",               NULL,      NULL,    "amFinal_liq_cc",       "chemicals",
-         "FE|Industry|Chemicals|Ammonia Final|+|Green hydrogen-based (EJ/yr)",                NULL,      NULL,    "amFinal_h2",           "chemicals")
-
-        out <- mbind(
-          c(list(out), # pass a list of magpie objects
-            .select_sum_name_multiply(o37_demFeIndRoute, .mixer_to_selector(mixer))
-          ))
-
-      } else {
-
-        # mapping of industrial output to energy production factors in CES tree
-        ces_eff_target_dyn37 <- readGDX(gdx, "ces_eff_target_dyn37")
-
-        # energy production factors for primary and secondary steel
-        en.ppfen.chemicals <- ces_eff_target_dyn37 %>%
-          filter(.data$all_in == "ue_chemicals") %>%
-          pull('all_in1')
-
-        mixer <- tribble(
-          ~variable,                                                                                     ~all_in,
-          "FE|Industry|Chemicals|Electricity|+|Mechanical work and low-temperature heat (EJ/yr)",        "feelwlth_chemicals",
-          "FE|Industry|Chemicals|Electricity|+|High-temperature heat (EJ/yr)",                           "feelhth_chemicals")
-
-        # calculate and bind to out
-        out <- mbind(
-          c(list(out), # pass a list of magpie objects
-            .select_sum_name_multiply(vm_cesIO, .mixer_to_selector(mixer))
-          ))
-      }
-
       mixer <- tribble(
         ~variable,                                                                                     ~all_in,
         "FE|Industry|Steel|Primary|Electricity (EJ/yr)",                                               "feel_steel_primary",
@@ -911,10 +819,118 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         ))
     }
 
+    #TOCHECK:QIANZHI
+    if (chemicals_process_based) {
+
+      # Electricity use by route
+      routes_otherChem  <- c("otherChem_old", "otherChem_elec", "otherChem_h2")
+      routes_HVC        <- c("hvc_stCrLiq", "hvc_stCrNg", "hvc_meSol", "hvc_meNg", "hvc_meLiq", "hvc_meSol_gh2", "hvc_meSol_cc", "hvc_meNg_cc", "hvc_meLiq_cc", "hvc_meh2")
+      routes_fertilizer <- c("fertilizer_amSol", "fertilizer_amNg", "fertilizer_amLiq", "fertilizer_amSol_cc", "fertilizer_amNg_cc", "fertilizer_amLiq_cc", "fertilizer_amh2")
+      routes_meFinal    <- c("meFinal_sol", "meFinal_ng", "meFinal_liq", "meFinal_sol_gh2", "meFinal_sol_cc", "meFinal_ng_cc", "meFinal_liq_cc", "meFinal_h2")
+      routes_ammoFinal  <- c("amFinal_sol", "amFinal_ng", "amFinal_liq", "amFinal_sol_cc", "amFinal_ng_cc", "amFinal_liq_cc", "amFinal_h2")
+      tech_ammonia      <- c("amSyCoal", "amSyNG", "amSyLiq", "amSyCoal_cc", "amSyNG_cc", "amSyLiq_cc", "amSyH2")
+      tech_methanol     <- c("meSySol", "meSyNG", "meSyLiq", "meSySol_cc", "meSyNG_cc", "meSyLiq_cc", "meSyH2")
+
+      mixer <- tribble(
+        ~variable,                                          ~all_enty, ~all_te,         ~route,            ~secInd37,
+        "FE|Industry|Chemicals|++|Other Chemicals (EJ/yr)", NULL,      NULL,            routes_otherChem,  "chemicals",
+        "FE|Industry|Chemicals|++|HVC (EJ/yr)",             NULL,      NULL,            routes_HVC,        "chemicals",
+        "FE|Industry|Chemicals|++|Fertilizer (EJ/yr)",      NULL,      NULL,            routes_fertilizer, "chemicals",
+        "FE|Industry|Chemicals|++|Methanol Final (EJ/yr)",  NULL,      NULL,            routes_meFinal,    "chemicals",
+        "FE|Industry|Chemicals|++|Ammonia Final (EJ/yr)",   NULL,      NULL,            routes_ammoFinal,  "chemicals",
+        "FE|Industry|Chemicals|Ammonia (EJ/yr)",            NULL,      tech_ammonia,    NULL,              "chemicals",
+        "FE|Industry|Chemicals|Methanol (EJ/yr)",           NULL,      tech_methanol,   NULL,              "chemicals"
+        )
+
+      out <- mbind(
+        c(list(out), # pass a list of magpie objects
+          .select_sum_name_multiply(o37_demFeIndRoute, .mixer_to_selector(mixer))
+        ))
+
+      mixer <- tribble(
+        ~variable,                                                                          ~all_enty, ~all_te,        ~route,                                       ~secInd37,
+        "FE|Industry|Chemicals|Other Chemicals|+|Conventional (EJ/yr)",                      NULL,      NULL,          "otherChem_old",                              "chemicals",
+        "FE|Industry|Chemicals|Other Chemicals|+|Electrified (EJ/yr)",                       NULL,      NULL,          "otherChem_elec",                             "chemicals",
+        "FE|Industry|Chemicals|Other Chemicals|+|H2-based (EJ/yr)",                          NULL,      NULL,          "otherChem_h2",                               "chemicals",
+
+        "FE|Industry|Chemicals|HVC|+|From liquids-based steam cracker (EJ/yr)",              NULL,      NULL,          "hvc_stCrLiq",                                "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From gas-based steam cracker (EJ/yr)",                  NULL,      NULL,          "hvc_stCrNg",                                 "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From solids-based methanol (EJ/yr)",                    NULL,      NULL,          "hvc_meSol",                                  "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From gas-based methanol (EJ/yr)",                       NULL,      NULL,          "hvc_meNg",                                   "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From liquids-based methanol (EJ/yr)",                   NULL,      NULL,          "hvc_meLiq",                                  "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From solids and green hydrogen-based methanol (EJ/yr)", NULL,      NULL,          "hvc_meSol_gh2",                              "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From solids-based methanol with CC (EJ/yr)",            NULL,      NULL,          "hvc_meSol_cc",                               "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From gas-based methanol with CC (EJ/yr)",               NULL,      NULL,          "hvc_meNg_cc",                                "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From liquids-based methanol with CC (EJ/yr)",           NULL,      NULL,          "hvc_meLiq_cc",                               "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From green hydogren-based methanol (EJ/yr)",            NULL,      NULL,          "hvc_meh2",                                   "chemicals",
+
+        "FE|Industry|Chemicals|Fertilizer|+|From solids-based ammonia (EJ/yr)",              NULL,      NULL,           "fertilizer_amSol",                          "chemicals",
+        "FE|Industry|Chemicals|Fertilizer|+|From gas-based ammonia (EJ/yr)",                 NULL,      NULL,           "fertilizer_amNg",                           "chemicals",
+        "FE|Industry|Chemicals|Fertilizer|+|From liquids-based ammonia (EJ/yr)",             NULL,      NULL,           "fertilizer_amLiq",                          "chemicals",
+        "FE|Industry|Chemicals|Fertilizer|+|From solids-based ammonia with CC (EJ/yr)",      NULL,      NULL,           "fertilizer_amSol_cc",                       "chemicals",
+        "FE|Industry|Chemicals|Fertilizer|+|From gas-based ammonia with CC (EJ/yr)",         NULL,      NULL,           "fertilizer_amNg_cc",                        "chemicals",
+        "FE|Industry|Chemicals|Fertilizer|+|From liquids-based ammonia with CC (EJ/yr)",     NULL,      NULL,           "fertilizer_amLiq_cc",                       "chemicals",
+        "FE|Industry|Chemicals|Fertilizer|+|From green hydrogen-based ammonia (EJ/yr)",      NULL,      NULL,           "fertilizer_amh2",                           "chemicals",
+
+        "FE|Industry|Chemicals|Methanol Final|+|Solids-based (EJ/yr)",                       NULL,      NULL,           "meFinal_sol",                               "chemicals",
+        "FE|Industry|Chemicals|Methanol Final|+|Gas-based (EJ/yr)",                          NULL,      NULL,           "meFinal_ng",                                "chemicals",
+        "FE|Industry|Chemicals|Methanol Final|+|Liquids-based (EJ/yr)",                      NULL,      NULL,           "meFinal_liq",                               "chemicals",
+        "FE|Industry|Chemicals|Methanol Final|+|Solids and green hydrogen-based (EJ/yr)",    NULL,      NULL,           "meFinal_sol_gh2",                           "chemicals",
+        "FE|Industry|Chemicals|Methanol Final|+|Solids-based with CC (EJ/yr)",               NULL,      NULL,           "meFinal_sol_cc",                            "chemicals",
+        "FE|Industry|Chemicals|Methanol Final|+|Gas-based with CC (EJ/yr)",                  NULL,      NULL,           "meFinal_ng_cc",                             "chemicals",
+        "FE|Industry|Chemicals|Methanol Final|+|Liquids-based with CC (EJ/yr)",              NULL,      NULL,           "meFinal_liq_cc",                            "chemicals",
+        "FE|Industry|Chemicals|Methanol Final|+|Green hydrogen-based (EJ/yr)",               NULL,      NULL,           "meFinal_h2",                                "chemicals",
+
+        "FE|Industry|Chemicals|Ammonia Final|+|Solids-based (EJ/yr)",                        NULL,      NULL,           "amFinal_sol",                               "chemicals",
+        "FE|Industry|Chemicals|Ammonia Final|+|Gas-based (EJ/yr)",                           NULL,      NULL,           "amFinal_ng",                                "chemicals",
+        "FE|Industry|Chemicals|Ammonia Final|+|Liquids-based (EJ/yr)",                       NULL,      NULL,           "amFinal_liq",                               "chemicals",
+        "FE|Industry|Chemicals|Ammonia Final|+|Solids-based with CC (EJ/yr)",                NULL,      NULL,           "amFinal_sol_cc",                            "chemicals",
+        "FE|Industry|Chemicals|Ammonia Final|+|Gas-based with CC (EJ/yr)",                   NULL,      NULL,           "amFinal_ng_cc",                             "chemicals",
+        "FE|Industry|Chemicals|Ammonia Final|+|Liquids-based with CC (EJ/yr)",               NULL,      NULL,           "amFinal_liq_cc",                            "chemicals",
+        "FE|Industry|Chemicals|Ammonia Final|+|Green hydrogen-based (EJ/yr)",                NULL,      NULL,           "amFinal_h2",                                "chemicals",
+        
+        "FE|Industry|Chemicals|Ammonia|+|Solids-based (EJ/yr)",                              NULL,      "amSyCoal",     c("amFinal_sol", "fertilizer_amSol"),        "chemicals",
+        "FE|Industry|Chemicals|Ammonia|+|Gas-based (EJ/yr)",                                 NULL,      "amSyNG",       c("amFinal_ng", "fertilizer_amNg"),          "chemicals",
+        "FE|Industry|Chemicals|Ammonia|+|Liquids-based (EJ/yr)",                             NULL,      "amSyLiq",      c("amFinal_liq", "fertilizer_amliq"),        "chemicals",
+        "FE|Industry|Chemicals|Ammonia|+|Solids-based with CC (EJ/yr)",                      NULL,      c("amSyCoal","amSyCoal_cc"),   c("amFinal_sol_cc", "fertilizer_amSol_cc"),  "chemicals",
+        "FE|Industry|Chemicals|Ammonia|+|Gas-based with CC (EJ/yr)",                         NULL,      c("amSyNG","amSyNG_cc"),     c("amFinal_ng_cc", "fertilizer_amNg_cc"),    "chemicals",
+        "FE|Industry|Chemicals|Ammonia|+|Liquids-based with CC (EJ/yr)",                     NULL,      c("amSyLiq","amSyLiq_cc"),     c("amFinal_liq_cc", "fertilizer_amLiq_cc"),  "chemicals",
+        "FE|Industry|Chemicals|Ammonia|+|Green hydrogen-based (EJ/yr)",                      NULL,      "amSyH2",       c("amFinal_h2", "fertilizer_amh2"),          "chemicals",
+        
+        "FE|Industry|Chemicals|Methanol|+|Solids-based (EJ/yr)",                             NULL,      "meSySol",      c("meFinal_sol", "hvc_meSol"),               "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Gas-based (EJ/yr)",                                NULL,      "meSyNG",       c("meFinal_ng", "hvc_meNg"),                 "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Liquids-based (EJ/yr)",                            NULL,      "meSyLiq",      c("meFinal_liq", "hvc_meLiq"),               "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Solids and green hydrogen-based (EJ/yr)",          NULL,      "meSySol",      c("meFinal_sol_gh2", "hvc_meSol_gh2"),       "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Solids-based with CC (EJ/yr)",                     NULL,      c("meSySol","meSySol_cc"),    c("meFinal_sol_cc", "hvc_meSol_cc"),         "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Gas-based with CC (EJ/yr)",                        NULL,      c("meSyNG","meSyNG_cc"),     c("meFinal_ng_cc", "hvc_meNg_cc"),           "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Liquids-based with CC  (EJ/yr)",                   NULL,      c("meSyLiq","meSyLiq_cc"),    c("meFinal_liq_cc", "hvc_meLiq_cc"),         "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Green hydrogen-based  (EJ/yr)",                    NULL,      "meSyH2",       c("meFinal_h2", "hvc_meh2"),                 "chemicals"
+        )
+
+      out <- mbind(
+        c(list(out), # pass a list of magpie objects
+          .select_sum_name_multiply(o37_demFeIndRoute, .mixer_to_selector(mixer))
+        ))
+
+    } else {
+
+      # mapping of industrial output to energy production factors in CES tree
+      ces_eff_target_dyn37 <- readGDX(gdx, "ces_eff_target_dyn37")
+
+      mixer <- tribble(
+        ~variable,                                                                                     ~all_in,
+        "FE|Industry|Chemicals|Electricity|+|Mechanical work and low-temperature heat (EJ/yr)",        "feelwlth_chemicals",
+        "FE|Industry|Chemicals|Electricity|+|High-temperature heat (EJ/yr)",                           "feelhth_chemicals")
+
+      # calculate and bind to out
+      out <- mbind(
+        c(list(out), # pass a list of magpie objects
+          .select_sum_name_multiply(vm_cesIO, .mixer_to_selector(mixer))
+        ))
+    }
+
     mixer <- tribble(
       ~variable,                                                                                     ~all_in,
-      "FE|Industry|Chemicals|Electricity|+|Mechanical work and low-temperature heat (EJ/yr)",        "feelwlth_chemicals",
-      "FE|Industry|Chemicals|Electricity|+|High-temperature heat (EJ/yr)",                           "feelhth_chemicals",
       "FE|Industry|Other Industry|Electricity|+|Mechanical work and low-temperature heat (EJ/yr)",   "feelwlth_otherInd",
       "FE|Industry|Other Industry|Electricity|+|High-temperature heat (EJ/yr)",                      "feelhth_otherInd")
 
@@ -1009,16 +1025,16 @@ reportFE <- function(gdx, regionSubsetList = NULL,
           "Production|Industry|Chemicals|Other Chemicals|+|Electrified (Mt/yr)",                       "OtherChem",  "otherChem_elec",
           "Production|Industry|Chemicals|Other Chemicals|+|H2-based (Mt/yr)",                          "OtherChem",  "otherChem_h2",
  
-          "Production|Industry|Chemicals|HVC|+|From liquids-based steam cracker (Mt/yr)",              "HVC",        "HVC_stCrLiq",
-          "Production|Industry|Chemicals|HVC|+|From gas-based steam cracker (Mt/yr)",                  "HVC",        "HVC_stCrNg",
-          "Production|Industry|Chemicals|HVC|+|From solids-based methanol (Mt/yr)",                    "HVC",        "HVC_meSol",    
-          "Production|Industry|Chemicals|HVC|+|From gas-based methanol (Mt/yr)",                       "HVC",        "HVC_meNg",
-          "Production|Industry|Chemicals|HVC|+|From liquids-based methanol (Mt/yr)",                   "HVC",        "HVC_meLiq",
-          "Production|Industry|Chemicals|HVC|+|From solids and green hydrogen-based methanol (Mt/yr)", "HVC",        "HVC_meSol_gh2",
-          "Production|Industry|Chemicals|HVC|+|From solids-based methanol with CC (Mt/yr)",            "HVC",        "HVC_meSol_cc",
-          "Production|Industry|Chemicals|HVC|+|From gas-based methanol with CC (Mt/yr)",               "HVC",        "HVC_meNg_cc",
-          "Production|Industry|Chemicals|HVC|+|From liquids-based methanol with CC (Mt/yr)",           "HVC",        "HVC_meLiq_cc",
-          "Production|Industry|Chemicals|HVC|+|From green hydogren-based methanol (Mt/yr)",            "HVC",        "HVC_meh2",
+          "Production|Industry|Chemicals|HVC|+|From liquids-based steam cracker (Mt/yr)",              "HVC",        "hvc_stCrLiq",
+          "Production|Industry|Chemicals|HVC|+|From gas-based steam cracker (Mt/yr)",                  "HVC",        "hvc_stCrNg",
+          "Production|Industry|Chemicals|HVC|+|From solids-based methanol (Mt/yr)",                    "HVC",        "hvc_meSol",    
+          "Production|Industry|Chemicals|HVC|+|From gas-based methanol (Mt/yr)",                       "HVC",        "hvc_meNg",
+          "Production|Industry|Chemicals|HVC|+|From liquids-based methanol (Mt/yr)",                   "HVC",        "hvc_meLiq",
+          "Production|Industry|Chemicals|HVC|+|From solids and green hydrogen-based methanol (Mt/yr)", "HVC",        "hvc_meSol_gh2",
+          "Production|Industry|Chemicals|HVC|+|From solids-based methanol with CC (Mt/yr)",            "HVC",        "hvc_meSol_cc",
+          "Production|Industry|Chemicals|HVC|+|From gas-based methanol with CC (Mt/yr)",               "HVC",        "hvc_meNg_cc",
+          "Production|Industry|Chemicals|HVC|+|From liquids-based methanol with CC (Mt/yr)",           "HVC",        "hvc_meLiq_cc",
+          "Production|Industry|Chemicals|HVC|+|From green hydogren-based methanol (Mt/yr)",            "HVC",        "hvc_meh2",
  
           "Production|Industry|Chemicals|Fertilizer|+|From solids-based ammonia (Mt/yr)",              "Fertilizer", "fertilizer_amSol",
           "Production|Industry|Chemicals|Fertilizer|+|From gas-based ammonia (Mt/yr)",                 "Fertilizer", "fertilizer_amNg",
@@ -1045,14 +1061,14 @@ reportFE <- function(gdx, regionSubsetList = NULL,
           "Production|Industry|Chemicals|Ammonia Final|+|Liquids-based with CC (Mt/yr)",               "AmmoFinal",  "amFinal_liq_cc",
           "Production|Industry|Chemicals|Ammonia Final|+|Green hydrogen-based (Mt/yr)",                "AmmoFinal",  "amFinal_h2",
  
-          "Production|Industry|Chemicals|Methanol|+|Solids-based (Mt/yr)",                             "methanol",   c("HVC_meSol",    "meFinal_sol"),
-          "Production|Industry|Chemicals|Methanol|+|Gas-based (Mt/yr)",                                "methanol",   c("HVC_meNg",     "meFinal_ng"),
-          "Production|Industry|Chemicals|Methanol|+|Liquids-based (Mt/yr)",                            "methanol",   c("HVC_meLiq",    "meFinal_liq"),
-          "Production|Industry|Chemicals|Methanol|+|Solids and green hydrogen-based (Mt/yr)",          "methanol",   c("HVC_meSol_gh2","meFinal_sol_gh2"),
-          "Production|Industry|Chemicals|Methanol|+|Solids-based with CC (Mt/yr)",                     "methanol",   c("HVC_meSol_cc", "meFinal_sol_cc"),
-          "Production|Industry|Chemicals|Methanol|+|Gas-based with CC (Mt/yr)",                        "methanol",   c("HVC_meNg_cc",  "meFinal_ng_cc"),
-          "Production|Industry|Chemicals|Methanol|+|Liquids-based with CC (Mt/yr)",                    "methanol",   c("HVC_meLiq_cc", "meFinal_liq_cc"),
-          "Production|Industry|Chemicals|Methanol|+|Green hydrogen-based (Mt/yr)",                     "methanolH2", c("HVC_meh2",     "meFinal_h2"),
+          "Production|Industry|Chemicals|Methanol|+|Solids-based (Mt/yr)",                             "methanol",   c("hvc_meSol",    "meFinal_sol"),
+          "Production|Industry|Chemicals|Methanol|+|Gas-based (Mt/yr)",                                "methanol",   c("hvc_meNg",     "meFinal_ng"),
+          "Production|Industry|Chemicals|Methanol|+|Liquids-based (Mt/yr)",                            "methanol",   c("hvc_meLiq",    "meFinal_liq"),
+          "Production|Industry|Chemicals|Methanol|+|Solids and green hydrogen-based (Mt/yr)",          "methanol",   c("hvc_meSol_gh2","meFinal_sol_gh2"),
+          "Production|Industry|Chemicals|Methanol|+|Solids-based with CC (Mt/yr)",                     "methanol",   c("hvc_meSol_cc", "meFinal_sol_cc"),
+          "Production|Industry|Chemicals|Methanol|+|Gas-based with CC (Mt/yr)",                        "methanol",   c("hvc_meNg_cc",  "meFinal_ng_cc"),
+          "Production|Industry|Chemicals|Methanol|+|Liquids-based with CC (Mt/yr)",                    "methanol",   c("hvc_meLiq_cc", "meFinal_liq_cc"),
+          "Production|Industry|Chemicals|Methanol|+|Green hydrogen-based (Mt/yr)",                     "methanolH2", c("hvc_meh2",     "meFinal_h2"),
  
           "Production|Industry|Chemicals|Ammonia|+|Solids-based (Mt/yr)",                              "ammonia",    c("fertilizer_amSol",   "amFinal_sol"),
           "Production|Industry|Chemicals|Ammonia|+|Gas-based (Mt/yr)",                                 "ammonia",    c("fertilizer_amNg",    "amFinal_ng"),
