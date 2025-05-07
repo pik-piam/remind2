@@ -10,7 +10,7 @@ dimSums(x, dim = 3, na.rm = FALSE)
 \item{x}{A MAgPIE-object}
 
 \item{dim}{The dimensions(s) to sum over. A vector of dimension codes or dimension names.
-See \code{\link{dimCode}} for more information}
+See \code{\link[magclass]{dimCode}} for more information}
 
 \item{na.rm}{logical. Should missing values (including NaN) be omitted from
 the calculations?}

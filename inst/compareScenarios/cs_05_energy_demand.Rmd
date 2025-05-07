@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 # Energy Demand
 
 ## Final Energy all sectors
@@ -794,6 +799,87 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 
 ## Transport Final Energy --- with Bunkers
 
+
+
+### FE Transport per mode
+
+```{r FE Transport per mode}
+tot <- "FE|Transport"
+items <- c(
+  "FE|Transport|Bunkers|Freight|International Shipping",
+  "FE|Transport|Freight|Domestic Shipping",
+  "FE|Transport|Freight|Road",
+  "FE|Transport|Rail",
+  "FE|Transport|Pass|Road|Bus",
+  "FE|Transport|Pass|Road|LDV",
+  "FE|Transport|Pass|Domestic Aviation",
+  "FE|Transport|Bunkers|Pass|International Aviation",
+  NULL
+)
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
+### FE Transport w/ Bunkers by mode - Line
+#### FE Transport w/ Bunkers - Line
+```{r Transport w/ Bunkers}
+showLinePlots(data, "FE|Transport")
+```
+
+#### Road
+```{r Road}
+showLinePlots(data, "FE|Transport|Road")
+```
+
+#### Pass International Aviation 
+```{r Pass International Aviation}
+showLinePlots(data, "FE|Transport|Bunkers|Pass|International Aviation")
+```
+
+#### Pass Domestic Aviation
+```{r Pass Domestic Aviation}
+showLinePlots(data, "FE|Transport|Pass|Domestic Aviation")
+```
+
+#### Pass Road LDV
+```{r Pass Road LDV}
+showLinePlots(data, "FE|Transport|Pass|Road|LDV")
+```
+
+#### Pass Road LDV 4wheeler (Car)
+```{r Pass Road LDV 4wheeler Car}
+showLinePlots(data, "FE|Transport|Pass|Road|LDV|Four Wheelers")
+```
+
+#### Pass Road LDV 2wheeler
+```{r Pass Road LDV 2wheeler}
+showLinePlots(data, "FE|Transport|Pass|Road|LDV|Two Wheelers")
+```
+
+#### Pass Road Bus
+```{r Pass Road Bus}
+showLinePlots(data, "FE|Transport|Pass|Road|Bus")
+```
+
+#### Rail
+```{r Rail}
+showLinePlots(data, "FE|Transport|Rail")
+```
+
+#### Freight Road
+```{r Freight Road}
+showLinePlots(data, "FE|Transport|Freight|Road")
+```
+
+#### Freight Domestic Shipping
+```{r Freight Domestic Shipping}
+showLinePlots(data, "FE|Transport|Freight|Domestic Shipping")
+```
+
+#### Freight International Shipping
+```{r Freight International Shipping}
+showLinePlots(data, "FE|Transport|Freight|International Shipping")
+```
+
 ```{r Transport Final Energy}
 tot <- "FE|Transport"
 items <- c(
@@ -817,8 +903,8 @@ items2 <- c(
 
 \newpage
 
-### FE Transport w Bunkers by carrier - Bar
-```{r FE Transport w Bunkers by carrier - Bar}
+### FE Transport w/ Bunkers by carrier - Bar
+```{r FE Transport w/ Bunkers by carrier - Bar}
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
@@ -902,6 +988,21 @@ showLinePlots(data, "FE|Transport|Electricity|Share")
 
 ## Transport Final Energy -- w/o Bunkers
 
+\newpage
+```{r FE Transport per mode}
+tot <- "FE|Transport|w/o Bunkers"
+items <- c(
+  "FE|Transport|Freight|Domestic Shipping",
+  "FE|Transport|Freight|Road",
+  "FE|Transport|Rail",
+  "FE|Transport|Pass|Domestic Aviation",
+  "FE|Transport|Pass|Road|Bus",
+  "FE|Transport|Pass|Road|LDV",
+  NULL
+)
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
 ```{r Basics -- w/o Bunkers}
 tot <- "FE|Transport|w/o Bunkers"
 items <- c(
@@ -938,26 +1039,31 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 showAreaAndBarPlots(data, items2, tot, orderVars = "user", scales = "fixed")
 ```
 
-### FE Transport w/o Bunkers - Line Plots
+### FE Transport w/o Bunkers by tech - Line
+
+#### Total 
+```{r Total}
+showLinePlots(data, "FE|Transport|w/o Bunkers")
+```
 
 #### Electricity
 ```{r Electricity}
-showLinePlots(data, "FE|w/o Bunkers|Transport|Electricity")
+showLinePlots(data, "FE|Transport|w/o Bunkers|Electricity")
 ```
 
 #### Liquids
 ```{r Liquids}
-showLinePlots(data, "FE|w/o Bunkers|Transport|Liquids")
+showLinePlots(data, "FE|Transport|w/o Bunkers|Liquids")
 ```
 
 #### Gases
 ```{r Gases}
-showLinePlots(data, "FE|w/o Bunkers|Transport|Gases")
+showLinePlots(data, "FE|Transport|w/o Bunkers|Gases")
 ```
 
 #### Hydrogen
 ```{r Hydrogen}
-showLinePlots(data, "FE|w/o Bunkers|Transport|Hydrogen")
+showLinePlots(data, "FE|Transport|w/o Bunkers|Hydrogen")
 ```
 
 ### Electricity Share in Transport w/o Bunkers FE
@@ -965,18 +1071,4 @@ showLinePlots(data, "FE|w/o Bunkers|Transport|Hydrogen")
 showLinePlots(data, "FE|Transport|w/o Bunkers|Electricity|Share")
 ```
 
-
-### Transport per type
-
-```{r Transport per type}
-tot <- "FE|Transport"
-items <- c(
-  "FE|Transport|LDV|Electricity",
-  "FE|Transport|LDV|Hydrogen",
-  "FE|Transport|LDV|Gases",
-  "FE|Transport|LDV|Liquids",
-  NULL
-)
-showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
-```
 

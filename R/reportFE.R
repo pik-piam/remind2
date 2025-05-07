@@ -792,6 +792,51 @@ reportFE <- function(gdx, regionSubsetList = NULL,
           .select_sum_name_multiply(o37_demFeIndRoute, .mixer_to_selector(mixer))
         ))
 
+      # FE steel demand by routes and carriers
+      mixer <- tribble(
+        ~variable,                                                ~all_enty,  ~all_te,  ~route,           ~secInd37,
+        "FE|Industry|Steel|BF-BOF|+|Electricity (EJ/yr)",         "feels",    NULL,     "bfbof",          "steel",
+        "FE|Industry|Steel|BF-BOF|+|Heat (EJ/yr)",                "fehes",    NULL,     "bfbof",          "steel",
+        "FE|Industry|Steel|BF-BOF|+|Solids (EJ/yr)",              "fesos",    NULL,     "bfbof",          "steel",
+        "FE|Industry|Steel|BF-BOF|+|Liquids (EJ/yr)",             "fehos",    NULL,     "bfbof",          "steel",
+        "FE|Industry|Steel|BF-BOF|+|Gases (EJ/yr)",               "fegas",    NULL,     "bfbof",          "steel",
+        "FE|Industry|Steel|BF-BOF|+|Hydrogen (EJ/yr)",            "feh2s",    NULL,     "bfbof",          "steel",
+        "FE|Industry|Steel|BF-BOF-CCS|+|Electricity (EJ/yr)",     "feels",    NULL,     "bfbof_ccs",      "steel",
+        "FE|Industry|Steel|BF-BOF-CCS|+|Heat (EJ/yr)",            "fehes",    NULL,     "bfbof_ccs",      "steel",
+        "FE|Industry|Steel|BF-BOF-CCS|+|Solids (EJ/yr)",          "fesos",    NULL,     "bfbof_ccs",      "steel",
+        "FE|Industry|Steel|BF-BOF-CCS|+|Liquids (EJ/yr)",         "fehos",    NULL,     "bfbof_ccs",      "steel",
+        "FE|Industry|Steel|BF-BOF-CCS|+|Gases (EJ/yr)",           "fegas",    NULL,     "bfbof_ccs",      "steel",
+        "FE|Industry|Steel|BF-BOF-CCS|+|Hydrogen (EJ/yr)",        "feh2s",    NULL,     "bfbof_ccs",      "steel",
+        "FE|Industry|Steel|DRI-NG-EAF|+|Electricity (EJ/yr)",     "feels",    NULL,     "idreaf_ng",      "steel",
+        "FE|Industry|Steel|DRI-NG-EAF|+|Heat (EJ/yr)",            "fehes",    NULL,     "idreaf_ng",      "steel",
+        "FE|Industry|Steel|DRI-NG-EAF|+|Solids (EJ/yr)",          "fesos",    NULL,     "idreaf_ng",      "steel",
+        "FE|Industry|Steel|DRI-NG-EAF|+|Liquids (EJ/yr)",         "fehos",    NULL,     "idreaf_ng",      "steel",
+        "FE|Industry|Steel|DRI-NG-EAF|+|Gases (EJ/yr)",           "fegas",    NULL,     "idreaf_ng",      "steel",
+        "FE|Industry|Steel|DRI-NG-EAF|+|Hydrogen (EJ/yr)",        "feh2s",    NULL,     "idreaf_ng",      "steel",
+        "FE|Industry|Steel|DRI-NG-EAF-CCS|+|Electricity (EJ/yr)", "feels",    NULL,     "idreaf_ng_ccs",  "steel",
+        "FE|Industry|Steel|DRI-NG-EAF-CCS|+|Heat (EJ/yr)",        "fehes",    NULL,     "idreaf_ng_ccs",  "steel",
+        "FE|Industry|Steel|DRI-NG-EAF-CCS|+|Solids (EJ/yr)",      "fesos",    NULL,     "idreaf_ng_ccs",  "steel",
+        "FE|Industry|Steel|DRI-NG-EAF-CCS|+|Liquids (EJ/yr)",     "fehos",    NULL,     "idreaf_ng_ccs",  "steel",
+        "FE|Industry|Steel|DRI-NG-EAF-CCS|+|Gases (EJ/yr)",       "fegas",    NULL,     "idreaf_ng_ccs",  "steel",
+        "FE|Industry|Steel|DRI-NG-EAF-CCS|+|Hydrogen (EJ/yr)",    "feh2s",    NULL,     "idreaf_ng_ccs",  "steel",
+        "FE|Industry|Steel|DRI-H2-EAF|+|Electricity (EJ/yr)",     "feels",    NULL,     "idreaf_h2",      "steel",
+        "FE|Industry|Steel|DRI-H2-EAF|+|Heat (EJ/yr)",            "fehes",    NULL,     "idreaf_h2",      "steel",
+        "FE|Industry|Steel|DRI-H2-EAF|+|Solids (EJ/yr)",          "fesos",    NULL,     "idreaf_h2",      "steel",
+        "FE|Industry|Steel|DRI-H2-EAF|+|Liquids (EJ/yr)",         "fehos",    NULL,     "idreaf_h2",      "steel",
+        "FE|Industry|Steel|DRI-H2-EAF|+|Gases (EJ/yr)",           "fegas",    NULL,     "idreaf_h2",      "steel",
+        "FE|Industry|Steel|DRI-H2-EAF|+|Hydrogen (EJ/yr)",        "feh2s",    NULL,     "idreaf_h2",      "steel",
+        "FE|Industry|Steel|SCRAP-EAF|+|Electricity (EJ/yr)",      "feels",    NULL,     "seceaf",         "steel",
+        "FE|Industry|Steel|SCRAP-EAF|+|Heat (EJ/yr)",             "fehes",    NULL,     "seceaf",         "steel",
+        "FE|Industry|Steel|SCRAP-EAF|+|Solids (EJ/yr)",           "fesos",    NULL,     "seceaf",         "steel",
+        "FE|Industry|Steel|SCRAP-EAF|+|Liquids (EJ/yr)",          "fehos",    NULL,     "seceaf",         "steel",
+        "FE|Industry|Steel|SCRAP-EAF|+|Gases (EJ/yr)",            "fegas",    NULL,     "seceaf",         "steel",
+        "FE|Industry|Steel|SCRAP-EAF|+|Hydrogen (EJ/yr)",         "feh2s",    NULL,     "seceaf",         "steel")
+
+      out <- mbind(
+        c(list(out), # pass a list of magpie objects
+          .select_sum_name_multiply(o37_demFeIndRoute, .mixer_to_selector(mixer))
+        ))
+
     } else {
 
       # mapping of industrial output to energy production factors in CES tree

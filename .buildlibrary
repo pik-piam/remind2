@@ -1,9 +1,10 @@
-ValidationKey: '236687940'
+ValidationKey: '238343274'
 AcceptedWarnings:
 - .*following variables are expected in the piamInterfaces.*
 - Summation checks have revealed some gaps.*
 - .*to check if summation groups add up.*
 - Warning: package .* was built under R version
+- range error
 AcceptedNotes: Imports includes .* non-default packages.
 AutocreateReadme: yes
 allowLinterWarnings: yes

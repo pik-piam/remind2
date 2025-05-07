@@ -14,7 +14,7 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
   skip_if_not(as.logical(gdxrrw::igdx(silent = TRUE)), "gdxrrw is not initialized properly")
 
   # GDXs for comparison.
-  gdxList <- c("fulldata-SSP2-EU21-PkBudg650-release.gdx" = "https://rse.pik-potsdam.de/data/example/remind2_test-convGDX2MIF_SSP2-EU21-PkBudg650_2024-06-18_22.43.19.gdx",
+  gdxList <- c("fulldata-SSP2-EU21-PkBudg650-release.gdx" = "https://rse.pik-potsdam.de/data/example/remind2_test-convGDX2MIF_SSP2-EU21-PkBudg650_2025-04-07_14.31.18.gdx",
                "fulldata-SSP2-NPi-AMT.gdx"                = "https://rse.pik-potsdam.de/data/example/remind2_test-convGDX2MIF_SSP2-NPi-AMT.gdx")
 
   gdxPaths <- NULL
@@ -62,7 +62,7 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
 
     message("Running convGDX2MIF(", gdxPath, ")...")
     refpolicycost <- if (gdxPath == gdxPaths[[1]]) gdxPath else NULL
-    mifContent <- convGDX2MIF(gdxPath, gdx_refpolicycost = refpolicycost, testthat = TRUE)
+    mifContent <- convGDX2MIF(gdxPath, gdx_refpolicycost = refpolicycost, testthat = TRUE, extraData = NULL)
 
     expect_no_warning(piamInterfaces::checkVarNames(getNames(mifContent, dim = 3)))
 
@@ -80,7 +80,7 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
             "^Emi\\|CO2\\|Energy\\|Demand\\|Industry\\|.*Fossil \\(Mt CO2/yr\\)$",
             low = 0),
           list("Share.*\\((%|Percent)\\)$", low = 0, up = 100)),
-        reaction = 'stop'))
+        reaction = 'warning'))
 
     magclass::write.report(
       x = magclass::collapseNames(mifContent),

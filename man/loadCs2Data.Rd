@@ -19,12 +19,12 @@ output file.}
 
 \item{mifHist}{\code{character(1)}. Path to historical mif or \code{NULL}.}
 
-\item{cfgScen, cfgDefault}{See section "YAML Parameters" in \link[=compareScenarios]{compareScenarios()}.}
+\item{cfgScen, cfgDefault}{See section "YAML Parameters" in \link[piamPlotComparison]{compareScenarios}.}
 
 \item{envir}{\code{environment}. The environment where the loaded data is put into.}
 }
 \description{
-Load data from mif files into R-objects as used in \link[=compareScenarios]{compareScenarios()}.
+Load data from mif files into R-objects as used in \link[piamPlotComparison]{compareScenarios}.
 }
 \examples{
 \dontrun{

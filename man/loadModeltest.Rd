@@ -20,7 +20,7 @@ modeltest run names.}
 }
 \description{
 The newest model tests are collected from the cluster and copied into a
-temporary folder (by default). Then the \link[=compareScenarios]{compareScenarios()}
+temporary folder (by default). Then the \link[piamPlotComparison]{compareScenarios}
 data loading procedure is used to load this data into the users environment.
 }
 \examples{

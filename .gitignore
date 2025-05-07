@@ -6,4 +6,4 @@ tests/testthat/test-convGDX2mif-data
 .github/workflows/lucode2-check.yaml
 .Rprofile
 renv
-remind2.Rproj
+*.Rproj

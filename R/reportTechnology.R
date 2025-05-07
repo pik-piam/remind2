@@ -26,7 +26,8 @@
 #' @importFrom madrat toolAggregate
 #'
 
-reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)) {
+reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
+                             t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)) {
 
   if (is.null(output)) {
     output <- mbind(
@@ -352,7 +353,8 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(
   # write to output ----
   ## substitute NA by 1E-30 to avoid that if in 2005, 2010, 2015, 2130, 2150,
   ## output is 0 in each region, the sum is returned by toolAggregate
-  output[is.na(output) | output == 0] <- 1E-30
+  output[is.na(output) | output <= 0] <- 1E-30
+
   ## delete "+" and "++" from variable names
   output <- deletePlus(output)
 

@@ -2,8 +2,30 @@
 
 # Emissions
 
-## GHG - total
+## GHG - different totals
 
+### GHG total w/o Bunkers w/ national LULUCF accounting - should match UNFCCC
+```{r GHG total w/o Bunkers w/ national LULUCF accounting - should match UNFCCC}
+showLinePlots(data, "Emi|GHG|w/o Bunkers|LULUCF national accounting")
+```
+
+### GHG total w/ Bunkers w/ national LULUCF accounting - should match UNFCCC
+```{r GHG total w/ Bunkers w/ national LULUCF accounting - should match UNFCCC}
+showLinePlots(data, "Emi|GHG|w/ Bunkers|LULUCF national accounting")
+```
+
+### GHG total w/o Bunkers
+```{r GHG total w/o Bunkers}
+# TODO: EU sources and PRIMAP still exclude bunkers in default vars -> update
+showLinePlots(data, "Emi|GHG|w/o Bunkers", histVars = "Emi|GHG")
+```
+
+### GHG total w/ Bunkers
+```{r GHG total w/ Bunkers}
+showLinePlots(data, "Emi|GHG|w/ Bunkers")
+```
+
+### GHG - total
 ```{r GHG total}
 
 showLinePlots(
@@ -20,21 +42,19 @@ items <- c(
 showLinePlotsWithTarget(data, items)
 ```
 
-```{r GHG - total w/ Bunkers}
-showLinePlots(data, "Emi|GHG|w/ Bunkers")
-```
-
-```{r GHG - total with national LULUCF accounting - should match UNFCCC reporting}
-showLinePlots(data, "Emi|GHG|w/ Bunkers|LULUCF national accounting")
-```
-
 
 ##  GHG Sectors
 
-### GHG Energy
-```{r GHG Energy}
-showLinePlots(data, "Emi|GHG|Energy")
+### GHG Energy w/o Bunkers
+```{r GHG Energy w/o Bunkers}
+showLinePlots(data, "Emi|GHG|w/o Bunkers|Energy")
 ```
+
+### GHG Energy w/ Bunkers
+```{r GHG Energy w/ Bunkers}
+showLinePlots(data, "Emi|GHG|w/ Bunkers|Energy")
+```
+
 
 ### GHG Industrial Processes
 ```{r GHG Industrial Processes}
@@ -85,7 +105,8 @@ items <- c(
   "Emi|CO2|Land-Use Change",
   "Emi|CO2|Industrial Processes",
   "Emi|CO2|Waste",
-  "Emi|CO2|Energy|Demand|Transport",
+  "Emi|CO2|w/o Bunkers|Energy|Demand|Transport",
+  "Emi|CO2|Energy|Demand|Transport|International Bunkers",
   "Emi|CO2|Energy|Demand|Industry",
   "Emi|CO2|Energy|Demand|Buildings",
   "Emi|CO2|Energy|Demand|CDR Sector",
@@ -98,27 +119,50 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
+### CO2 total w/o Bunkers w/ national LULUCF accounting - should match UNFCCC
+```{r CO2 total w/o Bunkers}
+showLinePlots(data, "Emi|CO2|w/o Bunkers|LULUCF national accounting")
+```
 
-### Total CO2
+### CO2 total w/ Bunkers w/ national LULUCF accounting - should match UNFCCC
+```{r CO2 total w/o Bunkers}
+showLinePlots(data, "Emi|CO2|w/ Bunkers|LULUCF national accounting")
+```
 
-```{r CO2 total}
+### CO2 total w/o Bunkers
+```{r CO2 total w/o Bunkers}
+# TODO: EU sources and PRIMAP still exclude bunkers in default vars -> update
+showLinePlots(data, "Emi|CO2|w/o Bunkers", histVars = "Emi|CO2")
+```
+
+### CO2 total w/ Bunkers 
+```{r CO2 total w/ Bunkers}
+showLinePlots(data, "Emi|CO2|w/ Bunkers")
+```
+
+### Total CO2 (for comparison with old REMIND versions)
+```{r Total CO2 (for comparison with old REMIND versions)}
 showLinePlots(data, "Emi|CO2")
 ```
 
-
-### Energy and Industrial Processes - Net (incl BECCS)
-
-```{r CO2 Energy and Industry}
+### Energy and Industrial Processes w/o bunkers - Net (incl BECCS)
+```{r Energy and Industrial Processes w/o bunkers - Net (incl BECCS)}
 showLinePlots(
   data, 
-  vars = "Emi|CO2|Energy and Industrial Processes", 
-  histVars = "Emi|CO2|Fossil Fuels and Industry"
+  vars = "Emi|CO2|w/o Bunkers|Energy and Industrial Processes"
+)
+```
+
+### Energy and Industrial Processes w/ bunkers - Net (incl BECCS)
+```{r Energy and Industrial Processes w/ bunkers - Net (incl BECCS)}
+showLinePlots(
+  data, 
+  vars = "Emi|CO2|w/ Bunkers|Energy and Industrial Processes"
 )
 ```
 
 
 ### Energy and Industrial Processes - Gross
-
 ```{r CO2 Energy and Industry Gross}
 showLinePlots(
   data, 
@@ -127,11 +171,16 @@ showLinePlots(
 )
 ```
 
+### Energy without bunkers
 
-### Energy
+```{r CO2 Energy w/o bunkers}
+showLinePlots(data, "Emi|CO2|w/o Bunkers|Energy")
+```
 
-```{r CO2 Energy}
-showLinePlots(data, "Emi|CO2|Energy")
+### Energy with bunkers
+
+```{r CO2 Energy w/ bunkers}
+showLinePlots(data, "Emi|CO2|w/ Bunkers|Energy")
 ```
 
 
@@ -203,6 +252,67 @@ showLinePlots(
 showLinePlots(data, "Emi|CO2|Industry")
 ```
 
+
+### Transport without bunkers
+
+```{r CO2 Transport}
+showLinePlots(data, "Emi|CO2|w/o Bunkers|Energy|Demand|Transport")
+```
+
+### Transport with bunkers
+
+```{r CO2 Transport}
+showLinePlots(data, "Emi|CO2|w/ Bunkers|Energy|Demand|Transport")
+```
+
+
+### International Bunkers
+
+```{r CO2 Bunkers}
+showLinePlots(data, "Emi|CO2|Energy|Demand|Transport|International Bunkers")
+```
+
+
+### Process Emissions
+
+```{r CO2 Process Emissions}
+showLinePlots(data, "Emi|CO2|Industrial Processes")
+```
+
+```{r CO2 Process Emissions by Sector}
+tot <- c("Emi|CO2|Industrial Processes")
+items <- c(
+      "Emi|CO2|Industrial Processes|Industry|Chemicals",
+      "Emi|CO2|Industrial Processes|Industry|Cement",
+      "Emi|CO2|Industrial Processes|CDR Sector|OAE"
+      )
+showAreaAndBarPlots(data, items, tot, scales = "fixed")
+```
+
+#### Process Emissions Cement
+
+```{r}
+showLinePlots(
+  data, 
+  vars = "Emi|CO2|Industrial Processes|Industry|Cement", 
+  histVars = c("Emi|CO2|Industrial Processes|Cement", 
+               "Emi|CO2|Industrial Processes|Minerals")
+)
+```
+
+
+#### Process Emissions Chemicals
+
+```{r}
+showLinePlots(data, "Emi|CO2|Industrial Processes|Industry|Chemicals")
+```
+
+#### Process Emissions Metals
+
+```{r}
+showLinePlots(data, "Emi|CO2|Industrial Processes|Industry|Metals")
+```
+
 ### Waste Emissions
 
 #### Waste Emissions from Plastics-Incineration
@@ -248,60 +358,6 @@ showLinePlots(data, "Emi|CO2|Waste|Non-Incinerated Plastic")
 showLinePlots(data, "Emi|CO2|Waste|Non-plastic Waste")
 ```
 
-
-### Transport
-
-```{r CO2 Transport}
-showLinePlots(data, "Emi|CO2|Energy|Demand|Transport")
-```
-
-
-### International Bunkers
-
-```{r CO2 Bunkers}
-showLinePlots(data, "Emi|CO2|Energy|Demand|Transport|International Bunkers")
-```
-
-
-### Process Emissions
-
-```{r CO2 Process Emissions}
-showLinePlots(data, "Emi|CO2|Industrial Processes")
-```
-
-```{r CO2 Process Emissions by Sector}
-tot <- c("Emi|CO2|Industrial Processes")
-items <- c(
-      "Emi|CO2|Industrial Processes|Industry|Chemicals",
-      "Emi|CO2|Industrial Processes|Industry|Cement",
-      "Emi|CO2|Industrial Processes|CDR Sector|OAE"
-      )
-showAreaAndBarPlots(data, items, tot, scales = "fixed")
-```
-
-#### Process Emissions Cement
-
-```{r}
-showLinePlots(
-  data, 
-  vars = "Emi|CO2|Industrial Processes|Industry|Cement", 
-  histVars = c("Emi|CO2|Industrial Processes|Cement", "Emi|CO2|Industrial Processes|Minerals")
-)
-```
-
-
-#### Process Emissions Chemicals
-
-```{r}
-showLinePlots(data, "Emi|CO2|Industrial Processes|Industry|Chemicals")
-```
-
-#### Process Emissions Metals
-
-```{r}
-showLinePlots(data, "Emi|CO2|Industrial Processes|Industry|Metals")
-```
-
 ### Land-Use Change
 
 ```{r CO2 Land-Use Change}
@@ -315,8 +371,7 @@ showLinePlots(
 ```{r CO2 Land-Use Change - LULUCF national accounting}
 showLinePlots(
   data, 
-  vars = "Emi|CO2|Land-Use Change|LULUCF national accounting",
-  histVars = "Emi|CO2|Land Use"
+  vars = "Emi|CO2|Land-Use Change|LULUCF national accounting"
 )
 ```
 

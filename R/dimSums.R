@@ -7,7 +7,7 @@
 #'
 #' @param x A MAgPIE-object
 #' @param dim The dimensions(s) to sum over. A vector of dimension codes or dimension names.
-#' See \code{\link{dimCode}} for more information
+#' See \code{\link[magclass]{dimCode}} for more information
 #' @param na.rm logical. Should missing values (including NaN) be omitted from
 #' the calculations?
 #' @return A MAgPIE object with values summed over the specified dimensions

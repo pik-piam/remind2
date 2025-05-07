@@ -4,7 +4,7 @@
 \alias{reportEmiForClimateAssessment}
 \title{Reports emissions & air pollutant values from GDX for climate assessment in between Nash iterations before some of
 the energy system variables are defined. The report contains only a subset of reported emissions, with the main
-difference being that Emi|CO2|Energy and Industrial Processes is calculated from the difference between total and
+difference being that Emi|CA|CO2|Energy and Industrial Processes is calculated from the difference between total and
 LUC emissions. Only global values from this function should be used, as it also skips the subtraction
 of certain non-regional sources, such as bunkers, from the regional information}
 \usage{
@@ -29,7 +29,7 @@ be created.}
 \description{
 Reports emissions & air pollutant values from GDX for climate assessment in between Nash iterations before some of
 the energy system variables are defined. The report contains only a subset of reported emissions, with the main
-difference being that Emi|CO2|Energy and Industrial Processes is calculated from the difference between total and
+difference being that Emi|CA|CO2|Energy and Industrial Processes is calculated from the difference between total and
 LUC emissions. Only global values from this function should be used, as it also skips the subtraction
 of certain non-regional sources, such as bunkers, from the regional information
 }

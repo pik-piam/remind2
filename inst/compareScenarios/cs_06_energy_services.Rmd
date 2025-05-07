@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 # Energy Services and Products
 
 ## Summary of affluence indicators 
@@ -13,8 +18,23 @@ indicators_buildings <- c(
   "UE|Buildings|Heating pCap",
   "UE|Buildings|non-Heating|Electricity|Conventional pCap")
 indicators_transport <- c(
+  "ES|Transport|Pass with bunkers pCap",
+  "ES|Transport|Pass|Road|LDV|Four Wheelers pCap",
+  "ES|Transport|Pass|Road|LDV|Two Wheelers pCap",
+  "ES|Transport|Pass|Rail pCap",
+  "ES|Transport|Pass|Road|Bus pCap",
+  "ES|Transport|Pass|Aviation pCap",
+  "ES|Transport|Pass|Domestic Aviation pCap",
+  "ES|Transport|Bunkers|Pass|International Aviation pCap",
+  "ES|Transport|Pass|Non-motorized|Cycle pCap",
+  "ES|Transport|Pass|Non-motorized|Walk pCap",
+  "ES|Transport|Freight with bunkers pCap",
+  "ES|Transport|Freight|Road pCap",
+  "ES|Transport|Freight|Rail pCap",
+  "ES|Transport|Freight|Domestic Shipping pCap",
+  "ES|Transport|Bunkers|Freight|International Shipping pCap",
+  "Stock|Transport|Pass|Road|LDV|Four Wheelers pCap",
   "Stock|Transport|Pass|Road|LDV pCap",
-  "ES|Transport|Pass pCap",
   "ES|Transport|Freight pCap")
 indicators_industry <- c(
   "Production|Industry|Cement|per-capita",
@@ -231,66 +251,106 @@ if ("UE|Buildings|Heating|Electricity|Heat pump pCap" %in% data[["variable"]]) {
 
 ## Transport
 
-### ES Pass - Line
-```{r ES Pass - Line}
+### ES
+
+#### ES Pass by mode - Bar
+```{r ES Pass by mode - Bar}
+tot <- "ES|Transport|Pass"
 items <- c(
-  "ES|Transport|Pass",
-  "ES|Transport|Pass|Road|LDV"
+  "ES|Transport|Bunkers|Pass|International Aviation",
+  "ES|Transport|Pass|Domestic Aviation",
+  "ES|Transport|Pass|Rail",
+  "ES|Transport|Pass|Road|Bus",
+  "ES|Transport|Pass|Road|LDV|Four Wheelers",
+  "ES|Transport|Pass|Road|LDV|Two Wheelers",
+  "ES|Transport|Pass|Non-motorized|Cycle",
+  "ES|Transport|Pass|Non-motorized|Walk"
   )
-showMultiLinePlots(data, items)
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-### ES Pass LDV by tech - Bar
+#### ES Pass Modes - Line
+```{r ES Pass Modes - Line}
+showLinePlots(data, "ES|Transport|Pass with bunkers")
+showLinePlots(data, "ES|Transport|Pass|Road|LDV|Four Wheelers")
+showLinePlots(data, "ES|Transport|Pass|Road|LDV|Two Wheelers")
+showLinePlots(data, "ES|Transport|Pass|Rail")
+showLinePlots(data, "ES|Transport|Pass|Road|Bus")
+showLinePlots(data, "ES|Transport|Pass|Aviation")
+showLinePlots(data, "ES|Transport|Pass|Domestic Aviation")
+showLinePlots(data, "ES|Transport|Bunkers|Pass|International Aviation")
+showLinePlots(data, "ES|Transport|Pass|Non-motorized|Cycle")
+showLinePlots(data, "ES|Transport|Pass|Non-motorized|Walk")
+```
+
+#### ES Pass LDV by tech - Bar
 ```{r ES Pass LDV by tech - Bar}
+tot <- "ES|Transport|Pass|Road|LDV"
 items <- c(
   "ES|Transport|Pass|Road|LDV|BEV",
   "ES|Transport|Pass|Road|LDV|FCEV",
   "ES|Transport|Pass|Road|LDV|Gases",
   "ES|Transport|Pass|Road|LDV|Hybrid electric",
   "ES|Transport|Pass|Road|LDV|Liquids")
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
+#### ES Freight with shipping by mode - Bar
+```{r ES Freight by mode - Bar}
+tot <- "ES|Transport|Freight"
+items <- c(
+  "ES|Transport|Freight|Road",
+  "ES|Transport|Freight|Rail",
+  "ES|Transport|Freight|Domestic Shipping",
+  "ES|Transport|Bunkers|Freight|International Shipping"
+  )
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
+#### ES Freight w/o shipping by mode - Bar
+```{r ES Freight by mode - Bar}
+items <- c(
+  "ES|Transport|Freight|Domestic Shipping",
+  "ES|Transport|Freight|Rail",
+  "ES|Transport|Freight|Road"
+  )
 showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
 ```
 
-### ES Pass LDV by tech - perCap - Bar
-```{r ES Pass LDV by tech - perCap - Bar}
-items <- c(
-  "ES|Transport|Pass|Road|LDV|BEV pCap",
-  "ES|Transport|Pass|Road|LDV|FCEV pCap",
-  "ES|Transport|Pass|Road|LDV|Gases pCap",
-  "ES|Transport|Pass|Road|LDV|Hybrid electric pCap",
-  "ES|Transport|Pass|Road|LDV|Liquids pCap")
-showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
+#### ES Freight Modes - Line
+```{r ES Freight Modes - Line}
+showLinePlots(data, "ES|Transport|Freight with bunkers")
+showLinePlots(data, "ES|Transport|Freight|Road")
+showLinePlots(data, "ES|Transport|Freight|Rail")
+showLinePlots(data, "ES|Transport|Freight|Domestic Shipping")
+showLinePlots(data, "ES|Transport|Bunkers|Freight|International Shipping")
 ```
 
-### ES Freight - Line
-```{r ES Freight - Line}
-items <- c(
-  "ES|Transport|Freight")
-showMultiLinePlots(data, items)
-```
-
-### ES Freight Road by tech - Bar
+#### ES Freight Road by tech - Bar
 ```{r ES Freight Road by tech - Bar}
+tot <- "ES|Transport|Freight|Road"
 items <- c(
   "ES|Transport|Freight|Road|BEV",
   "ES|Transport|Freight|Road|FCEV",
   "ES|Transport|Freight|Road|Gases",
   "ES|Transport|Freight|Road|Liquids")
-showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-### ES Freight Road by tech - perCap - Bar
-```{r ES Freight Road by tech - perCap - Bar}
-items <- c(
-  "ES|Transport|Freight|Road|BEV pCap",
-  "ES|Transport|Freight|Road|FCEV pCap",
-  "ES|Transport|Freight|Road|Gases pCap",
-  "ES|Transport|Freight|Road|Liquids pCap")
-showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
+### Stocks and Sales
+
+#### LDV Stock - line
+```{r LDV Stock - line}
+showLinePlots(data, "Stock|Transport|Pass|Road|LDV")
 ```
 
-### LDV Vehicles Stock - EDGE-T
-```{r LDV Vehicles Stock - EDGE-T}
+#### LDV 4wheeler (Car) Stock - line
+```{r LDV 4wheeler (car) Stock - line}
+showLinePlots(data, "Stock|Transport|Pass|Road|LDV|Four Wheelers")
+```
+
+#### LDV Stock by tech - Bar
+```{r LDV Stock by tech - Bar}
 tot <- "Stock|Transport|Pass|Road|LDV"
 items <- c(
   "Stock|Transport|Pass|Road|LDV|BEV",
@@ -302,21 +362,31 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-### LDV Vehicles Stock - perCap - EDGE-T
-```{r LDV Vehicles Stock - perCap - EDGE-T}
-tot <- "Stock|Transport|Pass|Road|LDV pCap"
+#### LDV Stock by tech - carrier share - Bar 
+```{r LDV Stock by tech - carrier share - Bar }
+showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
+```
+
+#### LDV 4Wheelers (Car) Stock by tech - Bar
+```{r LDV 4Wheelers (Car) Stock by tech - Bar}
+tot <- "Stock|Transport|Pass|Road|LDV"
 items <- c(
-  "Stock|Transport|Pass|Road|LDV|BEV pCap",
-  "Stock|Transport|Pass|Road|LDV|Hybrid electric pCap",
-  "Stock|Transport|Pass|Road|LDV|FCEV pCap",
-  "Stock|Transport|Pass|Road|LDV|Gases pCap",
-  "Stock|Transport|Pass|Road|LDV|Liquids pCap",
+  "Stock|Transport|Pass|Road|LDV|BEV",
+  "Stock|Transport|Pass|Road|LDV|Hybrid electric",
+  "Stock|Transport|Pass|Road|LDV|FCEV",
+  "Stock|Transport|Pass|Road|LDV|Gases",
+  "Stock|Transport|Pass|Road|LDV|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-### LDV Vehicles Sales - EDGE-T
-```{r LDV Vehicles Sales - EDGE-T}
+#### LDV 4Wheelers (Car) Stock by tech - carrier share - Bar 
+```{r LDV 4Wheelers (Car) Stock by tech - carrier share - Bar }
+showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
+```
+
+#### LDV Sales by tech - Bar
+```{r LDV Sales by tech - Bar}
 tot <- "Sales|Transport|Pass|Road|LDV"
 items <- c(
   "Sales|Transport|Pass|Road|LDV|BEV",
@@ -329,8 +399,37 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-### Truck Stock - EDGE-T
-```{r Truck Stock}
+#### LDV Sales by tech - carrier share - Bar 
+```{r LDV Sales by tech - carrier share - Bar  }
+showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
+```
+
+#### LDV 4Wheelers (Car) Sales by tech - Bar
+```{r LDV 4Wheelers (Car) by tech - Bar}
+tot <- "Sales|Transport|Pass|Road|LDV|Four Wheelers"
+items <- c(
+  "Sales|Transport|Pass|Road|LDV|Four Wheelers|BEV",
+  "Sales|Transport|Pass|Road|LDV|Four Wheelers|Hybrid electric",
+  "Sales|Transport|Pass|Road|LDV|Four Wheelers|FCEV",
+  "Sales|Transport|Pass|Road|LDV|Four Wheelers|Gases",
+  "Sales|Transport|Pass|Road|LDV|Four Wheelers|Liquids",
+  NULL
+)
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
+#### LDV 4Wheelers (Car) Sales by tech - carrier share - Bar 
+```{r LDV 4Wheelers (Car) Sales by tech - carrier share - Bar  }
+showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
+```
+
+#### Truck Stock - line
+```{r Truck Stock - line}
+showLinePlots(data, "Stock|Transport|Freight|Road")
+```
+
+#### Truck Stock by tech - Bar
+```{r Truck Stock by tech - Bar}
 tot <- "Stock|Transport|Freight|Road"
 items <- c(
   "Stock|Transport|Freight|Road|BEV",
@@ -341,8 +440,18 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-### Truck Sales - EDGE-T
-```{r Truck Sales}
+#### Truck Stock by tech - carrier share - Bar 
+```{r Truck Stock by tech - carrier share - Bar }
+showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
+```
+
+#### Truck Sales - line
+```{r Truck Sales - line}
+showLinePlots(data, "Sales|Transport|Freight|Road")
+```
+
+#### Truck Sales by tech - Bar
+```{r Truck Sales by tech - Bar}
 tot <- "Sales|Transport|Freight|Road"
 items <- c(
   "Sales|Transport|Freight|Road|BEV",
@@ -353,8 +462,18 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-### Bus Stock - EDGE-T
-```{r Bus Stock}
+#### Truck Sales by tech - carrier share - Bar 
+```{r Truck Sales by tech - carrier share - Bar }
+showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
+```
+
+#### Bus Stocks - line
+```{r Bus Stock - line}
+showLinePlots(data, "Stock|Transport|Pass|Road|Bus")
+```
+
+#### Bus Stock by tech - Bar
+```{r Bus Stock by tech - Bar}
 tot <- "Stock|Transport|Pass|Road|Bus"
 items <- c(
   "Stock|Transport|Pass|Road|Bus|BEV",
@@ -364,9 +483,18 @@ items <- c(
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
+#### Bus Stock by tech - carrier share - Bar 
+```{r Bus Stock by tech - carrier share - Bar  }
+showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
+```
 
-### Bus Sales - EDGE-T
-```{r Bus Sales}
+#### Bus Sales - line
+```{r Bus Sales - line}
+showLinePlots(data, "Sales|Transport|Pass|Road|Bus")
+```
+
+#### Bus Sales by tech - Bar
+```{r Bus Sales by tech - Bar}
 tot <- "Sales|Transport|Pass|Road|Bus"
 items <- c(
   "Sales|Transport|Pass|Road|Bus|BEV",
@@ -375,6 +503,11 @@ items <- c(
   "Sales|Transport|Pass|Road|Bus|Liquids",
   NULL)
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
+#### Bus Sales by tech - carrier share - Bar 
+```{r Bus Sales by tech - carrier share - Bar  }
+showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 ```
 
 ## Industry Production

@@ -1,6 +1,6 @@
 #' Reports emissions & air pollutant values from GDX for climate assessment in between Nash iterations before some of
 #' the energy system variables are defined. The report contains only a subset of reported emissions, with the main
-#' difference being that Emi|CO2|Energy and Industrial Processes is calculated from the difference between total and
+#' difference being that Emi|CA|CO2|Energy and Industrial Processes is calculated from the difference between total and
 #' LUC emissions. Only global values from this function should be used, as it also skips the subtraction
 #' of certain non-regional sources, such as bunkers, from the regional information
 #'
@@ -60,17 +60,17 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
 
   out <- mbind(
     # Basic Total CO2 emissions
-    setNames(dimSums(sel_vm_emiAllMkt_co2, dim = 3) * GtC_2_MtCO2, "Emi|CO2 (Mt CO2/yr)"),
-    # Basic Land-use change CO2 emissions
-    setNames(dimSums(vm_emiMacSector[, , "co2luc"], dim = 3) * GtC_2_MtCO2, "Emi|CO2|+|Land-Use Change (Mt CO2/yr)")
+    setNames(dimSums(sel_vm_emiAllMkt_co2, dim = 3) * GtC_2_MtCO2, "Emi|CA|CO2 (Mt CO2/yr)"),
+    # Basic Land-use change CO2 emissions. Remove the + to avoid summation checks
+    setNames(dimSums(vm_emiMacSector[, , "co2luc"], dim = 3) * GtC_2_MtCO2, "Emi|CA|CO2|Land-Use Change (Mt CO2/yr)")
   )
   # Basic Get Energy and Industrial Processes from the difference between total and Land-use change emissions, for
   # climate assessment
   out <- mbind(
     out,
     setNames(
-      out[, , "Emi|CO2 (Mt CO2/yr)"] - out[, , "Emi|CO2|+|Land-Use Change (Mt CO2/yr)"],
-      "Emi|CO2|Energy and Industrial Processes (Mt CO2/yr)"
+      out[, , "Emi|CA|CO2 (Mt CO2/yr)"] - out[, , "Emi|CA|CO2|Land-Use Change (Mt CO2/yr)"],
+      "Emi|CA|CO2|Energy and Industrial Processes (Mt CO2/yr)"
     )
   )
 
@@ -112,34 +112,34 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
     # total CH4 emissions
     setNames(
       dimSums(mselect(emiMAC, gas = "ch4"), dim = 3) + dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3),
-      "Emi|CH4 (Mt CH4/yr)"
+      "Emi|CA|CH4 (Mt CH4/yr)"
     ),
     # total N2O emissions
     setNames(
       (dimSums(mselect(emiMAC, gas = "n2o"), dim = 3) + dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3)) * MtN2_to_ktN2O,
-      "Emi|N2O (kt N2O/yr)"
+      "Emi|CA|N2O (kt N2O/yr)"
     )
   )
 
   out <- mbind(
     out,
     ### Basic PFCs
-    setNames(vm_emiFgas[, , "emiFgasCF4"],      "Emi|CF4 (kt CF4/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasC2F6"],     "Emi|C2F6 (kt C2F6/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasC6F14"],    "Emi|C6F14 (kt C6F14/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC"],      "Emi|HFC (kt HFC134a-equiv/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC125"],   "Emi|HFC|HFC125 (kt HFC125/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC134a"],  "Emi|HFC|HFC134a (kt HFC134a/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC143a"],  "Emi|HFC|HFC143a (kt HFC143a/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC227ea"], "Emi|HFC|HFC227ea (kt HFC227ea/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC23"],    "Emi|HFC|HFC23 (kt HFC23/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC245fa"], "Emi|HFC|HFC245fa (kt HFC245fa/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC32"],    "Emi|HFC|HFC32 (kt HFC32/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasHFC43-10"], "Emi|HFC|HFC43-10 (kt HFC43-10/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasPFC"],      "Emi|PFC (kt CF4-equiv/yr)"),
-    setNames(vm_emiFgas[, , "emiFgasSF6"],      "Emi|SF6 (kt SF6/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasCF4"],      "Emi|CA|CF4 (kt CF4/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasC2F6"],     "Emi|CA|C2F6 (kt C2F6/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasC6F14"],    "Emi|CA|C6F14 (kt C6F14/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC"],      "Emi|CA|HFC (kt HFC134a-equiv/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC125"],   "Emi|CA|HFC|HFC125 (kt HFC125/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC134a"],  "Emi|CA|HFC|HFC134a (kt HFC134a/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC143a"],  "Emi|CA|HFC|HFC143a (kt HFC143a/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC227ea"], "Emi|CA|HFC|HFC227ea (kt HFC227ea/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC23"],    "Emi|CA|HFC|HFC23 (kt HFC23/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC245fa"], "Emi|CA|HFC|HFC245fa (kt HFC245fa/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC32"],    "Emi|CA|HFC|HFC32 (kt HFC32/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasHFC43-10"], "Emi|CA|HFC|HFC43-10 (kt HFC43-10/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasPFC"],      "Emi|CA|PFC (kt CF4-equiv/yr)"),
+    setNames(vm_emiFgas[, , "emiFgasSF6"],      "Emi|CA|SF6 (kt SF6/yr)"),
     ### Basic F-Gases (Mt CO2eq)
-    setNames(vm_emiFgas[, , "emiFgasTotal"],    "Emi|GHG|+|F-Gases (Mt CO2eq/yr)")
+    setNames(vm_emiFgas[, , "emiFgasTotal"],    "Emi|CA|GHG|F-Gases (Mt CO2eq/yr)")
   )
 
   # Add global values
@@ -151,7 +151,8 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
 
   # Run air pollution report
   message("reportEmiForClimateAssessment executes reportEmiAirPol")
-  pollutants <- reportEmiAirPol(gdx)
+  pollutants <- reportEmiAirPol(gdx, regionSubsetList = regionSubsetList, t = t)
+  getItems(pollutants, "variable") <- sub("Emi\\|", "Emi\\|CA\\|", getItems(pollutants, "variable"))
   # Combine both reports
   out <- mbind(out, pollutants[getItems(out, dim = "all_regi"), getItems(out, dim = "tall"), ])
 
