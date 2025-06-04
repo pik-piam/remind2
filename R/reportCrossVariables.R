@@ -42,6 +42,9 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
   module2realisation <- readGDX(gdx, "module2realisation", react = "silent")
   rownames(module2realisation) <- module2realisation$modules
 
+  power_realisation <- if ("power" %in% module2realisation[, 1]) module2realisation[which(module2realisation[, 1] == "power"), 2]
+  storLoss <- power_realisation %in% c("IntC", "DTcoup")
+
   ####### conversion factors ##########
   TWa_2_EJ <- 31.536
   ####### read in needed data #########
@@ -92,20 +95,24 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
     output[r,,"SE|Electricity|Wind (EJ/yr)"] / output[r,,"Cap|Electricity|Wind (GW)"] / TWa_2_EJ * 1000 * 100,
     "Theoretical Capacity Factor|Electricity|Wind (%)"))
 
-  # wind capacity factor  (with curtailment considered)
-  tmp <- mbind(tmp,setNames(
-    (output[r,,"SE|Electricity|Wind (EJ/yr)"] - output[r,,"SE|Electricity|Curtailment|Wind (EJ/yr)"]) /
-      output[r,,"Cap|Electricity|Wind (GW)"] / TWa_2_EJ * 1000 * 100, "Real Capacity Factor|Electricity|Wind (%)"))
+  # wind capacity factor (with curtailment considered)
+  if (storLoss) {
+    tmp <- mbind(tmp,setNames(
+      (output[r,,"SE|Electricity|Wind (EJ/yr)"] - output[r,,"SE|Electricity|Curtailment|Wind (EJ/yr)"]) /
+        output[r,,"Cap|Electricity|Wind (GW)"] / TWa_2_EJ * 1000 * 100, "Real Capacity Factor|Electricity|Wind (%)"))
+  }
 
   # solar real capacity factor (before curtailment)
   tmp <- mbind(tmp,setNames(
     output[r,,"SE|Electricity|Solar (EJ/yr)"] / output[r,,"Cap|Electricity|Solar (GW)"] / TWa_2_EJ * 1000 * 100,
     "Theoretical Capacity Factor|Electricity|Solar (%)"))
 
-  # solar capacity factor  (with curtailment considered)
-  tmp <- mbind(tmp,setNames(
-    (output[r,,"SE|Electricity|Solar (EJ/yr)"] - output[r,,"SE|Electricity|Curtailment|Solar (EJ/yr)"]) /
-      output[r,,"Cap|Electricity|Solar (GW)"] / TWa_2_EJ * 1000 * 100, "Real Capacity Factor|Electricity|Solar (%)"))
+  # solar capacity factor (with curtailment considered)
+  if (storLoss) {
+    tmp <- mbind(tmp,setNames(
+      (output[r,,"SE|Electricity|Solar (EJ/yr)"] - output[r,,"SE|Electricity|Curtailment|Solar (EJ/yr)"]) /
+        output[r,,"Cap|Electricity|Solar (GW)"] / TWa_2_EJ * 1000 * 100, "Real Capacity Factor|Electricity|Solar (%)"))
+  }
 
   # add global values
   tmp <- mbind(tmp,dimSums(tmp,dim=1))
@@ -114,16 +121,24 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
     tmp <- mbind(tmp, calc_regionSubset_sums(tmp, regionSubsetList))
 
   # correct global values for intensive variables (prices, LCOES, Capacity factors)
-  map <- data.frame(region=getRegions(tmp["GLO",,,invert=TRUE]),world="GLO",stringsAsFactors=FALSE)
-  varWeights <- c("Capacity Factor|Electricity|Gas (%)" = "Cap|Electricity|Gas (GW)",
-                  "Real Capacity Factor|Electricity|Wind (%)" = "Cap|Electricity|Wind (GW)",
-                  "Theoretical Capacity Factor|Electricity|Wind (%)" = "Cap|Electricity|Wind (GW)",
-                  "Real Capacity Factor|Electricity|Solar (%)" = "Cap|Electricity|Solar (GW)",
-                  "Theoretical Capacity Factor|Electricity|Solar (%)" = "Cap|Electricity|Solar (GW)")
-  for (var in names(varWeights)) {
-    tmp["GLO",,var] <- toolAggregate(tmp[map$region,,var], rel = map, weight = output[map$region,,varWeights[[var]]])
+  map <- data.frame(region = getRegions(tmp["GLO", , , invert = TRUE]), world = "GLO", stringsAsFactors = FALSE)
+  varWeights <- c(
+    "Capacity Factor|Electricity|Gas (%)" = "Cap|Electricity|Gas (GW)",
+    "Theoretical Capacity Factor|Electricity|Wind (%)" = "Cap|Electricity|Wind (GW)",
+    "Theoretical Capacity Factor|Electricity|Solar (%)" = "Cap|Electricity|Solar (GW)"
+  )
+
+  if (storLoss) {
+    varWeights <- c(
+      varWeights,
+      "Real Capacity Factor|Electricity|Wind (%)" = "Cap|Electricity|Wind (GW)",
+      "Real Capacity Factor|Electricity|Solar (%)" = "Cap|Electricity|Solar (GW)"
+    )
   }
 
+  for (var in names(varWeights)) {
+    tmp["GLO", , var] <- toolAggregate(tmp[map$region, , var], rel = map, weight = output[map$region, , varWeights[[var]]])
+  }
 
   # correct region aggregated values for intensive variables (prices, LCOES, Capacity factors)
   if (!is.null(regionSubsetList)) {
