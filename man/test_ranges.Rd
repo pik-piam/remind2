@@ -2,7 +2,7 @@
 % Please edit documentation in R/test_ranges.R
 \name{test_ranges}
 \alias{test_ranges}
-\title{Test Ranges on Variables in magpie Objects}
+\title{Test Ranges on Variables in magpie or quitte Objects}
 \usage{
 test_ranges(
   data,
@@ -12,7 +12,7 @@ test_ranges(
 )
 }
 \arguments{
-\item{data}{A \code{\link[magclass:magclass-package]{magpie}} object to test.}
+\item{data}{A \code{\link[magclass:magclass-package]{magpie}} or quitte object to test.}
 
 \item{tests}{A list of tests to perform, where each tests consists of:
 - A regular expression to match variables names in \code{data} (mandatory
@@ -31,7 +31,7 @@ warn or throw an error if variables exceed the ranges.}
 expressions from \code{tests} not matching any variables in \code{data}.}
 }
 \description{
-Test Ranges on Variables in magpie Objects
+Test Ranges on Variables in magpie or quitte Objects
 }
 \examples{
 require(dplyr)
@@ -54,5 +54,5 @@ test_ranges(data, tests)
 
 }
 \author{
-Michaja Pehl
+Michaja Pehl, Falk Benke
 }

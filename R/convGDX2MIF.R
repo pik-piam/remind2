@@ -154,12 +154,6 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   checkVarNames(getNames(output, dim = 3))
 
   ## summation checks ----
-
-  # known issues:
-  # https://github.com/remindmodel/development_issues/issues/544
-  # https://github.com/remindmodel/development_issues/issues/545
-  # https://github.com/remindmodel/development_issues/issues/546
-
   .reportSummationErrors <- function(msg, testthat) {
     if (!any(grepl("All summation checks were fine", msg))) {
       msgtext <- paste(msg, collapse = "\n")
@@ -185,6 +179,10 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
     type = "message"
   ) %>%
     .reportSummationErrors(testthat = testthat)
+
+  if (length(sumChecks) == 0) {
+    message("All summation checks were fine!")
+  }
 
   ## range checks ----
   test_ranges(
