@@ -1053,11 +1053,11 @@ reportFE <- function(gdx, regionSubsetList = NULL,
 
         mixer <- tribble(
          ~variable,                                                         ~all_enty,
-          "Production|Industry|Chemicals|Other Chemicals (Mt/yr)",           "OtherChem",
-          "Production|Industry|Chemicals|HVC (Mt/yr)",                       "HVC",
-          "Production|Industry|Chemicals|Fertilizer (Mt/yr)",                "Fertilizer",
-          "Production|Industry|Chemicals|Methanol Final (Mt/yr)",            "MethFinal",
-          "Production|Industry|Chemicals|Ammonia Final (Mt/yr)",             "AmmoFinal",
+          "Production|Industry|Chemicals|Other Chemicals (Mt/yr)",           "otherChem",
+          "Production|Industry|Chemicals|HVC (Mt/yr)",                       "hvc",
+          "Production|Industry|Chemicals|Fertilizer (Mt/yr)",                "fertilizer",
+          "Production|Industry|Chemicals|Methanol Final (Mt/yr)",            "methFinal",
+          "Production|Industry|Chemicals|Ammonia Final (Mt/yr)",             "ammoFinal",
           "Production|Industry|Chemicals|Methanol (Mt/yr)",                  c("methanol","methanolH2"),
           "Production|Industry|Chemicals|Ammonia (Mt/yr)",                   c("ammonia","ammoniaH2"))
  
