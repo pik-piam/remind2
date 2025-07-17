@@ -140,7 +140,13 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
     "gashp"  = "Heat|Gas",
     "coalhp" = "Heat|Coal",
     "geohe"  = "Heat|Electricity|Heat Pump",
-    "biohp"  = "Heat|Biomass"
+    "biohp"  = "Heat|Biomass",
+    "MeOH" = "Liquids|Hydrogen",
+    "h22ch4" = "Gases|Hydrogen",
+    "windon" = "Electricity|Wind|Onshore",
+    "storwindon" = "Electricity|Storage|Battery|For Wind Onshore",
+    "windoff" = "Electricity|Wind|Offshore",
+    "storwindoff" = "Electricity|Storage|Battery|For Wind Offshore"
   )
 
   if (tran_mod == "complex") {
@@ -152,15 +158,19 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
     carmap <- c()
   }
 
-  # add synfuel technologies
-  techmap <- append(techmap, c("MeOH" = "Liquids|Hydrogen",
-                               "h22ch4" = "Gases|Hydrogen"))
-
   if (CDR_mod != "off") {
     cdrmap <- c("dac" = "DAC",
                 "ccsinje" = "CO2 Storage")
   } else {
     cdrmap <- c()
+  }
+
+  if ("biopyronly" %in% te){
+    techmap <- append(techmap, c("biopyronly" = "Biochar|No co-product",
+                                 "biopyrhe" = "Biochar|Heat",
+                                 "biopyrel" = "Biochar|Electricity",
+                                 "biopyrchp" = "Biochar|Combined Heat and Power",
+                                 "biopyrliq" = "Biochar|Liquids"))
   }
 
   if (("seliq" %in% sety) || ("seliqbio" %in% sety)) {
@@ -169,10 +179,6 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
     techmap[["refdip"]] <- "Liquids|Fossil|Oil"
   }
 
-  techmap <- append(techmap, c("windon" = "Electricity|Wind|Onshore",
-                                "storwindon" = "Electricity|Storage|Battery|For Wind Onshore",
-                                "windoff" = "Electricity|Wind|Offshore",
-                                "storwindoff" = "Electricity|Storage|Battery|For Wind Offshore"))
 
   bar_and <- function(str) {
     ## prepend pipe if not empty

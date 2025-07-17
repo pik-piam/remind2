@@ -62,6 +62,8 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   s_twa2mwh <- readGDX(gdx, "sm_TWa_2_MWh", format = "first_found", reacht = "silent")
   tdptwyr2dpgj <- 31.71   # TerraDollar per TWyear to Dollar per GJ
   p80_subset   <- c("perm", "good", "peur", "peoil", "pegas", "pecoal", "pebiolc") # TODO: read in from gdx as sets trade
+  s_tBC_2_TWa <- readGDX(gdx, name = "s_tBC_2_TWa", format = "first_found", react = "silent")
+  sm_trillion_2_non <- readGDX(gdx, "sm_trillion_2_non", format = "first_found", react = "silent")
   ####### read in needed data #########
 
   #---- Functions
@@ -83,6 +85,8 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   pm_taxemiMkt   <- readGDX(gdx, name = "pm_taxemiMkt", format = "first_found", react = "silent")[, t, ]
   p47_taxCO2eq_AggFE <- readGDX(gdx, name = "p47_taxCO2eq_AggFE", format = "first_found", react = "silent")[, t, ]
   p47_taxCO2eq_SectorAggFE <- readGDX(gdx, name = "p47_taxCO2eq_SectorAggFE", format = "first_found", react = "silent")[, t, ]
+  p33_BiocharPrice <- readGDX(gdx, "p33_BiocharPrice", field = "l", format = "first_found", react = "silent")[, t, ]
+
   ## variables
   pric_emu       <- readGDX(gdx, name = "vm_pebiolc_price", field = "l", format = "first_found")[, t, ]
 
@@ -1063,6 +1067,13 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   out <- mbind(out, setNames(glob_price,                                       "Price|Coal|World Market (US$2017/GJ)"))
   for (i in getRegions(out)) glob_price[i, , ] <- pm_pvp[, , "pebiolc"] / pm_pvp[, , "good"] * tdptwyr2dpgj
   out <- mbind(out, setNames(glob_price,                                       "Price|Biomass|World Market (US$2017/GJ)"))
+
+  if (!is.null(s_tBC_2_TWa)){ 
+    for (i in getRegions(out)) glob_price[i, , ] <- p33_BiocharPrice * s_tBC_2_TWa * sm_trillion_2_non # [trilUS$2017/TWa BC] * [TWa/t BC] * [TrilUSD/USD]
+    out <- mbind(out, setNames(glob_price,                              "Price|Biochar (US$2017/t Biochar)"))
+  } else {
+    out <- mbind(out, new.magpie(getRegions(out), getYears(out), "Price|Biochar (US$2017/t Biochar)", fill = NA))
+  }   
 
   ## special global prices
 

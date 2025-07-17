@@ -172,3 +172,22 @@ showAreaAndBarPlots(data,
                              "Carbon Management|Feedstocks|Stored|Synthetic"),
                     tot = "Carbon Management|Feedstocks")
 ```
+
+# Biochar production 
+```{r Biochar Total Line Plot Only}
+showLinePlots(data, "SE|Biochar Mt")
+```
+
+```{r Biochar area by type}
+showAreaAndBarPlots(
+  data = data,
+  vars = rev(c('SE|Biochar Mt|No co-product (Mt/yr)',
+                'SE|Biochar Mt|Heat (Mt/yr)', 
+                'SE|Biochar Mt|Electricity (Mt/yr)',
+                'SE|Biochar Mt|Combined Heat and Power (Mt/yr)',
+                'SE|Biochar Mt|Liquids (Mt/yr)')),
+
+  tot = 'SE|Biochar Mt (Mt/yr)',
+  scales = 'fixed',
+  orderVars = 'user')
+```

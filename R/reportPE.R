@@ -158,10 +158,11 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_demPE("pebiolc", seLiq, teNoCCS,                             name = "PE|Biomass|Liquids|Cellulosic|+|w/o CC (EJ/yr)"),
     get_demPE(c("pebioil", "pebios"), seLiq,                         name = "PE|Biomass|Liquids|Non-Cellulosic (EJ/yr)"),
     get_demPE("pebios", seLiq,                                       name = "PE|Biomass|Liquids|Conventional Ethanol (EJ/yr)"),
-    get_demPE(peBio, seLiq, c("bioftrec", "bioftcrec", "biodiesel"), name = "PE|Biomass|Liquids|Biodiesel (EJ/yr)"),
+    get_demPE(peBio, seLiq, c("bioftrec", "bioftcrec", "biodiesel", "biopyrliq"), name = "PE|Biomass|Liquids|Biodiesel (EJ/yr)"),
     get_demPE(peBio, seLiq, c("bioftcrec"),                          name = "PE|Biomass|Liquids|Biodiesel|+|w/ CC (EJ/yr)"),
-    get_demPE(peBio, seLiq, c("bioftrec", "biodiesel"),              name = "PE|Biomass|Liquids|Biodiesel|+|w/o CC (EJ/yr)"),
+    get_demPE(peBio, seLiq, c("bioftrec", "biodiesel", "biopyrliq"), name = "PE|Biomass|Liquids|Biodiesel|+|w/o CC (EJ/yr)"),
     get_demPE(peBio, seSol,                                          name = "PE|Biomass|+|Solids (EJ/yr)"),
+    get_demPE(peBio, "sebiochar",                                    name = "PE|Biomass|+|Biochar (EJ/yr)"),
     get_demPE(peBio, "sehe",                                         name = "PE|Biomass|+|Heat (EJ/yr)"),
 
     # renewables and nuclear
