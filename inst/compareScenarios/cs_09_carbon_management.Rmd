@@ -172,3 +172,19 @@ showAreaAndBarPlots(data,
                              "Carbon Management|Feedstocks|Stored|Synthetic"),
                     tot = "Carbon Management|Feedstocks")
 ```
+
+# Biochar production 
+```{r Biochar Plots}
+showLinePlots(data, "SE|Biochar Mt")
+showAreaAndBarPlots(
+  data = data,
+  vars = c('SE|Biochar Mt|No co-product',
+           'SE|Biochar Mt|Heat', 
+           'SE|Biochar Mt|Electricity',
+           'SE|Biochar Mt|Combined Heat and Power',
+           'SE|Biochar Mt|Liquids'),
+
+  tot = 'SE|Biochar Mt',
+  scales = 'fixed',
+  orderVars = 'user')
+```

@@ -77,9 +77,11 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     # Add the couple PE of technologies that have SEcarrier as their couple product (and another carrier as main product)
     pc2te_couple <- pc2te[(pc2te$all_enty %in% PEcarrier) & (pc2te$all_enty2 %in% SEcarrier) & (pc2te$all_te %in% te), ]
     PE <- PE + dimSums(demPE[pc2te_couple] * prodCouple[pc2te_couple] / (1 + prodCouple[pc2te_couple]), dim = 3)
-    # Subtract the couple PE of technologies that have SEcarrier as their main product, but also have a couple product
+    # Subtract the couple PE of technologies that have SEcarrier as their main product, but also have a couple product.
+    # The sums are necessary to deal with technologies that have more than 1 couple product.
     pc2te_main <- pc2te[(pc2te$all_enty %in% PEcarrier) & (pc2te$all_enty1 %in% SEcarrier) & (pc2te$all_te %in% te), ]
-    PE <- PE - dimSums(demPE[pc2te_main] * prodCouple[pc2te_main] / (1 + prodCouple[pc2te_main]), dim = 3)
+    PE <- PE - dimSums(dimSums(demPE[pc2te_main] * (prodCouple[pc2te_main]), dim = 3.4) /
+                      (1 + dimSums(prodCouple[pc2te_main], dim = 3.4)),      dim = 3)
 
     if (!is.null(name)) magclass::getNames(PE) <- name
     return(PE)
@@ -158,10 +160,11 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_demPE("pebiolc", seLiq, teNoCCS,                             name = "PE|Biomass|Liquids|Cellulosic|+|w/o CC (EJ/yr)"),
     get_demPE(c("pebioil", "pebios"), seLiq,                         name = "PE|Biomass|Liquids|Non-Cellulosic (EJ/yr)"),
     get_demPE("pebios", seLiq,                                       name = "PE|Biomass|Liquids|Conventional Ethanol (EJ/yr)"),
-    get_demPE(peBio, seLiq, c("bioftrec", "bioftcrec", "biodiesel"), name = "PE|Biomass|Liquids|Biodiesel (EJ/yr)"),
+    get_demPE(peBio, seLiq, c("bioftrec", "bioftcrec", "biodiesel", "biopyrliq"), name = "PE|Biomass|Liquids|Biodiesel (EJ/yr)"),
     get_demPE(peBio, seLiq, c("bioftcrec"),                          name = "PE|Biomass|Liquids|Biodiesel|+|w/ CC (EJ/yr)"),
-    get_demPE(peBio, seLiq, c("bioftrec", "biodiesel"),              name = "PE|Biomass|Liquids|Biodiesel|+|w/o CC (EJ/yr)"),
+    get_demPE(peBio, seLiq, c("bioftrec", "biodiesel", "biopyrliq"), name = "PE|Biomass|Liquids|Biodiesel|+|w/o CC (EJ/yr)"),
     get_demPE(peBio, seSol,                                          name = "PE|Biomass|+|Solids (EJ/yr)"),
+    get_demPE(peBio, "sebiochar",                                    name = "PE|Biomass|+|Biochar (EJ/yr)"),
     get_demPE(peBio, "sehe",                                         name = "PE|Biomass|+|Heat (EJ/yr)"),
 
     # renewables and nuclear
