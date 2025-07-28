@@ -909,7 +909,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         "FE|Industry|Chemicals|HVC|+|From liquids-based methanol with CC (EJ/yr)",           NULL,      NULL,          "hvc_meLiq_cc",                               "chemicals",
         "FE|Industry|Chemicals|HVC|+|From green hydogren-based methanol (EJ/yr)",            NULL,      NULL,          "hvc_meh2",                                   "chemicals",
         "FE|Industry|Chemicals|HVC|+|From chemical recycling (EJ/yr)",                       NULL,      NULL,          "hvc_stCrChemRe",                             "chemicals",
-        "FE|Industry|Chemicals|HVC|+|From chemical recycling via methanol(EJ/yr)",           NULL,      NULL,          "hvc_mechemRe",                               "chemicals",
+        "FE|Industry|Chemicals|HVC|+|From chemical recycling via methanol (EJ/yr)",           NULL,      NULL,          "hvc_mechemRe",                               "chemicals",
         "FE|Industry|Chemicals|HVC|+|From mechanical recycling (EJ/yr)",                     NULL,      NULL,          "mech_recycle",                               "chemicals",
 
         "FE|Industry|Chemicals|Fertilizer|+|From solids-based ammonia (EJ/yr)",              NULL,      NULL,           "fertilizer_amSol",                          "chemicals",
@@ -940,7 +940,7 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         
         "FE|Industry|Chemicals|Ammonia|+|Solids-based (EJ/yr)",                              NULL,      "amSyCoal",     c("amFinal_sol", "fertilizer_amSol"),        "chemicals",
         "FE|Industry|Chemicals|Ammonia|+|Gas-based (EJ/yr)",                                 NULL,      "amSyNG",       c("amFinal_ng", "fertilizer_amNg"),          "chemicals",
-        "FE|Industry|Chemicals|Ammonia|+|Liquids-based (EJ/yr)",                             NULL,      "amSyLiq",      c("amFinal_liq", "fertilizer_amliq"),        "chemicals",
+        "FE|Industry|Chemicals|Ammonia|+|Liquids-based (EJ/yr)",                             NULL,      "amSyLiq",      c("amFinal_liq", "fertilizer_amLiq"),        "chemicals",
         "FE|Industry|Chemicals|Ammonia|+|Solids-based with CC (EJ/yr)",                      NULL,      c("amSyCoal","amSyCoal_cc"),   c("amFinal_sol_cc", "fertilizer_amSol_cc"),  "chemicals",
         "FE|Industry|Chemicals|Ammonia|+|Gas-based with CC (EJ/yr)",                         NULL,      c("amSyNG","amSyNG_cc"),     c("amFinal_ng_cc", "fertilizer_amNg_cc"),    "chemicals",
         "FE|Industry|Chemicals|Ammonia|+|Liquids-based with CC (EJ/yr)",                     NULL,      c("amSyLiq","amSyLiq_cc"),     c("amFinal_liq_cc", "fertilizer_amLiq_cc"),  "chemicals",
@@ -952,9 +952,9 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         "FE|Industry|Chemicals|Methanol|+|Solids and green hydrogen-based (EJ/yr)",          NULL,      "meSySol",      c("meFinal_sol_gh2", "hvc_meSol_gh2"),       "chemicals",
         "FE|Industry|Chemicals|Methanol|+|Solids-based with CC (EJ/yr)",                     NULL,      c("meSySol","meSySol_cc"),    c("meFinal_sol_cc", "hvc_meSol_cc"),         "chemicals",
         "FE|Industry|Chemicals|Methanol|+|Gas-based with CC (EJ/yr)",                        NULL,      c("meSyNG","meSyNG_cc"),     c("meFinal_ng_cc", "hvc_meNg_cc"),           "chemicals",
-        "FE|Industry|Chemicals|Methanol|+|Liquids-based with CC  (EJ/yr)",                   NULL,      c("meSyLiq","meSyLiq_cc"),    c("meFinal_liq_cc", "hvc_meLiq_cc"),         "chemicals",
-        "FE|Industry|Chemicals|Methanol|+|Green hydrogen-based  (EJ/yr)",                    NULL,      "meSyH2",       c("meFinal_h2", "hvc_meh2"),                 "chemicals",
-        "FE|Industry|Chemicals|Methanol|+|Chemical recycling  (EJ/yr)",                      NULL,      "meSyChemRe",   c("hvc_mechemRe", "meFinal_chemRe"),                 "chemicals"
+        "FE|Industry|Chemicals|Methanol|+|Liquids-based with CC (EJ/yr)",                   NULL,      c("meSyLiq","meSyLiq_cc"),    c("meFinal_liq_cc", "hvc_meLiq_cc"),         "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Green hydrogen-based (EJ/yr)",                    NULL,      "meSyH2",       c("meFinal_h2", "hvc_meh2"),                 "chemicals",
+        "FE|Industry|Chemicals|Methanol|+|Chemical recycling (EJ/yr)",                      NULL,      "meSyChemRe",   c("hvc_mechemRe", "meFinal_chemRe"),                 "chemicals"
         )
 
       out <- mbind(
@@ -1060,8 +1060,6 @@ reportFE <- function(gdx, regionSubsetList = NULL,
           "Production|Industry|Chemicals|Ammonia Final (Mt/yr)",             "ammoFinal",
           "Production|Industry|Chemicals|Methanol (Mt/yr)",                  c("methanol","methanolH2"),
           "Production|Industry|Chemicals|Ammonia (Mt/yr)",                   c("ammonia","ammoniaH2"))
- 
-         # TODO: Missing - OtherChem, Fertilizer, HVC
 
         out <- mbind(
           c(list(out), # pass a list of magpie objects
