@@ -8,3 +8,4 @@ tests/testthat/test-convGDX2mif-data
 renv
 *.Rproj
 .vscode
+debugging.r
