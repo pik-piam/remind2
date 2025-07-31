@@ -77,9 +77,11 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     # Add the couple PE of technologies that have SEcarrier as their couple product (and another carrier as main product)
     pc2te_couple <- pc2te[(pc2te$all_enty %in% PEcarrier) & (pc2te$all_enty2 %in% SEcarrier) & (pc2te$all_te %in% te), ]
     PE <- PE + dimSums(demPE[pc2te_couple] * prodCouple[pc2te_couple] / (1 + prodCouple[pc2te_couple]), dim = 3)
-    # Subtract the couple PE of technologies that have SEcarrier as their main product, but also have a couple product
+    # Subtract the couple PE of technologies that have SEcarrier as their main product, but also have couple products.
+    # This requires summing over each technology (dim 3) and its possibly several couple products (dim 3.4)
     pc2te_main <- pc2te[(pc2te$all_enty %in% PEcarrier) & (pc2te$all_enty1 %in% SEcarrier) & (pc2te$all_te %in% te), ]
-    PE <- PE - dimSums(demPE[pc2te_main] * prodCouple[pc2te_main] / (1 + prodCouple[pc2te_main]), dim = 3)
+    PE <- PE - dimSums(dimSums(demPE[pc2te_main] * prodCouple[pc2te_main], dim = 3.4) /
+                      (1 + dimSums(prodCouple[pc2te_main], dim = 3.4)),    dim = 3)
 
     if (!is.null(name)) magclass::getNames(PE) <- name
     return(PE)
@@ -139,8 +141,8 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_demPE(peBio,                                                 name = "PE|+|Biomass (EJ/yr)"),
     get_demPE(peBio, te = teCCS,                                     name = "PE|Biomass|++|w/ CC (EJ/yr)"),
     get_demPE(peBio, te = teNoCCS,                                   name = "PE|Biomass|++|w/o CC (EJ/yr)"),
-    get_demPE(c("pebioil", "pebios"),                                name = "PE|Biomass|1st Generation (EJ/yr)"),
-    get_demPE(peBio, te = "biotr",                                   name = "PE|Biomass|Traditional (EJ/yr)"),
+    get_demPE(c("pebioil", "pebios"),                                name = "PE|Biomass|+++|1st Generation (EJ/yr)"),
+    get_demPE(peBio, te = "biotr",                                   name = "PE|Biomass|++++|Traditional (EJ/yr)"),
     get_demPE(peBio, "seel",                                         name = "PE|Biomass|+|Electricity (EJ/yr)"),
     get_demPE(peBio, "seel", teCCS,                                  name = "PE|Biomass|Electricity|+|w/ CC (EJ/yr)"),
     get_demPE(peBio, "seel", teNoCCS,                                name = "PE|Biomass|Electricity|+|w/o CC (EJ/yr)"),
@@ -158,10 +160,11 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_demPE("pebiolc", seLiq, teNoCCS,                             name = "PE|Biomass|Liquids|Cellulosic|+|w/o CC (EJ/yr)"),
     get_demPE(c("pebioil", "pebios"), seLiq,                         name = "PE|Biomass|Liquids|Non-Cellulosic (EJ/yr)"),
     get_demPE("pebios", seLiq,                                       name = "PE|Biomass|Liquids|Conventional Ethanol (EJ/yr)"),
-    get_demPE(peBio, seLiq, c("bioftrec", "bioftcrec", "biodiesel"), name = "PE|Biomass|Liquids|Biodiesel (EJ/yr)"),
+    get_demPE(peBio, seLiq, c("bioftrec", "bioftcrec", "biodiesel", "biopyrliq"), name = "PE|Biomass|Liquids|Biodiesel (EJ/yr)"),
     get_demPE(peBio, seLiq, c("bioftcrec"),                          name = "PE|Biomass|Liquids|Biodiesel|+|w/ CC (EJ/yr)"),
-    get_demPE(peBio, seLiq, c("bioftrec", "biodiesel"),              name = "PE|Biomass|Liquids|Biodiesel|+|w/o CC (EJ/yr)"),
+    get_demPE(peBio, seLiq, c("bioftrec", "biodiesel", "biopyrliq"), name = "PE|Biomass|Liquids|Biodiesel|+|w/o CC (EJ/yr)"),
     get_demPE(peBio, seSol,                                          name = "PE|Biomass|+|Solids (EJ/yr)"),
+    get_demPE(peBio, "sebiochar",                                    name = "PE|Biomass|+|Biochar (EJ/yr)"),
     get_demPE(peBio, "sehe",                                         name = "PE|Biomass|+|Heat (EJ/yr)"),
 
     # renewables and nuclear
@@ -186,11 +189,11 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     setNames(dimSums(demPE[, , c(peFos, peBio)], dim = 3)
            + dimSums(prodSE[, , c("pegeo", "pehyd", "pewin", "pesol", "peur")], dim = 3), "PE (EJ/yr)"),
     setNames(dimSums(demPE[, , peBio], dim = 3)
-           - dimSums(mselect(demPE, all_enty = peBio, all_te = "biotr"), dim = 3),  "PE|Biomass|Modern (EJ/yr)"),
-    setNames(fuExtr[, , "pebiolc.2"], "PE|Biomass|Residues (EJ/yr)"),
+           - dimSums(mselect(demPE, all_enty = peBio, all_te = "biotr"), dim = 3),  "PE|Biomass|++++|Modern (EJ/yr)"),
+    setNames(fuExtr[, , "pebiolc.2"], "PE|Biomass|+++|Residues (EJ/yr)"),
     setNames((fuExtr[, , "pebiolc.1"]
               + (1 - pm_costsPEtradeMp[, , "pebiolc"]) * Mport[, , "pebiolc"]
-              - Xport[, , "pebiolc"]), "PE|Biomass|Energy Crops (EJ/yr)")
+              - Xport[, , "pebiolc"]), "PE|Biomass|+++|Energy Crops (EJ/yr)")
   )
 
   # add global values
