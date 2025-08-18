@@ -1032,39 +1032,27 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         "Production|Industry|Steel|+|SCRAP-EAF (Mt/yr)",      "sesteel",     "seceaf"
       )
 
-      # reporting of process-based industry production per process-route
-      if (steel_process_based) {
-        mixer <- tribble(
-          ~variable,                                            ~mat,          ~route,
-          "Production|Industry|Steel|+|BF-BOF (Mt/yr)",         "prsteel",     "bfbof",
-          "Production|Industry|Steel|+|BF-BOF-CCS (Mt/yr)",     "prsteel",     "bfbof_ccs",
-          "Production|Industry|Steel|+|DRI-NG-EAF (Mt/yr)",     "prsteel",     "idreaf_ng",
-          "Production|Industry|Steel|+|DRI-NG-EAF-CCS (Mt/yr)", "prsteel",     "idreaf_ng_ccs",
-          "Production|Industry|Steel|+|DRI-H2-EAF (Mt/yr)",     "prsteel",     "idreaf_h2",
-          "Production|Industry|Steel|+|SCRAP-EAF (Mt/yr)",      "sesteel",     "seceaf"
-        )
+      out <- mbind(c(list(out),
+                    .select_sum_name_multiply(o37_ProdIndRoute, .mixer_to_selector(mixer), factor=1e3))) # factor 1e3 converts Gt/yr to Mt/yr
+    }
 
-        out <- mbind(c(list(out),
-                     .select_sum_name_multiply(o37_ProdIndRoute, .mixer_to_selector(mixer), factor=1e3))) # factor 1e3 converts Gt/yr to Mt/yr
-      }
+    #TOCHECK:QIANZHI
+    if (chemicals_process_based) {
 
-      #TOCHECK:QIANZHI
-      if (chemicals_process_based) {
+      mixer <- tribble(
+        ~variable,                                                         ~all_enty,
+        "Production|Industry|Chemicals|Other Chemicals (Mt/yr)",           "otherChem",
+        "Production|Industry|Chemicals|HVC (Mt/yr)",                       "hvc",
+        "Production|Industry|Chemicals|Fertilizer (Mt/yr)",                "fertilizer",
+        "Production|Industry|Chemicals|Methanol Final (Mt/yr)",            "methFinal",
+        "Production|Industry|Chemicals|Ammonia Final (Mt/yr)",             "ammoFinal",
+        "Production|Industry|Chemicals|Methanol (Mt/yr)",                  c("methanol","methanolH2"),
+        "Production|Industry|Chemicals|Ammonia (Mt/yr)",                   c("ammonia","ammoniaH2"))
 
-        mixer <- tribble(
-         ~variable,                                                         ~all_enty,
-          "Production|Industry|Chemicals|Other Chemicals (Mt/yr)",           "otherChem",
-          "Production|Industry|Chemicals|HVC (Mt/yr)",                       "hvc",
-          "Production|Industry|Chemicals|Fertilizer (Mt/yr)",                "fertilizer",
-          "Production|Industry|Chemicals|Methanol Final (Mt/yr)",            "methFinal",
-          "Production|Industry|Chemicals|Ammonia Final (Mt/yr)",             "ammoFinal",
-          "Production|Industry|Chemicals|Methanol (Mt/yr)",                  c("methanol","methanolH2"),
-          "Production|Industry|Chemicals|Ammonia (Mt/yr)",                   c("ammonia","ammoniaH2"))
-
-        out <- mbind(
-          c(list(out), # pass a list of magpie objects
-            .select_sum_name_multiply(v37_matFlow, .mixer_to_selector(mixer), factor=1e3)
-          ))
+      out <- mbind(
+        c(list(out), # pass a list of magpie objects
+          .select_sum_name_multiply(v37_matFlow, .mixer_to_selector(mixer), factor=1e3)
+        ))
           
       # TODO: think about routes in chemicals
        mixer <- tribble(
@@ -1134,9 +1122,8 @@ reportFE <- function(gdx, regionSubsetList = NULL,
        out <- mbind(c(list(out),
                     .select_sum_name_multiply(o37_ProdIndRoute, .mixer_to_selector(mixer), factor=1e3))) # factor 1e3 converts Gt/yr to Mt/yr
                     
-      }
     }
-  }
+  }  
 
 
   #--- Transport reporting ---
