@@ -20,68 +20,58 @@
 #'
 #' @export
 #' @importFrom gdx readGDX
-#' @importFrom magclass mselect getYears getNames<- mbind setNames
+#' @importFrom magclass mselect getYears getNames<- mbind setNames matchDim
 
 reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)) {
   ####### conversion factors ##########
   TWa_2_EJ <- 3600 * 24 * 365 / 1e6
   ####### read in needed data #########
   ## sets
-  teCCS    <- readGDX(gdx, "teCCS", format = "first_found") # technologies with carbon capture
-  teNoCCS  <- readGDX(gdx, "teNoCCS", format = "first_found") # technologies without CCS
-  entySe   <- readGDX(gdx, "entySe", format = "first_found") # secondary energy types
-  peFos    <- readGDX(gdx, "peFos", format = "first_found") # primary energy fossil fuels
-  peBio    <- readGDX(gdx, "peBio", format = "first_found") # biomass primary energy types
+  teCCS    <- readGDX(gdx, "teCCS") # technologies with carbon capture
+  teNoCCS  <- readGDX(gdx, "teNoCCS") # technologies without CCS
+  entySe   <- readGDX(gdx, "entySe") # secondary energy types
+  peFos    <- readGDX(gdx, "peFos") # primary energy fossil fuels
+  peBio    <- readGDX(gdx, "peBio") # biomass primary energy types
   pe2se    <- readGDX(gdx, "pe2se") # map primary energy carriers to secondary
-  pc2te    <- readGDX(gdx, "pc2te", format = "first_found") # prod couple: mapping for own consumption of technologies
+  pc2te    <- readGDX(gdx, "pc2te") # prod couple: mapping for own consumption and co-production of technologies
   pc2te    <- pc2te[(pc2te$all_enty1 %in% entySe) & (pc2te$all_enty2 %in% entySe), ] # ensure main and couple product are valid entySe
 
   seLiq    <- intersect(c("seliqfos", "seliqbio"), entySe)
   seGas    <- intersect(c("segafos", "segabio"), entySe)
   seSol    <- intersect(c("sesofos", "sesobio"), entySe)
 
-  ## parameter
-  pm_costsPEtradeMp <- readGDX(gdx, "pm_costsPEtradeMp", restore_zeros = FALSE)
-  
   ## variables
-  demPE  <- readGDX(gdx, name = "vm_demPe", field = "l", restore_zeros = FALSE, format = "first_found") * TWa_2_EJ
-  demPE  <- demPE[pe2se]
-  prodSE <- readGDX(gdx, name = "vm_prodSe", field = "l", restore_zeros = FALSE, format = "first_found") * TWa_2_EJ
-  prodSE <- mselect(prodSE, all_enty1 = entySe)
-  fuExtr <- readGDX(gdx, "vm_fuExtr", field = "l", format = "first_found") * TWa_2_EJ
-  Mport  <- readGDX(gdx, "vm_Mport", field = "l", format = "first_found") * TWa_2_EJ
-  Xport  <- readGDX(gdx, "vm_Xport", field = "l", format = "first_found") * TWa_2_EJ
+  demPE  <- readGDX(gdx, name = "vm_demPe", field = "l", restore_zeros = FALSE)
+  prodSE <- readGDX(gdx, name = "vm_prodSe", field = "l", restore_zeros = FALSE)
+  y <- Reduce(intersect, list(getYears(demPE), getYears(prodSE))) # calculate minimal temporal resolution
+  demPE  <- demPE[pe2se][, y, ] * TWa_2_EJ
+  prodSE <- mselect(prodSE, all_enty1 = entySe)[, y, ] * TWa_2_EJ
+  fuExtr <- readGDX(gdx, "vm_fuExtr", field = "l")[, y, ] * TWa_2_EJ
+  Mport  <- readGDX(gdx, "vm_Mport", field = "l")[, y, ] * TWa_2_EJ
+  Xport  <- readGDX(gdx, "vm_Xport", field = "l")[, y, ] * TWa_2_EJ
 
-  ####### calculate minimal temporal resolution #####
-  y <- Reduce(intersect, list(getYears(demPE), getYears(prodSE)))
-  demPE  <- demPE[, y, ]
-  prodSE <- prodSE[, y, ]
-  fuExtr <- fuExtr[, y, ]
-  Mport  <- Mport[, y, ]
-  Xport  <- Xport[, y, ]
+  ## parameters
+  prodCouple_tmp <- readGDX(gdx, "pm_prodCouple", restore_zeros = FALSE) # share of couple production
+  prodCouple <- magclass::matchDim(prodCouple_tmp, prodSE, dim = 1, fill = 0) # adjust regional dimension
+  getSets(prodCouple) <- getSets(prodCouple_tmp) # necessary because matchDim overwrites sets names of dim 3
+  prodCouple[prodCouple < 0] <- 0 # ignore negative values (own consumption of technologies)
 
-  #### adjust regional dimension of prodCouple (own consumption of technologies)
-  prodCouple_tmp <- readGDX(gdx, "pm_prodCouple", restore_zeros = FALSE, format = "first_found")
-  prodCouple_tmp[is.na(prodCouple_tmp)] <- 0
-  prodCouple <- new.magpie(getRegions(prodSE), getYears(prodCouple_tmp), magclass::getNames(prodCouple_tmp), fill = 0)
-  prodCouple[getRegions(prodCouple_tmp), , ] <- prodCouple_tmp
-  getSets(prodCouple) <- getSets(prodCouple_tmp)
-  prodCouple[prodCouple < 0] <- 0 # fix negative values to 0
-  
+  pm_costsPEtradeMp <- readGDX(gdx, "pm_costsPEtradeMp", restore_zeros = FALSE)
+
+
   ####### internal functions for reporting ###########
   get_demPE <- function(PEcarrier, SEcarrier = entySe, te = pe2se$all_te, name = NULL) {
     # Compute the PE of technologies that have SEcarrier as their main product
     PE <- dimSums(mselect(demPE, all_enty = PEcarrier, all_enty1 = SEcarrier, all_te = te), dim = 3)
 
     # Some technologies output a couple of SE carriers: the main product (all_enty1), and the couple product (all_enty2)
-    # Add the couple PE of technologies that have SEcarrier as their couple product (and another carrier as main product)
-    pc2te_couple <- pc2te[(pc2te$all_enty %in% PEcarrier) & (pc2te$all_enty2 %in% SEcarrier) & (pc2te$all_te %in% te), ]
-    PE <- PE + dimSums(demPE[pc2te_couple] * prodCouple[pc2te_couple] / (1 + prodCouple[pc2te_couple]), dim = 3)
-    # Subtract the couple PE of technologies that have SEcarrier as their main product, but also have couple products.
-    # This requires summing over each technology (dim 3) and its possibly several couple products (dim 3.4)
-    pc2te_main <- pc2te[(pc2te$all_enty %in% PEcarrier) & (pc2te$all_enty1 %in% SEcarrier) & (pc2te$all_te %in% te), ]
-    PE <- PE - dimSums(dimSums(demPE[pc2te_main] * prodCouple[pc2te_main], dim = 3.4) /
-                      (1 + dimSums(prodCouple[pc2te_main], dim = 3.4)),    dim = 3)
+    pc2te_subset <- pc2te[(pc2te$all_enty %in% PEcarrier) & (pc2te$all_te %in% te), ]
+    # Compute the share of a particular SE in the output of each technology by summing over its couple products (dim 3.4)
+    coupleContribution <- demPE[pc2te_subset] * prodCouple[pc2te_subset] / (1 + dimSums(prodCouple[pc2te_subset], dim = 3.4))
+    # Add contribution of technologies that have SEcarrier as their couple product (all_enty2) and another main product
+    PE <- PE + dimSums(mselect(coupleContribution, all_enty2 = SEcarrier), dim = 3)
+    # Subtract contribution of technologies that have SEcarrier as their main product (all_enty1) and have couple products
+    PE <- PE - dimSums(mselect(coupleContribution, all_enty1 = SEcarrier), dim = 3)
 
     if (!is.null(name)) magclass::getNames(PE) <- name
     return(PE)
