@@ -32,7 +32,7 @@ reportEmiAirPol <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 
   tmp <- NULL
   out <- NULL
 
-  if (!realisation == "exoGAINS") stop("not allowed air pollution realization.")
+  if (!(realisation %in% c("exoGAINS", "exoGAINS2025"))) stop("not allowed air pollution realization.")
 
   ######### initialisation  ###########
   airpollutants <- c("so2", "bc", "oc", "CO", "VOC", "NOx", "NH3")
