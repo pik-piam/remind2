@@ -213,7 +213,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   # if-clause will be removed with Release 3.5.2
   if (file.exists(file.path(extraData, "emi2020_sectNOGAINS_sourceCEDS.cs4r"))) {
     # Calculate AP emissions that are based on ratio to CO2 emissions.  ----
-    # Derive ratio based on CEDS 2020 AP emissions and REMIND 2020 CO2 emissions
+    # Derive emission ratio (ER) based on CEDS 2020 AP emissions and REMIND 2020 CO2 emissions
     .deriveER <- function(emiAPrefyear, emico2, refyear = 2020, convyear = "never") {
       # regional ER in the reference year
       rer2020 <- emiAPrefyear / emico2[, refyear, ]
@@ -273,6 +273,23 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         setNames(
           report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"] * er,
           paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)")
+        )
+      )
+    }
+
+    # Aggregation: Domestic Aviation + International Aviation
+    for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
+      out <- mbind(
+        out,
+        setNames(
+          dimSums(out[
+            , ,
+            c(
+              paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)"),
+              paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
+            )
+          ], dim = 3),
+          paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Aviation (Mt ", toupper(spec), "/yr)")
         )
       )
     }
