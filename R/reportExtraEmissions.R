@@ -259,7 +259,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         out,
         setNames(
           report[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"] * er,
-          paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
+          paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
         )
       )
     }
@@ -278,7 +278,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         out,
         setNames(
           report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"] * er,
-          paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)")
+          paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)")
         )
       )
     }
@@ -291,11 +291,11 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
           dimSums(out[
             , ,
             c(
-              paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)"),
-              paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
+              paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)"),
+              paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
             )
           ], dim = 3),
-          paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Aviation (Mt ", toupper(spec), "/yr)")
+          paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Aviation (Mt ", toupper(spec), "/yr)")
         )
       )
     }
@@ -313,7 +313,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         out,
         setNames(
           report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"] * er,
-          paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", toupper(spec), "/yr)")
+          paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", toupper(spec), "/yr)")
         )
       )
     }
