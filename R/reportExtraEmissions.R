@@ -27,6 +27,12 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
     "FE|Buildings|Gases",
     "FE|Buildings|Liquids",
     "FE|Buildings|Solids",
+
+    # Use net CO2 emissions for aviation and shipping instead of tailpipe
+    # emissions as activity variables. Net CO2 emissions only include fossil
+    # fuel combustion, which seems more adequate for scaling airpollutants,
+    # since combustion of biofuels and synfuels has typically smaller
+    # airpollutant emissions per unit of CO2 emitted.
     "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation",
     "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation",
     "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"
