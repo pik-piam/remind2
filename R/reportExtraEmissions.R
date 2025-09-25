@@ -211,7 +211,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   out <- mbind(
     out,
     setNames(
-      tmp * ef,
+      tmp * ef * MtN_to_ktN2O,
       "Emi|N2O|Extra|Buildings (kt N2O/yr)"
     )
   )
