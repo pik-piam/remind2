@@ -2227,13 +2227,6 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   getSets(EmiMAC) <- c("region", "year", "macsector", "sector", "emiMkt", "gas") # rename dimensions for sake of understanding
   EmiMAC[, , mac.map$all_enty] <- vm_emiMacSector[, , mac.map$all_enty]
 
-  # Backwards compatibility: Will be removed from remind2 with Release 3.5.2
-    if ("Waste" %in% getNames(EmiMAC, dim = "sector")) {
-      tmp <- getNames(EmiMAC, dim = "sector")
-      tmp <- gsub("\\bWaste\\b", "waste", tmp)
-      getNames(EmiMAC, dim = "sector") <- tmp
-    }
-
   ### 5.1 non-CO2 GHG by sector ----
 
   sel_vm_emiTeDetailMkt_ch4 <- if (getSets(vm_emiTeDetailMkt)[[6]] == "emiAll") {

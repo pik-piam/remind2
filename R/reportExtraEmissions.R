@@ -60,25 +60,19 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
     stop("Auxiliary file 'p_emissions4ReportExtraIAMC.cs4r' not found")
   }
 
-  # warning will be changed to stop with Release 3.5.2
   if (!file.exists(file.path(extraData, "emi2020_sectNOGAINS_sourceCEDS.cs4r"))) {
-    warning("Auxiliary file 'emi2020_sectNOGAINS_sourceCEDS.cs4r' not found")
+    stop("Auxiliary file 'emi2020_sectNOGAINS_sourceCEDS.cs4r' not found")
   }
 
   cedsceds <- read.magpie(file.path(extraData, "p_emissions4ReportExtraCEDS.cs4r"))
   cedsiamc <- read.magpie(file.path(extraData, "p_emissions4ReportExtraIAMC.cs4r"))
-  # if-clause will be removed with Release 3.5.2
-  if (file.exists(file.path(extraData, "emi2020_sectNOGAINS_sourceCEDS.cs4r"))) {
-    cedsairpoll <- read.magpie(file.path(extraData, "emi2020_sectNOGAINS_sourceCEDS.cs4r"))
-  }
+  cedsairpoll <- read.magpie(file.path(extraData, "emi2020_sectNOGAINS_sourceCEDS.cs4r"))
+
 
   if (!is.null(regionSubsetList)) {
     cedsceds <- mbind(cedsceds, calc_regionSubset_sums(cedsceds, regionSubsetList))
     cedsiamc <- mbind(cedsiamc, calc_regionSubset_sums(cedsiamc, regionSubsetList))
-    # if-clause will be removed with Release 3.5.2
-    if (file.exists(file.path(extraData, "emi2020_sectNOGAINS_sourceCEDS.cs4r"))) {
-      cedsairpoll <- mbind(cedsairpoll, calc_regionSubset_sums(cedsairpoll, regionSubsetList))
-    }
+    cedsairpoll <- mbind(cedsairpoll, calc_regionSubset_sums(cedsairpoll, regionSubsetList))
   }
 
   # check if regional resolution matches
@@ -94,14 +88,12 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
     stop("Regional resolution in 'p_emissions4ReportExtraIAMC.cs4r' and gdx do not match.")
   }
 
-  # if-clause will be removed with Release 3.5.2
-  if (file.exists(file.path(extraData, "emi2020_sectNOGAINS_sourceCEDS.cs4r"))) {
     if (length(setdiff(getItems(report, dim = 1), getItems(cedsairpoll, dim = 1))) != 0 ||
       length(setdiff(getItems(cedsairpoll, dim = 1), getItems(report, dim = 1))) != 0
     ) {
       stop("Regional resolution in 'emi2020_sectNOGAINS_sourceCEDS.cs4r' and gdx do not match.")
     }
-  }
+
 
 
   # Calculate emissions that are based on emission factors.  ----
@@ -216,8 +208,6 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
     )
   )
 
-  # if-clause will be removed with Release 3.5.2
-  if (file.exists(file.path(extraData, "emi2020_sectNOGAINS_sourceCEDS.cs4r"))) {
     # Calculate AP emissions that are based on ratio to CO2 emissions.  ----
     # Derive emission ratio (ER) based on CEDS 2020 AP emissions and REMIND 2020 CO2 emissions
     .deriveER <- function(emiAPrefyear, emico2, refyear = 2020, convyear = "never") {
@@ -317,7 +307,6 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         )
       )
     }
-  }
 
   # Aggregate to global. Since all variables are emissions, we can just sum them
   out <- mbind(out, setItems(dimSums(out, dim = 1), dim = 1, value = "World"))
