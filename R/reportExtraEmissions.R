@@ -88,11 +88,11 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
     stop("Regional resolution in 'p_emissions4ReportExtraIAMC.cs4r' and gdx do not match.")
   }
 
-    if (length(setdiff(getItems(report, dim = 1), getItems(cedsairpoll, dim = 1))) != 0 ||
-      length(setdiff(getItems(cedsairpoll, dim = 1), getItems(report, dim = 1))) != 0
-    ) {
-      stop("Regional resolution in 'emi2020_sectNOGAINS_sourceCEDS.cs4r' and gdx do not match.")
-    }
+  if (length(setdiff(getItems(report, dim = 1), getItems(cedsairpoll, dim = 1))) != 0 ||
+    length(setdiff(getItems(cedsairpoll, dim = 1), getItems(report, dim = 1))) != 0
+  ) {
+    stop("Regional resolution in 'emi2020_sectNOGAINS_sourceCEDS.cs4r' and gdx do not match.")
+  }
 
 
 
@@ -208,105 +208,105 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
     )
   )
 
-    # Calculate AP emissions that are based on ratio to CO2 emissions.  ----
-    # Derive emission ratio (ER) based on CEDS 2020 AP emissions and REMIND 2020 CO2 emissions
-    .deriveER <- function(emiAPrefyear, emico2, refyear = 2020, convyear = "never") {
-      # regional ER in the reference year
-      rer2020 <- emiAPrefyear / emico2[, refyear, ]
-      # global ER in the reference year
-      ger2020 <- dimSums(emiAPrefyear, dim = 1) / dimSums(emico2[, refyear, ], dim = 1)
-      # Preallocate with emico2 to ensure they will multiply nicely later
-      er <- emico2
+  # Calculate AP emissions that are based on ratio to CO2 emissions.  ----
+  # Derive emission ratio (ER) based on CEDS 2020 AP emissions and REMIND 2020 CO2 emissions
+  .deriveER <- function(emiAPrefyear, emico2, refyear = 2020, convyear = "never") {
+    # regional ER in the reference year
+    rer2020 <- emiAPrefyear / emico2[, refyear, ]
+    # global ER in the reference year
+    ger2020 <- dimSums(emiAPrefyear, dim = 1) / dimSums(emico2[, refyear, ], dim = 1)
+    # Preallocate with emico2 to ensure they will multiply nicely later
+    er <- emico2
 
-      if (convyear == "immediate") {
-        # If convyear is set to immediate, always use global emission ratio
-        er[, , ] <- ger2020
-      } else if (convyear == "never") {
-        # If convyear is set to never, always use regional emission ratio
-        er[, , ] <- rer2020
-      } else {
-        # If another value for convyear is given, assume linear convergence towards
-        # the global emission ratio in convyear
-        er[, , ] <- rer2020
-        er <- convergence(
-          er, as.numeric(ger2020),
-          start_year = 2020, end_year = convyear, type = "linear"
-        )
-      }
-      return(er)
-    }
-
-    # Air Pollutants from Domestic Aviation
-    # Converge to global ER in 2060
-    for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
-      er <- .deriveER(
-        dimReduce(cedsairpoll[, 2020, paste0("NOGAINS Domestic Aviation.", spec)]),
-        report[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"],
-        refyear = 2020,
-        convyear = 2060
-      )
-      out <- mbind(
-        out,
-        setNames(
-          report[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"] * er,
-          paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
-        )
+    if (convyear == "immediate") {
+      # If convyear is set to immediate, always use global emission ratio
+      er[, , ] <- ger2020
+    } else if (convyear == "never") {
+      # If convyear is set to never, always use regional emission ratio
+      er[, , ] <- rer2020
+    } else {
+      # If another value for convyear is given, assume linear convergence towards
+      # the global emission ratio in convyear
+      er[, , ] <- rer2020
+      er <- convergence(
+        er, as.numeric(ger2020),
+        start_year = 2020, end_year = convyear, type = "linear"
       )
     }
+    return(er)
+  }
 
-    # Air Pollutants from International Aviation
-    # Always use global emissions ratio since CEDS2025 emissions are only available as global total (and regional
-    # disaggregation in REMIND was uniform)
-    for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
-      er <- .deriveER(
-        dimReduce(cedsairpoll[, 2020, paste0("NOGAINS International Aviation.", spec)]),
-        report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"],
-        refyear = 2020,
-        convyear = "immediate"
+  # Air Pollutants from Domestic Aviation
+  # Converge to global ER in 2060
+  for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
+    er <- .deriveER(
+      dimReduce(cedsairpoll[, 2020, paste0("NOGAINS Domestic Aviation.", spec)]),
+      report[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"],
+      refyear = 2020,
+      convyear = 2060
+    )
+    out <- mbind(
+      out,
+      setNames(
+        report[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"] * er,
+        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
       )
-      out <- mbind(
-        out,
-        setNames(
-          report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"] * er,
-          paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)")
-        )
-      )
-    }
+    )
+  }
 
-    # Aggregation: Domestic Aviation + International Aviation
-    for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
-      out <- mbind(
-        out,
-        setNames(
-          dimSums(out[
-            , ,
-            c(
-              paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)"),
-              paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
-            )
-          ], dim = 3),
-          paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Aviation (Mt ", toupper(spec), "/yr)")
-        )
+  # Air Pollutants from International Aviation
+  # Always use global emissions ratio since CEDS2025 emissions are only available as global total (and regional
+  # disaggregation in REMIND was uniform)
+  for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
+    er <- .deriveER(
+      dimReduce(cedsairpoll[, 2020, paste0("NOGAINS International Aviation.", spec)]),
+      report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"],
+      refyear = 2020,
+      convyear = "immediate"
+    )
+    out <- mbind(
+      out,
+      setNames(
+        report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"] * er,
+        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)")
       )
-    }
+    )
+  }
 
-    # Air Pollutants from International Shipping
-    # Calculate global AP emissions based on ratio to global CO2 emissions.
-    for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
-      er <- .deriveER(
-        dimReduce(cedsairpoll[, 2020, paste0("NOGAINS International Shipping.", spec)]),
-        report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"],
-        refyear = 2020,
-        convyear = "immediate"
+  # Aggregation: Domestic Aviation + International Aviation
+  for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
+    out <- mbind(
+      out,
+      setNames(
+        dimSums(out[
+          , ,
+          c(
+            paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)"),
+            paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
+          )
+        ], dim = 3),
+        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Aviation (Mt ", toupper(spec), "/yr)")
       )
-      out <- mbind(
-        out,
-        setNames(
-          report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"] * er,
-          paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", toupper(spec), "/yr)")
-        )
+    )
+  }
+
+  # Air Pollutants from International Shipping
+  # Calculate global AP emissions based on ratio to global CO2 emissions.
+  for (spec in c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")) {
+    er <- .deriveER(
+      dimReduce(cedsairpoll[, 2020, paste0("NOGAINS International Shipping.", spec)]),
+      report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"],
+      refyear = 2020,
+      convyear = "immediate"
+    )
+    out <- mbind(
+      out,
+      setNames(
+        report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"] * er,
+        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", toupper(spec), "/yr)")
       )
-    }
+    )
+  }
 
   # Aggregate to global. Since all variables are emissions, we can just sum them
   out <- mbind(out, setItems(dimSums(out, dim = 1), dim = 1, value = "World"))
