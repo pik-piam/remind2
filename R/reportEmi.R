@@ -443,8 +443,8 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # read historical shares of waste energy use derived from IEA energy balances
 
-  # TODO: deprecated fallback, will be removed eventually
   if (is.null(extraData)) {
+    # download auxiliary file from RSE server
     regionHash <- digest::digest(sort(readGDX(gdx, "all_regi")), "xxhash32")
 
     wasteSharesFile <- switch(regionHash,
@@ -456,13 +456,15 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
       stop("No file 'emi_waste_shares.cs4r' found for regions in .gdx file.")
     }
 
-    WasteShares <- read.csv(
-      system.file("extdata", wasteSharesFile, package = "remind2"),
-      sep = ",", skip = 4, header = FALSE
-    ) %>%
+    f <- downloadAuxiliaryFile(wasteSharesFile)
+
+    WasteShares <- read.csv(f, sep = ",", skip = 4, header = FALSE) %>%
       as.magpie(temporal = 1, spatial = 2)
 
     WasteShares <- magclass::collapseDim(WasteShares[, "y2019", ])
+
+    unlink(f)
+
   } else {
     if (!file.exists(file.path(extraData, "emi_waste_shares.cs4r"))) {
       stop("Auxiliary file 'emi_waste_shares.cs4r' not found")
