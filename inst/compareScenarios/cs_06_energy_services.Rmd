@@ -266,7 +266,7 @@ items <- c(
   "FE|Transport|Pass|Road|Bus",
   "FE|Transport|Pass|Road|LDV|Four Wheelers",
   "FE|Transport|Pass|Road|LDV|Three Wheelers",
-  "FE|Transport|Pass|Road|LDV|Two Wheelers",
+  "FE|Transport|Pass|Road|LDV|Two Wheelers"
   )
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
@@ -281,7 +281,7 @@ items <- c(
   "FE|Transport|Pass|Road|Bus pCap",
   "FE|Transport|Pass|Road|LDV|Four Wheelers pCap",
   "FE|Transport|Pass|Road|LDV|Three Wheelers pCap",
-  "FE|Transport|Pass|Road|LDV|Two Wheelers pCap",
+  "FE|Transport|Pass|Road|LDV|Two Wheelers pCap"
   )
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
