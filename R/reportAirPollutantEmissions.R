@@ -196,7 +196,6 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   }
 
   # Internal aggregation function per pollutant
-  ## Top level of aggregation: "w/o Bunkers|Energy and Industrial Processes", "Product Use|Solvents", and "Waste"
   addAirPollutantEmissionsAggregation <- function(input = output_AP_unaggregated) {
     # Initialize output
     output <- input
@@ -343,6 +342,24 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
             paste0("Emi|", pollutant, "|Industrial Processes (Mt ", pollutant, "/yr)")
           )], dim = 3),
           paste0("Emi|", pollutant, "|w/o Bunkers|Energy and Industrial Processes (Mt ", pollutant, "/yr)")
+        )
+      )
+      # TEMPORARY SOLUTION UNTIL MAgPIE AP EMISSIONS ARE AVAILABLE AND 
+      # reportExtraEmissionsBECOMES AVAILABLE TO reportEmiForClimateAssessment 
+      ## Aggregate current top level variabes 
+      ## "w/o Bunkers|Energy and Industrial Processes", "Product Use|Solvents", and "Waste"
+      ## to total
+      ## Warning 1: These variables are overwritten in reportExtraEmissions to include bunkers
+      ## Warning 2: These totals are currently missing bunkers and AFOLU emissions
+      output <- mbind(
+        output,
+        setNames(
+          dimSums(output[, , c(
+            paste0("Emi|", pollutant, "|w/o Bunkers|Energy and Industrial Processes (Mt ", pollutant, "/yr)"),
+            paste0("Emi|", pollutant, "|Product Use|Solvents (Mt ", pollutant, "/yr)"),
+            paste0("Emi|", pollutant, "|Waste (Mt ", pollutant, "/yr)")
+          )], dim = 3),
+          paste0("Emi|", pollutant, " (Mt ", pollutant, "/yr)")
         )
       )
     }
