@@ -82,36 +82,36 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
     # download auxiliary file from RSE server
     regionHash <- digest::digest(sort(readGDX(gdx, "all_regi")), "xxhash32")
     # baseyear (2020) emissions
-        file_name_emi2020_regi <- switch(regionHash,
-                              "69585993" = paste0(file_name_emi2020, "_h12.cs4r"),
-                              "8c818b67" = paste0(file_name_emi2020, "_eu21.cs4r")
+    file_name_emi2020_regi <- switch(regionHash,
+      "69585993" = paste0(file_name_emi2020, "_h12.cs4r"),
+      "8c818b67" = paste0(file_name_emi2020, "_eu21.cs4r")
     )
     if (is.null(file_name_emi2020_regi)) {
-      stop(paste0("No file '",file_name_emi2020_regi,"' found for regions in .gdx file."))
+      stop(paste0("No file '", file_name_emi2020_regi, "' found for regions in .gdx file."))
     }
     file_emi2020 <- downloadAuxiliaryFile(file_name_emi2020_regi)
     emi2020 <- read.magpie(file_emi2020)
     # emission factors
     file_name_emifacs_regi <- switch(regionHash,
-                                     "69585993" = paste0(file_name_emifacs, "_h12.cs4r"),
-                                     "8c818b67" = paste0(file_name_emifacs, "_eu21.cs4r")
+      "69585993" = paste0(file_name_emifacs, "_h12.cs4r"),
+      "8c818b67" = paste0(file_name_emifacs, "_eu21.cs4r")
     )
     if (is.null(file_name_emifacs_regi)) {
-      stop(paste0("No file '",file_name_emifacs_regi,"' found for regions in .gdx file."))
+      stop(paste0("No file '", file_name_emifacs_regi, "' found for regions in .gdx file."))
     }
     file_emifacs <- downloadAuxiliaryFile(file_name_emifacs_regi)
     emifacs <- read.magpie(file_emifacs)
   } else {
     # check that files exist
-    if (!file.exists(file.path(extraData, paste0(file_name_emi2020,".cs4r")))) {
+    if (!file.exists(file.path(extraData, paste0(file_name_emi2020, ".cs4r")))) {
       stop(paste0("Auxiliary file '", file_name_emi2020, ".cs4r' not found."))
-    } else if (!file.exists(file.path(extraData, paste0(file_name_emifacs,".cs4r")))) {
+    } else if (!file.exists(file.path(extraData, paste0(file_name_emifacs, ".cs4r")))) {
       stop(paste0("Auxiliary file '", file_name_emifacs, ".cs4r' not found."))
     }
 
     # read files
-    emi2020 <- read.magpie(file.path(extraData, paste0(file_name_emi2020,".cs4r")))
-    emifacs <- read.magpie(file.path(extraData, paste0(file_name_emifacs,".cs4r")))
+    emi2020 <- read.magpie(file.path(extraData, paste0(file_name_emi2020, ".cs4r")))
+    emifacs <- read.magpie(file.path(extraData, paste0(file_name_emifacs, ".cs4r")))
   }
 
   # Set dim names
@@ -125,20 +125,22 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   # Check if regional resolution matches
   all_regi <- readGDX(gdx, "all_regi")
   if (length(setdiff(all_regi, getItems(emi2020, dim = 1))) != 0 ||
-      length(setdiff(getItems(emi2020, dim = 1), all_regi)) != 0
+    length(setdiff(getItems(emi2020, dim = 1), all_regi)) != 0
   ) {
     stop(paste0("Regional resolution in '", file_name_emi2020, ".cs4r' and gdx do not match."))
   } else if (length(setdiff(all_regi, getItems(emifacs, dim = 1))) != 0 ||
-             length(setdiff(getItems(emifacs, dim = 1), all_regi)) != 0
+    length(setdiff(getItems(emifacs, dim = 1), all_regi)) != 0
   ) {
     stop(paste0("Regional resolution in '", file_name_emifacs, ".cs4r' and gdx do not match."))
   }
 
   # 3. CALCULATE AIR POLLUTANT EMISSIONS FOR GAINS SECTORS ---------------------
 
-  emis_projected_AP <- exoGAINS2025AirPollutants(remind_output = output,
-                                          gains_emifacs = emifacs,
-                                          baseyear_emis_2020 = emi2020)
+  emis_projected_AP <- exoGAINS2025AirPollutants(
+    remind_output = output,
+    gains_emifacs = emifacs,
+    baseyear_emis_2020 = emi2020
+  )
 
   # 4. REPORT AIR POLLUTANT EMISSIONS FOR GAINS SECTORS ------------------------
 
@@ -152,12 +154,12 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   # Internal reporting function per pollutant
   generateAirPollutantEmissionsReporting <- function(pollutant, mapping = map_GAINS2REMIND, emissions = emis_projected_AP) {
     # Reduce to the pollutant
-    AP_in <- collapseDim(emissions[,,pollutant], dim = 3.2)
+    AP_in <- collapseDim(emissions[, , pollutant], dim = 3.2)
 
     # Get REMIND variable names
     AP_mapping <- mapping %>%
-      mutate("REMINDvariable" = paste0("Emi|",pollutant,"|",.data$REMINDreporting," (Mt ",pollutant, "/yr)")) %>%
-      select("GAINSsector","REMINDvariable")
+      mutate("REMINDvariable" = paste0("Emi|", pollutant, "|", .data$REMINDreporting, " (Mt ", pollutant, "/yr)")) %>%
+      select("GAINSsector", "REMINDvariable")
 
     # Rename GAINS sectors to REMIND variable names
     AP_out <- setNames(AP_in[, , AP_mapping$GAINSsector], as.character(AP_mapping$REMINDvariable))
@@ -166,89 +168,189 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   }
 
   # Report each pollutant
-  outout_AP <- do.call("mbind", lapply(airpollutants, generateAirPollutantEmissionsReporting))
+  output_AP_unaggregated <- do.call("mbind", lapply(airpollutants, generateAirPollutantEmissionsReporting))
+  getSets(output_AP_unaggregated)["d3.1"] <- "variable"
 
   # Add other region aggregations
   if (!is.null(regionSubsetList)) {
-    output_AP <- mbind(output_AP, calc_regionSubset_sums(output_AP, regionSubsetList))
+    output_AP_unaggregated <- mbind(output_AP_unaggregated, calc_regionSubset_sums(output_AP_unaggregated, regionSubsetList))
   }
 
   # 4.2 REPORTING OF SECTORAL AGGREGATIONS -------------------------------------
 
-  browser()
- # magclass objekt filtern nach regex in den variablen (via mselect oder pmatch) und diese dann viadimSums aufsummieren.
-
-
-
- # CONTINUE HERE ===============================================================
- # Report air pollutant emissions on finest level and aggregations
-
-
-  # Loop over air pollutants and add some variables
-  for (pollutant in airpollutants) {
-    poll_rep <- toupper(pollutant)
-    # Aggregation: Transport and Energy Supply
-    ## Aviation and International Shipping air pollutant emissions are computed in reportExtraEmissions,
-    ## and thus neither included in Energy Demand|Transport not in the totals.
-    out <- mbind(
-      out,
+  # Internal helper function for aggregation
+  sumAPchilds <- function(parent_name, childs_startWith, data, poll) {
+    # All variable names in data (no subdimensions!)
+    all_vars <- getItems(data, dim = 3)
+    # Selected variable names based on childs_startWith
+    selected_vars <- all_vars[startsWith(all_vars, paste0("Emi|", poll, "|", childs_startWith, "|+|"))]
+    # Add aggregation to new parent variable
+    extended_data <- mbind(
+      data,
       setNames(
-        dimSums(out[
-          , ,
-          c(
-            paste0("Emi|", poll_rep, "|Energy Demand|Transport|Ground Trans (Mt ", poll_rep, "/yr)")
-          )
-        ], dim = 3),
-        paste0("Emi|", poll_rep, "|Energy Demand|Transport (Mt ", poll_rep, "/yr)")
-      ),
-      setNames(
-        dimSums(out[
-          , ,
-          c(
-            paste0("Emi|", poll_rep, "|Energy Supply|Electricity (Mt ", poll_rep, "/yr)"),
-            paste0("Emi|", poll_rep, "|Energy Supply|Extraction (Mt ", poll_rep, "/yr)")
-          )
-        ], dim = 3),
-        paste0("Emi|", poll_rep, "|Energy Supply (Mt ", poll_rep, "/yr)")
+        dimSums(data[, , selected_vars], dim = 3),
+        paste0("Emi|", poll, "|", parent_name, " (Mt ", poll, "/yr)")
       )
     )
-    # Aggregation: Energy Demand + Energy Supply, Land Use
-    out <- mbind(
-      out,
-      setNames(
-        dimSums(out[, , c(
-          paste0("Emi|", poll_rep, "|Energy Demand|Industry (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Energy Demand|Buildings (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Energy Demand|Transport (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Energy Supply (Mt ", poll_rep, "/yr)")
-        )], dim = 3),
-        paste0("Emi|", poll_rep, "|Energy Supply and Demand (Mt ", poll_rep, "/yr)")
-      ),
-      setNames(
-        dimSums(out[, , c(
-          paste0("Emi|", poll_rep, "|Land Use|Savannah Burning (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Land Use|Forest Burning (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Land Use|Agriculture (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Land Use|Agricultural Waste Burning (Mt ", poll_rep, "/yr)")
-        )], dim = 3),
-        paste0("Emi|", poll_rep, "|Land Use (Mt ", poll_rep, "/yr)")
-      )
-    )
-    # Compute total
-    out <- mbind(
-      out,
-      setNames(
-        dimSums(out[, , c(
-          paste0("Emi|", poll_rep, "|Energy Supply and Demand (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Solvents (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Land Use (Mt ", poll_rep, "/yr)"),
-          paste0("Emi|", poll_rep, "|Waste (Mt ", poll_rep, "/yr)")
-        )], dim = 3),
-        paste0("Emi|", poll_rep, " (Mt ", poll_rep, "/yr)")
-      )
-    )
+    return(extended_data)
   }
 
-  getSets(out)[3] <- "variable"
-  return(out)
+  # Internal aggregation function per pollutant
+  ## Top level of aggregation: "w/o Bunkers|Energy and Industrial Processes", "Product Use|Solvents", and "Waste"
+  addAirPollutantEmissionsAggregation <- function(input = output_AP_unaggregated) {
+    # Initialize output
+    output <- input
+    # Loop over all pollutants
+    for (pollutant in airpollutants) {
+      # Industrial Processes
+      output <- sumAPchilds(
+        parent_name = "Industrial Processes",
+        childs_startWith = "Industrial Processes", data = output, poll = pollutant
+      )
+      # Waste
+      output <- sumAPchilds(
+        parent_name = "Waste",
+        childs_startWith = "Waste", data = output, poll = pollutant
+      )
+      # Energy|Demand|Industry|+|Solids
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Industry|+|Solids",
+        childs_startWith = "Energy|Demand|Industry|Solids", data = output, poll = pollutant
+      )
+      # Energy|Demand|Industry|+|Liquids
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Industry|+|Liquids",
+        childs_startWith = "Energy|Demand|Industry|Liquids", data = output, poll = pollutant
+      )
+      # Energy|Demand|Industry
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Industry",
+        childs_startWith = "Energy|Demand|Industry", data = output, poll = pollutant
+      )
+      # Energy|Demand|Residential|Solids|+|Biomass
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Residential|Solids|+|Biomass",
+        childs_startWith = "Energy|Demand|Residential|Solids|Biomass", data = output, poll = pollutant
+      )
+      # Energy|Demand|Residential|+|Solids
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Residential|+|Solids",
+        childs_startWith = "Energy|Demand|Residential|Solids", data = output, poll = pollutant
+      )
+      # Energy|Demand|Residential|+|Liquids
+     output <- sumAPchilds(
+        parent_name = "Energy|Demand|Residential|+|Liquids",
+        childs_startWith = "Energy|Demand|Residential|Liquids", data = output, poll = pollutant
+      )
+      # Energy|Demand|Residential
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Residential",
+        childs_startWith = "Energy|Demand|Residential", data = output, poll = pollutant
+      )
+      # Energy|Demand|Commercial|+|Solids
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Commercial|+|Solids",
+        childs_startWith = "Energy|Demand|Commercial|Solids", data = output, poll = pollutant
+      )
+      # Energy|Demand|Commercial
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Commercial",
+        childs_startWith = "Energy|Demand|Commercial", data = output, poll = pollutant
+      )
+      # Energy|Demand|Buildings
+      output <- mbind(
+        output,
+        setNames(
+          dimSums(output[, , c(
+            paste0("Emi|", pollutant, "|Energy|Demand|Residential (Mt ", pollutant, "/yr)"),
+            paste0("Emi|", pollutant, "|Energy|Demand|Commercial (Mt ", pollutant, "/yr)")
+          )], dim = 3),
+          paste0("Emi|", pollutant, "|Energy|Demand|Buildings (Mt ", pollutant, "/yr)")
+        )
+      )
+      # Energy|Demand|Transport|Ground|+|Liquids
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Transport|Ground|+|Liquids",
+        childs_startWith = "Energy|Demand|Transport|Ground|Liquids", data = output, poll = pollutant
+      )
+      # Energy|Demand|Transport|Ground
+      output <- sumAPchilds(
+        parent_name = "Energy|Demand|Transport|Ground",
+        childs_startWith = "Energy|Demand|Transport|Ground", data = output, poll = pollutant
+      )
+      # w/o Bunkers|Energy|Demand
+      ## Domestic aviation is missing (see reportExtraEmissions)
+      output <- mbind(
+        output,
+        setNames(
+          dimSums(output[, , c(
+            paste0("Emi|", pollutant, "|Energy|Demand|Industry (Mt ", pollutant, "/yr)"),
+            paste0("Emi|", pollutant, "|Energy|Demand|Buildings (Mt ", pollutant, "/yr)"),
+            paste0("Emi|", pollutant, "|Energy|Demand|Transport|Ground (Mt ", pollutant, "/yr)")
+          )], dim = 3),
+          paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)")
+        )
+      )
+      # Energy|Supply|+|Extraction
+      output <- sumAPchilds(
+        parent_name = "Energy|Supply|+|Extraction",
+        childs_startWith = "Energy|Supply|Extraction", data = output, poll = pollutant
+      )
+      # Energy|Supply|Electricity|+|Solids
+      output <- sumAPchilds(
+        parent_name = "Energy|Supply|Electricity|+|Solids",
+        childs_startWith = "Energy|Supply|Electricity|Solids", data = output, poll = pollutant
+      )
+      # Energy|Supply|Electricity|+|Liquids
+      output <- sumAPchilds(
+        parent_name = "Energy|Supply|Electricity|+|Liquids",
+        childs_startWith = "Energy|Supply|Electricity|Liquids", data = output, poll = pollutant
+      )
+      # Energy|Supply|+|Electricity
+      output <- sumAPchilds(
+        parent_name = "Energy|Supply|+|Electricity",
+        childs_startWith = "Energy|Supply|Electricity", data = output, poll = pollutant
+      )
+      # Energy|Supply|+|Transformation
+      output <- sumAPchilds(
+        parent_name = "Energy|Supply|+|Transformation",
+        childs_startWith = "Energy|Supply|Transformation", data = output, poll = pollutant
+      )
+      # Energy|Supply
+      output <- sumAPchilds(
+        parent_name = "Energy|Supply",
+        childs_startWith = "Energy|Supply", data = output, poll = pollutant
+      )
+      # w/o Bunkers|Energy
+      ## Domestic aviation is missing (see reportExtraEmissions)
+      output <- mbind(
+        output,
+        setNames(
+          dimSums(output[, , c(
+            paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)"),
+            paste0("Emi|", pollutant, "|Energy|Supply (Mt ", pollutant, "/yr)")
+          )], dim = 3),
+          paste0("Emi|", pollutant, "|w/o Bunkers|Energy (Mt ", pollutant, "/yr)")
+        )
+      )
+      # w/o Bunkers|Energy and Industrial Processes
+      ## Domestic aviation is missing (see reportExtraEmissions)
+      output <- mbind(
+        output,
+        setNames(
+          dimSums(output[, , c(
+            paste0("Emi|", pollutant, "|w/o Bunkers|Energy (Mt ", pollutant, "/yr)"),
+            paste0("Emi|", pollutant, "|Industrial Processes (Mt ", pollutant, "/yr)")
+          )], dim = 3),
+          paste0("Emi|", pollutant, "|w/o Bunkers|Energy and Industrial Processes (Mt ", pollutant, "/yr)")
+        )
+      )
+    }
+    return(output)
+  }
+
+  # Add aggregates for each pollutant
+  output_AP_aggregated <- addAirPollutantEmissionsAggregation(output_AP_unaggregated)
+
+  return(output_AP_aggregated)
 }
