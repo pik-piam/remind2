@@ -9,6 +9,7 @@
 #'                      emissions for all 35 GAINS sectors
 #' @param t temporal resolution of the reporting, default:
 #' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
+#' @param logging       Boolean to activate logging
 #'
 #' @author Laurin Köhler-Schindler
 #' @examples
@@ -20,8 +21,11 @@
 
 
 exoGAINS2025AirPollutants <- function(remind_output, gains_emifacs, baseyear_emis_2020,
-                                      t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)) {
-  cat("\nstarting exoGAINS2025AirPollutants.R ...\n\n")
+                                      t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
+                                      logging = FALSE) {
+  if (logging) {
+    cat("\nstarting exoGAINS2025AirPollutants.R ...\n\n")
+  }
   # 1. Prepare REMIND activities -----------------------------------------------
 
   # Delete "+", "++" and "+++" from variable names
@@ -55,9 +59,11 @@ exoGAINS2025AirPollutants <- function(remind_output, gains_emifacs, baseyear_emi
   RA <- RA["GLO", , invert = TRUE]
 
   # Logging missing sectors
-  cat("List of sectors that are not in the GAINS2025toREMIND mapping because there is no emission and/or activity data.\nThese sectors will be omitted in the calculations!\n")
-  missing_sectors <- setdiff(getNames(gains_emifacs, dim = 1), map_GAINS2REMIND$GAINSsector)
-  cat(missing_sectors, sep = "\n")
+  if (logging) {
+    cat("List of sectors that are not in the GAINS2025toREMIND mapping because there is no emission and/or activity data.\nThese sectors will be omitted in the calculations!\n")
+    missing_sectors <- setdiff(getNames(gains_emifacs, dim = 1), map_GAINS2REMIND$GAINSsector)
+    cat(missing_sectors, sep = "\n")
+  }
 
   # 2. Select GAINS data -------------------------------------------------------
 
@@ -110,15 +116,17 @@ exoGAINS2025AirPollutants <- function(remind_output, gains_emifacs, baseyear_emi
 
   # Logging species x sector x region combinations for which baseyear emissions (2020) are positive but projected emissions are NA
   # this happens if RA in 2020 is zero (division by zero in RA_change) or if emifacs in 2020 is zero (division by zero in emifacs_change)
-  cat("\nList of species x sector x region combinations for which projected emissions are NA but baseyear emissions (2020) are positive.
+  if (logging) {
+    cat("\nList of species x sector x region combinations for which projected emissions are NA but baseyear emissions (2020) are positive.
   This can happen if the REMIND activity in 2020 is zero or the emission factor in 2020 is zero.\n")
-  for (species in getNames(emis_projected, dim = "species")) {
-    for (sector in getNames(emis_projected, dim = "sector")) {
-      missing_combinations <- which(is.na(emis_projected[, 2020, species][, , sector]) & (emis[, 2020, species][, , sector] > 0))
-      if (length(missing_combinations) > 0) {
-        cat(paste0("Region(s) with missing projected emissions for species ", species, " and sector ", sector, ":"))
-        cat(paste0(getRegions(emis_projected)[missing_combinations]))
-        cat("\n")
+    for (species in getNames(emis_projected, dim = "species")) {
+      for (sector in getNames(emis_projected, dim = "sector")) {
+        missing_combinations <- which(is.na(emis_projected[, 2020, species][, , sector]) & (emis[, 2020, species][, , sector] > 0))
+        if (length(missing_combinations) > 0) {
+          cat(paste0("Region(s) with missing projected emissions for species ", species, " and sector ", sector, ":"))
+          cat(paste0(getRegions(emis_projected)[missing_combinations]))
+          cat("\n")
+        }
       }
     }
   }
@@ -130,7 +138,8 @@ exoGAINS2025AirPollutants <- function(remind_output, gains_emifacs, baseyear_emi
   emis_projected_GLO <- dimSums(emis_projected, dim = 1)
   getItems(emis_projected_GLO, dim = 1) <- "GLO"
   emis_projected <- mbind(emis_projected, emis_projected_GLO)
-
-  cat("\nexoGAINS2025AirPollutants.R finished.\n")
+  if (logging) {
+    cat("\nexoGAINS2025AirPollutants.R finished.\n")
+  }
   return(emis_projected)
 }
