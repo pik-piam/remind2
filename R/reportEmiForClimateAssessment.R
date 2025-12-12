@@ -10,6 +10,7 @@
 #' aggregations. If NULL (default value) only the global region aggregation "GLO" will
 #' be created.
 #' @param t temporal resolution of the reporting, default: t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
+#' @param extraData path to extra data files to be used in the reporting
 #'
 #' @author Gabriel Abrahao, Tonn Rüter
 #' @examples
@@ -21,7 +22,8 @@
 #' @importFrom gdx readGDX
 #' @importFrom magclass mbind mselect getItems getYears getSets new.magpie
 reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList = NULL,
-                                          t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)) {
+                                          t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
+                                          extraData = NULL) {
   # NOTE: This function is a copy of reportEmi with unnecessary parts removed
   # Read Data from GDX ----
 
@@ -148,10 +150,23 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
   if (!is.null(regionSubsetList)) {
     out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
   }
-
+  
   # Run air pollution report
-  message("reportEmiForClimateAssessment executes reportEmiAirPol")
-  pollutants <- reportEmiAirPol(gdx, regionSubsetList = regionSubsetList, t = t)
+  ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
+  c_model_version <- readGDX(gdx, "c_model_version")
+  main_version <- strsplit(c_model_version, "-dev")[[1]][1]
+  dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
+
+  if ( (main_version == "3-5-2") & (dev_version <= 318)) {
+    message("reportEmiForClimateAssessment executes reportEmiAirPol")
+    pollutants <- reportEmiAirPol(gdx, regionSubsetList = regionSubsetList, t = t)
+  } else {
+    message("reportEmiForClimateAssessment executes reportAirPollutantEmissions...")
+    pollutants <- reportAirPollutantEmissions(gdx = gdx, output = output, 
+                                              regionSubsetList = regionSubsetList, t = t, 
+                                              extraData = extraData)
+  }
+  
   getItems(pollutants, "variable") <- sub("Emi\\|", "Emi\\|CA\\|", getItems(pollutants, "variable"))
   # Combine both reports
   out <- mbind(out, pollutants[getItems(out, dim = "all_regi"), getItems(out, dim = "tall"), ])

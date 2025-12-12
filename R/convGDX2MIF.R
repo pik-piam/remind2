@@ -66,20 +66,31 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   output <- mbind(output, reportCapitalStock(gdx, regionSubsetList, t, gdx_ref = gdx_ref)[, t, ])
   message("running reportEnergyInvestment...")
   output <- mbind(output, reportEnergyInvestment(gdx, regionSubsetList, t, gdx_ref = gdx_ref)[, t, ])
-  message("running reportEmiAirPol...")
-  tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t))  # test whether reportEmiAirPol works
-  if (!inherits(tmp, "try-error")) {
-    if (!is.null(tmp)) output <- mbind(output, tmp[, t, ])
-  } else {
-    message("function reportEmiAirPol does not work and is skipped")
-  }
 
   # reporting of variables that need variables from different other report functions
+  ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
+  c_model_version <- readGDX(gdx, "c_model_version")
+  main_version <- strsplit(c_model_version, "-dev")[[1]][1]
+  dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
+  
+  if ( (main_version == "3-5-2") & (dev_version <= 318)) {
+    message("running reportEmiAirPol...")
+    tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t)) # test whether reportEmiAirPol works
+    if (!inherits(tmp, "try-error")) {
+      if (!is.null(tmp)) output <- mbind(output, tmp[, t, ])
+    } else {
+      message("function reportEmiAirPol does not work and is skipped")
+    }
+  } else {
+    message("running reportAirPollutantEmissions...") # needs output from reportMacroEconomy, reportPE, reportSE, and reportFE
+    output <- mbind(output, reportAirPollutantEmissions(gdx, output, regionSubsetList, t, extraData)[, t, ])
+  }
+
   message("running reportEmi...") # needs output from reportFE
   output <- mbind(output, reportEmi(gdx, output, regionSubsetList, t, extraData)[, t, ])
 
   message("running reportEmiForClimateAssessment...") # minimal and specific set of emissions for CA
-  output <- mbind(output, reportEmiForClimateAssessment(gdx, output, regionSubsetList, t)[, t, ])
+  output <- mbind(output, reportEmiForClimateAssessment(gdx, output, regionSubsetList, t, extraData)[, t, ])
 
   message("running reportTechnology...")
   # needs output from reportSE
