@@ -164,7 +164,7 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
     message("reportEmiForClimateAssessment executes reportAirPollutantEmissions...")
     pollutants <- reportAirPollutantEmissions(gdx = gdx, output = output, 
                                               regionSubsetList = regionSubsetList, t = t, 
-                                              extraData = extraData)
+                                              extraData = extraData, addTmpTotal = TRUE)
   }
   
   getItems(pollutants, "variable") <- sub("Emi\\|", "Emi\\|CA\\|", getItems(pollutants, "variable"))
