@@ -73,7 +73,7 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   main_version <- strsplit(c_model_version, "-dev")[[1]][1]
   dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
   
-  if ( (main_version == "3-5-2") & (dev_version <= 318)) {
+  if ( (main_version == "3-5-2") & (dev_version <= 140)) {
     message("running reportEmiAirPol...")
     tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t)) # test whether reportEmiAirPol works
     if (!inherits(tmp, "try-error")) {
