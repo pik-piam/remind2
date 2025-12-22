@@ -319,7 +319,7 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
 
   # Add aggregates for each pollutant
   output_AP_aggregated <- addAirPollutantEmissionsAggregation(output_AP_unaggregated)
-  browser()
+  
   # TEMPORARY SOLUTION TO GET TOTALS FOR reportEmiForClimateAssessment
   ## AP emissions from shipping and aviation can only be computed in
   ## reportExtraEmissions based on EDGE-T variables. Thus, they can
