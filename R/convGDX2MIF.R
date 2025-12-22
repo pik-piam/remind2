@@ -72,8 +72,8 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   c_model_version <- readGDX(gdx, "c_model_version")
   main_version <- strsplit(c_model_version, "-dev")[[1]][1]
   dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
-  
-  if ( (main_version == "3-5-2") & (dev_version <= 140)) {
+
+  if ((main_version == "3-5-2") && (dev_version <= 374)) {
     message("running reportEmiAirPol...")
     tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t)) # test whether reportEmiAirPol works
     if (!inherits(tmp, "try-error")) {
@@ -82,15 +82,22 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
       message("function reportEmiAirPol does not work and is skipped")
     }
   } else {
-    message("running reportAirPollutantEmissions...") # needs output from reportMacroEconomy, reportPE, reportSE, and reportFE
-    output <- mbind(output, reportAirPollutantEmissions(gdx, output, regionSubsetList, t, extraData)[, t, ])
+    # needs output from reportMacroEconomy, reportPE, reportSE, and reportFE
+    message("running reportAirPollutantEmissions...")
+    output <- mbind(
+      output,
+      reportAirPollutantEmissions(gdx, output, regionSubsetList, t, extraData)[, t, ]
+    )
   }
 
   message("running reportEmi...") # needs output from reportFE
   output <- mbind(output, reportEmi(gdx, output, regionSubsetList, t, extraData)[, t, ])
 
   message("running reportEmiForClimateAssessment...") # minimal and specific set of emissions for CA
-  output <- mbind(output, reportEmiForClimateAssessment(gdx, output, regionSubsetList, t, extraData)[, t, ])
+  output <- mbind(
+    output,
+    reportEmiForClimateAssessment(gdx, output, regionSubsetList, t, extraData)[, t, ]
+  )
 
   message("running reportTechnology...")
   # needs output from reportSE
@@ -117,8 +124,8 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
     gdx_refpolicycost <- gdx
   }
   if (file.exists(gdx_refpolicycost)) {
-    gdp_scen <- try(readGDX(gdx, c("cm_GDPpopScen","cm_GDPscen"), react = "error"), silent = TRUE)
-    gdp_scen_ref <- try(readGDX(gdx_refpolicycost, c("cm_GDPpopScen","cm_GDPscen"), react = "error"), silent = TRUE)
+    gdp_scen <- try(readGDX(gdx, c("cm_GDPpopScen", "cm_GDPscen"), react = "error"), silent = TRUE)
+    gdp_scen_ref <- try(readGDX(gdx_refpolicycost, c("cm_GDPpopScen", "cm_GDPscen"), react = "error"), silent = TRUE)
     if (!inherits(gdp_scen, "try-error") && !inherits(gdp_scen_ref, "try-error")) {
       if (gdp_scen[1] == gdp_scen_ref[1]) {
         if (gdx == gdx_refpolicycost) {

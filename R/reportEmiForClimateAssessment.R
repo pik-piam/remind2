@@ -157,7 +157,7 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
   main_version <- strsplit(c_model_version, "-dev")[[1]][1]
   dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
 
-  if ( (main_version == "3-5-2") & (dev_version <= 140)) {
+  if ( (main_version == "3-5-2") && (dev_version <= 374)) {
     message("reportEmiForClimateAssessment executes reportEmiAirPol")
     pollutants <- reportEmiAirPol(gdx, regionSubsetList = regionSubsetList, t = t)
   } else {

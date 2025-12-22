@@ -330,19 +330,30 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
 
 
   # 3. Aggregate AP emissions with variables from reportAirPollutantEmissions----
-  
+
   ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
   c_model_version <- readGDX(gdx, "c_model_version")
   main_version <- strsplit(c_model_version, "-dev")[[1]][1]
   dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
-  
-  if ((main_version == "3-5-2") & (dev_version <= 140)) {
-    # air pollutant emissions are computed using reportEmiAirPol, 
+
+  if ((main_version == "3-5-2") && (dev_version <= 374)) {
+    # air pollutant emissions are computed using reportEmiAirPol,
     # thus no aggregation here
   } else {
-    #
+    # Read variables reported in reportAirPollutantEmissions
+    reportAPvars <- c(
+      paste0("Emi|", airpollutants, "|Energy|Demand|Industry"),
+      paste0("Emi|", airpollutants, "|Energy|Demand|Buildings"),
+      paste0("Emi|", airpollutants, "|Energy|Demand|Transport|Ground"),
+      paste0("Emi|", airpollutants, "|Energy|Supply"),
+      paste0("Emi|", airpollutants, "|Industrial Processes"),
+      paste0("Emi|", airpollutants, "|Product Use|Solvents"),
+      paste0("Emi|", airpollutants, "|Waste")
+    )
+
+    #### HERE
   }
-  
+
   # Available variablesAsList(
   #   paste0("Emi|", pollutant, "|Energy|Demand|Industry (Mt ", pollutant, "/yr)"),
   #   paste0("Emi|", pollutant, "|Energy|Demand|Buildings (Mt ", pollutant, "/yr)"),
@@ -352,9 +363,9 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   #   paste0("Emi|", pollutant, "|Product Use|Solvents (Mt ", pollutant, "/yr)"),
   #   paste0("Emi|", pollutant, "|Waste (Mt ", pollutant, "/yr)")
   # )
-  
+
 ## CONTINUE HERE
-  
+
   # # w/o Bunkers|Energy|Demand
   # ## Domestic aviation is missing (see reportExtraEmissions)
   # output <- mbind(
@@ -368,8 +379,8 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)")
   #   )
   # )
-  
-  
+
+
   # # w/o Bunkers|Energy
   # ## Domestic aviation is missing (see reportExtraEmissions)
   # output <- mbind(

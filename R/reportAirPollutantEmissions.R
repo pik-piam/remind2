@@ -15,6 +15,7 @@
 #' @param t temporal resolution of the reporting, default:
 #' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
 #' @param extraData path to extra data files to be used in the reporting
+#' @param addTmpTotal choose if temporary totals are computed (default = FALSE)
 #'
 #' @author Laurin Köhler-Schindler
 #' @examples
@@ -50,12 +51,12 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   cm_GDPpopScen <- readGDX(gdx, "cm_GDPpopScen")
   ap_source <- as.numeric(readGDX(gdx, "cm_APsource"))
   # get AP ssp
-  if (ap_scenario == "MTFR" | ap_scenario == "SMIPVLLO") {
+  if (ap_scenario == "MTFR" || ap_scenario == "SMIPVLLO") {
     # MTFR and SMIPVLLO are not differentiated by SSP, so set to ap_scenario
     ap_ssp <- ap_scenario
-  } else if (ap_scenario == "CLE" | ap_scenario == "SLE" | ap_scenario == "SMIPbySSP") {
+  } else if (ap_scenario == "CLE" || ap_scenario == "SLE" || ap_scenario == "SMIPbySSP") {
     # CLE, SLE and SMIPbySSP are differentiated by SSP, but SSP4 is not available for SMIPbySSP
-    if (ap_scenario == "SMIPbySSP" & ((cm_APssp == "SSP4") | (cm_APssp == "FROMGDPSSP" & cm_GDPpopScen == "SSP4"))) {
+    if (ap_scenario == "SMIPbySSP" && ((cm_APssp == "SSP4") || (cm_APssp == "FROMGDPSSP" && cm_GDPpopScen == "SSP4"))) {
       stop(paste0("cm_APssp 'SSP4' is not available for SMIPbySSP. Please select another SSP."))
     }
     # Determine ap_ssp based on cm_APscen and cm_APssp setting
@@ -319,7 +320,7 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
 
   # Add aggregates for each pollutant
   output_AP_aggregated <- addAirPollutantEmissionsAggregation(output_AP_unaggregated)
-  
+
   # TEMPORARY SOLUTION TO GET TOTALS FOR reportEmiForClimateAssessment
   ## AP emissions from shipping and aviation can only be computed in
   ## reportExtraEmissions based on EDGE-T variables. Thus, they can

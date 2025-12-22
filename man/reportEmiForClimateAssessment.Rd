@@ -12,7 +12,8 @@ reportEmiForClimateAssessment(
   gdx,
   output = NULL,
   regionSubsetList = NULL,
-  t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150)
+  t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
+  extraData = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ aggregations. If NULL (default value) only the global region aggregation "GLO" w
 be created.}
 
 \item{t}{temporal resolution of the reporting, default: t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)}
+
+\item{extraData}{path to extra data files to be used in the reporting}
 }
 \description{
 Reports emissions & air pollutant values from GDX for climate assessment in between Nash iterations before some of

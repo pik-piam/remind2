@@ -2680,7 +2680,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   main_version <- strsplit(c_model_version, "-dev")[[1]][1]
   dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
   ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if ((main_version == "3-5-2") & (dev_version <= 140)) {
+  if ((main_version == "3-5-2") && (dev_version <= 374)) {
     out <- mbind(
       out,
 
@@ -2837,7 +2837,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
   ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if ((main_version == "3-5-2") & (dev_version <= 140)) {
+  if ((main_version == "3-5-2") && (dev_version <= 374)) {
     out <- mbind(
       out,
       # N2O Emissions
@@ -3036,7 +3036,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
   ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if ((main_version == "3-5-2") & (dev_version <= 140)) {
+  if ((main_version == "3-5-2") && (dev_version <= 374)) {
     out <- mbind(
       out,
 
