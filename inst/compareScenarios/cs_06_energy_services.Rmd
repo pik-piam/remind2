@@ -21,6 +21,7 @@ indicators_transport <- c(
   "ES|Transport|Pass with bunkers pCap",
   "ES|Transport|Pass|Short-Medium distance pCap",
   "ES|Transport|Pass|Road|LDV|Four Wheelers pCap",
+  "ES|Transport|Pass|Road|LDV|Three Wheelers pCap",
   "ES|Transport|Pass|Road|LDV|Two Wheelers pCap",
   "ES|Transport|Pass|Rail pCap",
   "ES|Transport|Pass|Road|Bus pCap",
@@ -253,17 +254,50 @@ if ("UE|Buildings|Heating|Electricity|Heat pump pCap" %in% data[["variable"]]) {
 
 ## Transport
 
+### FE
+
+#### FE Pass mix by mode w/ bunkers
+```{r FE Pass mix by mode w/ bunkers}
+tot <- "FE|Transport|Pass with bunkers"
+items <- c(
+  "FE|Transport|Bunkers|Pass|International Aviation",
+  "FE|Transport|Pass|Domestic Aviation",
+  "FE|Transport|Pass|Rail",
+  "FE|Transport|Pass|Road|Bus",
+  "FE|Transport|Pass|Road|LDV|Four Wheelers",
+  "FE|Transport|Pass|Road|LDV|Three Wheelers",
+  "FE|Transport|Pass|Road|LDV|Two Wheelers"
+  )
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
+#### FE Pass mix by mode w/ bunkers - per capita
+```{r FE Pass mix by mode w/ bunkers - per capita}
+tot <- "FE|Transport|Pass with bunkers pCap"
+items <- c(
+  "FE|Transport|Bunkers|Pass|International Aviation pCap",
+  "FE|Transport|Pass|Domestic Aviation pCap",
+  "FE|Transport|Pass|Rail pCap",
+  "FE|Transport|Pass|Road|Bus pCap",
+  "FE|Transport|Pass|Road|LDV|Four Wheelers pCap",
+  "FE|Transport|Pass|Road|LDV|Three Wheelers pCap",
+  "FE|Transport|Pass|Road|LDV|Two Wheelers pCap"
+  )
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
 ### ES
 
-#### ES Pass by mode w/ bunkers - Bar
+#### ES Pass mix by mode w/ bunkers
 ```{r ES Pass by mode w/ bunkers - Bar}
-tot <- "ES|Transport|Pass"
+tot <- "ES|Transport|Pass with bunkers"
 items <- c(
   "ES|Transport|Bunkers|Pass|International Aviation",
   "ES|Transport|Pass|Domestic Aviation",
   "ES|Transport|Pass|Rail",
   "ES|Transport|Pass|Road|Bus",
   "ES|Transport|Pass|Road|LDV|Four Wheelers",
+  "ES|Transport|Pass|Road|LDV|Three Wheelers",
   "ES|Transport|Pass|Road|LDV|Two Wheelers",
   "ES|Transport|Pass|Non-motorized|Cycle",
   "ES|Transport|Pass|Non-motorized|Walk"
@@ -271,12 +305,29 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-#### ES Pass by mode w/ bunkers - mode share - Bar 
-```{r ES Pass by mode w/ bunkers - mode share - Bar }
+#### ES Pass mix by mode w/ bunkers - per capita
+```{r ES Pass by mode w/ bunkers - Bar}
+tot <- "ES|Transport|Pass with bunkers pCap"
+items <- c(
+  "ES|Transport|Bunkers|Pass|International Aviation pCap",
+  "ES|Transport|Pass|Domestic Aviation pCap",
+  "ES|Transport|Pass|Rail pCap",
+  "ES|Transport|Pass|Road|Bus pCap",
+  "ES|Transport|Pass|Road|LDV|Four Wheelers pCap",
+  "ES|Transport|Pass|Road|LDV|Three Wheelers pCap",
+  "ES|Transport|Pass|Road|LDV|Two Wheelers pCap",
+  "ES|Transport|Pass|Non-motorized|Cycle pCap",
+  "ES|Transport|Pass|Non-motorized|Walk pCap"
+  )
+showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
+```
+
+#### ES Pass share mix by mode w/ bunkers - Bar 
+```{r ES Pass share mix by mode w/ bunkers - Bar }
 showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 ```
 
-#### ES Pass by mode w/o bunkers - Bar
+#### ES Pass mix by mode w/o bunkers - Bar
 ```{r ES Pass by mode w/o bunkers - Bar}
 tot <- "ES|Transport|Pass|Short-Medium distance"
 items <- c(
@@ -284,6 +335,7 @@ items <- c(
   "ES|Transport|Pass|Rail",
   "ES|Transport|Pass|Road|Bus",
   "ES|Transport|Pass|Road|LDV|Four Wheelers",
+  "ES|Transport|Pass|Road|LDV|Three Wheelers",
   "ES|Transport|Pass|Road|LDV|Two Wheelers",
   "ES|Transport|Pass|Non-motorized|Cycle",
   "ES|Transport|Pass|Non-motorized|Walk"
@@ -291,8 +343,8 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-#### ES Pass by mode w/o bunkers - mode share - Bar 
-```{r ES Pass by mode w/o bunkers - mode share - Bar }
+#### ES Pass share mix by mode w/o bunkers 
+```{r ES Pass share mix by mode w/o bunkers }
 showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 ```
 
@@ -301,6 +353,7 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 showLinePlots(data, "ES|Transport|Pass with bunkers")
 showLinePlots(data, "ES|Transport|Pass|Short-Medium distance")
 showLinePlots(data, "ES|Transport|Pass|Road|LDV|Four Wheelers")
+showLinePlots(data, "ES|Transport|Pass|Road|LDV|Three Wheelers")
 showLinePlots(data, "ES|Transport|Pass|Road|LDV|Two Wheelers")
 showLinePlots(data, "ES|Transport|Pass|Rail")
 showLinePlots(data, "ES|Transport|Pass|Road|Bus")
