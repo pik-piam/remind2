@@ -44,7 +44,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   model <- unique(report$model)[grepl("REMIND", unique(report$model))][1] # Deals with REMIND-MAgPIE mifs
   scenario <- unique(report$scenario)[1]
 
-  report <- report %>%
+  reportCalc <- report %>%
     filter(.data$variable %in% reportVars, .data$region != "World") %>%
     as.magpie() %>%
     collapseDim()
@@ -76,20 +76,20 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   }
 
   # check if regional resolution matches
-  if (length(setdiff(getItems(report, dim = 1), getItems(cedsceds, dim = 1))) != 0 ||
-    length(setdiff(getItems(cedsceds, dim = 1), getItems(report, dim = 1))) != 0
+  if (length(setdiff(getItems(reportCalc, dim = 1), getItems(cedsceds, dim = 1))) != 0 ||
+    length(setdiff(getItems(cedsceds, dim = 1), getItems(reportCalc, dim = 1))) != 0
   ) {
     stop("Regional resolution in 'p_emissions4ReportExtraCEDS.cs4r' and gdx do not match.")
   }
 
-  if (length(setdiff(getItems(report, dim = 1), getItems(cedsiamc, dim = 1))) != 0 ||
-    length(setdiff(getItems(cedsiamc, dim = 1), getItems(report, dim = 1))) != 0
+  if (length(setdiff(getItems(reportCalc, dim = 1), getItems(cedsiamc, dim = 1))) != 0 ||
+    length(setdiff(getItems(cedsiamc, dim = 1), getItems(reportCalc, dim = 1))) != 0
   ) {
     stop("Regional resolution in 'p_emissions4ReportExtraIAMC.cs4r' and gdx do not match.")
   }
 
-  if (length(setdiff(getItems(report, dim = 1), getItems(cedsairpoll, dim = 1))) != 0 ||
-    length(setdiff(getItems(cedsairpoll, dim = 1), getItems(report, dim = 1))) != 0
+  if (length(setdiff(getItems(reportCalc, dim = 1), getItems(cedsairpoll, dim = 1))) != 0 ||
+    length(setdiff(getItems(cedsairpoll, dim = 1), getItems(reportCalc, dim = 1))) != 0
   ) {
     stop("Regional resolution in 'emi2020_sectNOGAINS_sourceCEDS.cs4r' and gdx do not match.")
   }
@@ -127,7 +127,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   # Converge to global EF in 2060
   ef <- .deriveEF(
     dimReduce(cedsiamc[, 2020, "International Shipping.n2o_n"]),
-    report[, , "ES|Transport|Bunkers|Freight"],
+    reportCalc[, , "ES|Transport|Bunkers|Freight"],
     refyear = 2020,
     convyear = 2060
   )
@@ -135,7 +135,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   out <- mbind(
     out,
     setNames(
-      report[, , "ES|Transport|Bunkers|Freight"] * ef * MtN_to_ktN2O,
+      reportCalc[, , "ES|Transport|Bunkers|Freight"] * ef * MtN_to_ktN2O,
       "Emi|N2O|Extra|Transport|Bunkers|Freight (kt N2O/yr)"
     )
   )
@@ -143,7 +143,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   # Converge to global EF in 2060
   ef <- .deriveEF(
     dimReduce(cedsiamc[, 2020, "International Shipping.ch4"]),
-    report[, , "ES|Transport|Bunkers|Freight"],
+    reportCalc[, , "ES|Transport|Bunkers|Freight"],
     refyear = 2020,
     convyear = 2060
   )
@@ -152,7 +152,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   out <- mbind(
     out,
     setNames(
-      report[, , "ES|Transport|Bunkers|Freight"] * ef,
+      reportCalc[, , "ES|Transport|Bunkers|Freight"] * ef,
       "Emi|CH4|Extra|Transport|Bunkers|Freight (Mt CH4/yr)"
     )
   )
@@ -160,7 +160,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   # Converge to global EF in 2060
   ef <- .deriveEF(
     dimReduce(cedsiamc[, 2020, "Aircraft.n2o_n"]),
-    report[, , "ES|Transport|Pass|Aviation"],
+    reportCalc[, , "ES|Transport|Pass|Aviation"],
     refyear = 2020,
     convyear = 2060
   )
@@ -168,7 +168,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   out <- mbind(
     out,
     setNames(
-      report[, , "ES|Transport|Pass|Aviation"] * ef * MtN_to_ktN2O,
+      reportCalc[, , "ES|Transport|Pass|Aviation"] * ef * MtN_to_ktN2O,
       "Emi|N2O|Extra|Transport|Pass|Aviation (kt N2O/yr)"
     )
   )
@@ -176,14 +176,14 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   # Don't assume convergence, as Global South EFs may be more representative of solids burning
   ef <- .deriveEF(
     dimReduce(cedsceds[, 2020, "1A4a_Commercial-institutional.ch4"] + cedsceds[, 2020, "1A4b_Residential.ch4"]),
-    report[, , "FE|Buildings|Solids"],
+    reportCalc[, , "FE|Buildings|Solids"],
     refyear = 2020,
     convyear = NULL
   )
   out <- mbind(
     out,
     setNames(
-      report[, , "FE|Buildings|Solids"] * ef,
+      reportCalc[, , "FE|Buildings|Solids"] * ef,
       "Emi|CH4|Extra|Buildings|Solids (Mt CH4/yr)"
     )
   )
@@ -192,7 +192,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   # we are implicitly assuming the 2020 mix Solids+Liquids+Gases determines the EF.
   # See https://www.epa.gov/system/files/documents/2024-02/ghg-emission-factors-hub-2024.pdf
   # Don't assume convergence, as Global South EFs may be more representative of solids burning
-  tmp <- dimSums(report[, , c("FE|Buildings|Gases", "FE|Buildings|Liquids", "FE|Buildings|Solids")], dim = 3)
+  tmp <- dimSums(reportCalc[, , c("FE|Buildings|Gases", "FE|Buildings|Liquids", "FE|Buildings|Solids")], dim = 3)
   ef <- .deriveEF(
     dimReduce(cedsceds[, 2020, "1A4a_Commercial-institutional.n2o_n"] + cedsceds[, 2020, "1A4b_Residential.n2o_n"]),
     tmp,
@@ -243,14 +243,14 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   for (spec in airpollutants) {
     er <- .deriveER(
       dimReduce(cedsairpoll[, 2020, paste0("NOGAINS Domestic Aviation.", spec)]),
-      report[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"],
+      reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"],
       refyear = 2020,
       convyear = 2060
     )
     out <- mbind(
       out,
       setNames(
-        report[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"] * er,
+        reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"] * er,
         paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
       )
     )
@@ -262,14 +262,14 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   for (spec in airpollutants) {
     er <- .deriveER(
       dimReduce(cedsairpoll[, 2020, paste0("NOGAINS International Aviation.", spec)]),
-      report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"],
+      reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"],
       refyear = 2020,
       convyear = "immediate"
     )
     out <- mbind(
       out,
       setNames(
-        report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"] * er,
+        reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"] * er,
         paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)")
       )
     )
@@ -297,14 +297,14 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   for (spec in airpollutants) {
     er <- .deriveER(
       dimReduce(cedsairpoll[, 2020, paste0("NOGAINS International Shipping.", spec)]),
-      report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"],
+      reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"],
       refyear = 2020,
       convyear = "immediate"
     )
     out <- mbind(
       out,
       setNames(
-        report[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"] * er,
+        reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"] * er,
         paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", toupper(spec), "/yr)")
       )
     )
@@ -327,16 +327,15 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
     )
   }
 
-
+  # Aggregate to global. Since all variables are emissions, we can just sum them
+  out <- mbind(out, setItems(dimSums(out, dim = 1), dim = 1, value = "World"))
 
   # 3. Aggregate AP emissions with variables from reportAirPollutantEmissions----
 
   ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
-  c_model_version <- readGDX(gdx, "c_model_version")
-  main_version <- strsplit(c_model_version, "-dev")[[1]][1]
-  dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
+  cm_APscen <- try(readGDX(gdx, "cm_APscen", react = "error"), silent = TRUE)
 
-  if ((main_version == "3-5-2") && (dev_version <= 374)) {
+  if (inherits(cm_APscen, "try-error")) {
     # air pollutant emissions are computed using reportEmiAirPol,
     # thus no aggregation here
   } else {
@@ -351,63 +350,56 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
       paste0("Emi|", airpollutants, "|Waste")
     )
 
-    #### HERE
+    reportAgg <- report %>%
+      filter(.data$variable %in% reportAPvars) %>%
+      as.magpie() %>%
+      collapseDim()
+
+    # Aggregate
+
+
+    ## CONTINUE HERE
+
+    # # w/o Bunkers|Energy|Demand
+    # ## Domestic aviation is missing (see reportExtraEmissions)
+    # output <- mbind(
+    #   output,
+    #   setNames(
+    #     dimSums(output[, , c(
+    #       paste0("Emi|", pollutant, "|Energy|Demand|Industry (Mt ", pollutant, "/yr)"),
+    #       paste0("Emi|", pollutant, "|Energy|Demand|Buildings (Mt ", pollutant, "/yr)"),
+    #       paste0("Emi|", pollutant, "|Energy|Demand|Transport|Ground (Mt ", pollutant, "/yr)")
+    #     )], dim = 3),
+    #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)")
+    #   )
+    # )
+
+
+    # # w/o Bunkers|Energy
+    # ## Domestic aviation is missing (see reportExtraEmissions)
+    # output <- mbind(
+    #   output,
+    #   setNames(
+    #     dimSums(output[, , c(
+    #       paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)"),
+    #       paste0("Emi|", pollutant, "|Energy|Supply (Mt ", pollutant, "/yr)")
+    #     )], dim = 3),
+    #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy (Mt ", pollutant, "/yr)")
+    #   )
+    # )
+    # # w/o Bunkers|Energy and Industrial Processes
+    # ## Domestic aviation is missing (see reportExtraEmissions)
+    # output <- mbind(
+    #   output,
+    #   setNames(
+    #     dimSums(output[, , c(
+    #       paste0("Emi|", pollutant, "|w/o Bunkers|Energy (Mt ", pollutant, "/yr)"),
+    #       paste0("Emi|", pollutant, "|Industrial Processes (Mt ", pollutant, "/yr)")
+    #     )], dim = 3),
+    #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy and Industrial Processes (Mt ", pollutant, "/yr)")
+    #   )
+    # )
   }
-
-  # Available variablesAsList(
-  #   paste0("Emi|", pollutant, "|Energy|Demand|Industry (Mt ", pollutant, "/yr)"),
-  #   paste0("Emi|", pollutant, "|Energy|Demand|Buildings (Mt ", pollutant, "/yr)"),
-  #   paste0("Emi|", pollutant, "|Energy|Demand|Transport|Ground (Mt ", pollutant, "/yr)"),
-  #   paste0("Emi|", pollutant, "|Energy|Supply (Mt ", pollutant, "/yr)"),
-  #   paste0("Emi|", pollutant, "|Industrial Processes (Mt ", pollutant, "/yr)"),
-  #   paste0("Emi|", pollutant, "|Product Use|Solvents (Mt ", pollutant, "/yr)"),
-  #   paste0("Emi|", pollutant, "|Waste (Mt ", pollutant, "/yr)")
-  # )
-
-## CONTINUE HERE
-
-  # # w/o Bunkers|Energy|Demand
-  # ## Domestic aviation is missing (see reportExtraEmissions)
-  # output <- mbind(
-  #   output,
-  #   setNames(
-  #     dimSums(output[, , c(
-  #       paste0("Emi|", pollutant, "|Energy|Demand|Industry (Mt ", pollutant, "/yr)"),
-  #       paste0("Emi|", pollutant, "|Energy|Demand|Buildings (Mt ", pollutant, "/yr)"),
-  #       paste0("Emi|", pollutant, "|Energy|Demand|Transport|Ground (Mt ", pollutant, "/yr)")
-  #     )], dim = 3),
-  #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)")
-  #   )
-  # )
-
-
-  # # w/o Bunkers|Energy
-  # ## Domestic aviation is missing (see reportExtraEmissions)
-  # output <- mbind(
-  #   output,
-  #   setNames(
-  #     dimSums(output[, , c(
-  #       paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)"),
-  #       paste0("Emi|", pollutant, "|Energy|Supply (Mt ", pollutant, "/yr)")
-  #     )], dim = 3),
-  #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy (Mt ", pollutant, "/yr)")
-  #   )
-  # )
-  # # w/o Bunkers|Energy and Industrial Processes
-  # ## Domestic aviation is missing (see reportExtraEmissions)
-  # output <- mbind(
-  #   output,
-  #   setNames(
-  #     dimSums(output[, , c(
-  #       paste0("Emi|", pollutant, "|w/o Bunkers|Energy (Mt ", pollutant, "/yr)"),
-  #       paste0("Emi|", pollutant, "|Industrial Processes (Mt ", pollutant, "/yr)")
-  #     )], dim = 3),
-  #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy and Industrial Processes (Mt ", pollutant, "/yr)")
-  #   )
-  # )
-
-  # Aggregate to global. Since all variables are emissions, we can just sum them
-  out <- mbind(out, setItems(dimSums(out, dim = 1), dim = 1, value = "World"))
 
   # Set emissions to zero that are not represented but that are required for
   # earth system harmonization

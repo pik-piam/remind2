@@ -153,11 +153,9 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
   
   # Run air pollution report
   ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
-  c_model_version <- readGDX(gdx, "c_model_version")
-  main_version <- strsplit(c_model_version, "-dev")[[1]][1]
-  dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
+  cm_APscen <- try(readGDX(gdx, "cm_APscen", react = "error"), silent = TRUE)
 
-  if ( (main_version == "3-5-2") && (dev_version <= 374)) {
+  if (inherits(cm_APscen, "try-error")) {
     message("reportEmiForClimateAssessment executes reportEmiAirPol")
     pollutants <- reportEmiAirPol(gdx, regionSubsetList = regionSubsetList, t = t)
   } else {

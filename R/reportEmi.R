@@ -2676,11 +2676,10 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # CH4 and N2O Emissions by sector in native MtCH4 and kt N2O units
   # Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
-  c_model_version <- readGDX(gdx, "c_model_version")
-  main_version <- strsplit(c_model_version, "-dev")[[1]][1]
-  dev_version <-  as.numeric(strsplit(c_model_version, "-dev")[[1]][2])
+  cm_APscen <- try(readGDX(gdx, "cm_APscen", react = "error"), silent = TRUE)
+
   ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if ((main_version == "3-5-2") && (dev_version <= 374)) {
+  if (inherits(cm_APscen, "try-error")) {
     out <- mbind(
       out,
 
@@ -2837,7 +2836,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
   ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if ((main_version == "3-5-2") && (dev_version <= 374)) {
+  if (inherits(cm_APscen, "try-error")) {
     out <- mbind(
       out,
       # N2O Emissions
@@ -3036,7 +3035,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
   ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if ((main_version == "3-5-2") && (dev_version <= 374)) {
+  if (inherits(cm_APscen, "try-error")) {
     out <- mbind(
       out,
 
