@@ -251,7 +251,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
       out,
       setNames(
         reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Pass|Domestic Aviation"] * er,
-        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
+        paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", spec, "/yr)")
       )
     )
   }
@@ -270,7 +270,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
       out,
       setNames(
         reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Pass|International Aviation"] * er,
-        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)")
+        paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", spec, "/yr)")
       )
     )
   }
@@ -283,11 +283,11 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         dimSums(out[
           , ,
           c(
-            paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)"),
-            paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", toupper(spec), "/yr)")
+            paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", spec, "/yr)"),
+            paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", spec, "/yr)")
           )
         ], dim = 3),
-        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Pass|Aviation (Mt ", toupper(spec), "/yr)")
+        paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Aviation (Mt ", spec, "/yr)")
       )
     )
   }
@@ -305,7 +305,7 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
       out,
       setNames(
         reportCalc[, , "Emi|CO2|Energy|Demand|Transport|Bunkers|Freight|International Shipping"] * er,
-        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", toupper(spec), "/yr)")
+        paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", spec, "/yr)")
       )
     )
   }
@@ -318,11 +318,11 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         dimSums(out[
           , ,
           c(
-            paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", toupper(spec), "/yr)"),
-            paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", toupper(spec), "/yr)")
+            paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Pass|International Aviation (Mt ", spec, "/yr)"),
+            paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers|Freight|International Shipping (Mt ", spec, "/yr)")
           )
         ], dim = 3),
-        paste0("Emi|", toupper(spec), "|Extra|Energy|Demand|Transport|Bunkers (Mt ", toupper(spec), "/yr)")
+        paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers (Mt ", spec, "/yr)")
       )
     )
   }
@@ -331,6 +331,8 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
   out <- mbind(out, setItems(dimSums(out, dim = 1), dim = 1, value = "World"))
 
   # 3. Aggregate AP emissions with variables from reportAirPollutantEmissions----
+  ## Warning: Totals need to be updated to also include MAgPIE AP emissions
+  ##          once they become available to REMIND
 
   ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
   cm_APscen <- try(readGDX(gdx, "cm_APscen", react = "error"), silent = TRUE)
@@ -349,56 +351,118 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
       paste0("Emi|", airpollutants, "|Product Use|Solvents"),
       paste0("Emi|", airpollutants, "|Waste")
     )
-
     reportAgg <- report %>%
       filter(.data$variable %in% reportAPvars) %>%
-      as.magpie() %>%
+      as.magpie(spatial = "region", temporal = "period") %>%
       collapseDim()
 
-    # Aggregate
-
-
-    ## CONTINUE HERE
-
-    # # w/o Bunkers|Energy|Demand
-    # ## Domestic aviation is missing (see reportExtraEmissions)
-    # output <- mbind(
-    #   output,
-    #   setNames(
-    #     dimSums(output[, , c(
-    #       paste0("Emi|", pollutant, "|Energy|Demand|Industry (Mt ", pollutant, "/yr)"),
-    #       paste0("Emi|", pollutant, "|Energy|Demand|Buildings (Mt ", pollutant, "/yr)"),
-    #       paste0("Emi|", pollutant, "|Energy|Demand|Transport|Ground (Mt ", pollutant, "/yr)")
-    #     )], dim = 3),
-    #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)")
-    #   )
-    # )
-
-
-    # # w/o Bunkers|Energy
-    # ## Domestic aviation is missing (see reportExtraEmissions)
-    # output <- mbind(
-    #   output,
-    #   setNames(
-    #     dimSums(output[, , c(
-    #       paste0("Emi|", pollutant, "|w/o Bunkers|Energy|Demand (Mt ", pollutant, "/yr)"),
-    #       paste0("Emi|", pollutant, "|Energy|Supply (Mt ", pollutant, "/yr)")
-    #     )], dim = 3),
-    #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy (Mt ", pollutant, "/yr)")
-    #   )
-    # )
-    # # w/o Bunkers|Energy and Industrial Processes
-    # ## Domestic aviation is missing (see reportExtraEmissions)
-    # output <- mbind(
-    #   output,
-    #   setNames(
-    #     dimSums(output[, , c(
-    #       paste0("Emi|", pollutant, "|w/o Bunkers|Energy (Mt ", pollutant, "/yr)"),
-    #       paste0("Emi|", pollutant, "|Industrial Processes (Mt ", pollutant, "/yr)")
-    #     )], dim = 3),
-    #     paste0("Emi|", pollutant, "|w/o Bunkers|Energy and Industrial Processes (Mt ", pollutant, "/yr)")
-    #   )
-    # )
+    # Aggregate for all airpollutants
+    for (spec in airpollutants) {
+      # w/o Bunkers|Energy|Demand|Transport
+      out <- mbind(
+        out,
+        setNames(
+          reportAgg[, , paste0("Emi|", spec, "|Energy|Demand|Transport|Ground.Mt ", spec, "/yr")] +
+            out[, , paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Pass|Domestic Aviation (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/o Bunkers|Energy|Demand|Transport (Mt ", spec, "/yr)")
+        )
+      )
+      # w/ Bunkers|Energy|Demand|Transport
+      out <- mbind(
+        out,
+        setNames(
+          dimSums(out[, , c(
+            paste0("Emi|", spec, "|w/o Bunkers|Energy|Demand|Transport (Mt ", spec, "/yr)"),
+            paste0("Emi|", spec, "|Extra|Energy|Demand|Transport|Bunkers (Mt ", spec, "/yr)")
+          )], dim = 3),
+          paste0("Emi|", spec, "|w/ Bunkers|Energy|Demand|Transport (Mt ", spec, "/yr)")
+        )
+      )
+      # w/o Bunkers|Energy|Demand
+      out <- mbind(
+        out,
+        setNames(
+          dimSums(reportAgg[, , c(
+            paste0("Emi|", spec, "|Energy|Demand|Industry.Mt ", spec, "/yr"),
+            paste0("Emi|", spec, "|Energy|Demand|Buildings.Mt ", spec, "/yr")
+          )], dim = 3) +
+            out[, , paste0("Emi|", spec, "|w/o Bunkers|Energy|Demand|Transport (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/o Bunkers|Energy|Demand (Mt ", spec, "/yr)")
+        )
+      )
+      # w/ Bunkers|Energy|Demand
+      out <- mbind(
+        out,
+        setNames(
+          dimSums(reportAgg[, , c(
+            paste0("Emi|", spec, "|Energy|Demand|Industry.Mt ", spec, "/yr"),
+            paste0("Emi|", spec, "|Energy|Demand|Buildings.Mt ", spec, "/yr")
+          )], dim = 3) +
+            out[, , paste0("Emi|", spec, "|w/ Bunkers|Energy|Demand|Transport (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/ Bunkers|Energy|Demand (Mt ", spec, "/yr)")
+        )
+      )
+      # w/o Bunkers|Energy
+      out <- mbind(
+        out,
+        setNames(
+          reportAgg[, , paste0("Emi|", spec, "|Energy|Supply.Mt ", spec, "/yr")] +
+            out[, , paste0("Emi|", spec, "|w/o Bunkers|Energy|Demand (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/o Bunkers|Energy (Mt ", spec, "/yr)")
+        )
+      )
+      # w/ Bunkers|Energy
+      out <- mbind(
+        out,
+        setNames(
+          reportAgg[, , paste0("Emi|", spec, "|Energy|Supply.Mt ", spec, "/yr")] +
+            out[, , paste0("Emi|", spec, "|w/ Bunkers|Energy|Demand (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/ Bunkers|Energy (Mt ", spec, "/yr)")
+        )
+      )
+      # w/o Bunkers|Energy and Industrial Processes
+      out <- mbind(
+        out,
+        setNames(
+          reportAgg[, , paste0("Emi|", spec, "|Industrial Processes.Mt ", spec, "/yr")] +
+            out[, , paste0("Emi|", spec, "|w/o Bunkers|Energy (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/o Bunkers|Energy and Industrial Processes (Mt ", spec, "/yr)")
+        )
+      )
+      # w/ Bunkers|Energy and Industrial Processes
+      out <- mbind(
+        out,
+        setNames(
+          reportAgg[, , paste0("Emi|", spec, "|Industrial Processes.Mt ", spec, "/yr")] +
+            out[, , paste0("Emi|", spec, "|w/ Bunkers|Energy (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/ Bunkers|Energy and Industrial Processes (Mt ", spec, "/yr)")
+        )
+      )
+      # w/o Bunkers
+      out <- mbind(
+        out,
+        setNames(
+          dimSums(reportAgg[, , c(
+            paste0("Emi|", spec, "|Product Use|Solvents.Mt ", spec, "/yr"),
+            paste0("Emi|", spec, "|Waste.Mt ", spec, "/yr")
+          )], dim = 3) +
+            out[, , paste0("Emi|", spec, "|w/o Bunkers|Energy and Industrial Processes (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/o Bunkers (Mt ", spec, "/yr)")
+        )
+      )
+      # w/ Bunkers
+      out <- mbind(
+        out,
+        setNames(
+          dimSums(reportAgg[, , c(
+            paste0("Emi|", spec, "|Product Use|Solvents.Mt ", spec, "/yr"),
+            paste0("Emi|", spec, "|Waste.Mt ", spec, "/yr")
+          )], dim = 3) +
+            out[, , paste0("Emi|", spec, "|w/ Bunkers|Energy and Industrial Processes (Mt ", spec, "/yr)")],
+          paste0("Emi|", spec, "|w/ Bunkers (Mt ", spec, "/yr)")
+        )
+      )
+    }
   }
 
   # Set emissions to zero that are not represented but that are required for
