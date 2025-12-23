@@ -43,6 +43,11 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
     output <- mbind(output, reportFE(gdx, regionSubsetList = regionSubsetList, t = t))
   }
 
+  # Drop intermediate regional aggregations
+  if (!is.null(regionSubsetList)) {
+    output <- output[names(regionSubsetList), , , invert = TRUE]
+  }
+
   # 2. LOAD GAINS EMISSION FACTORS AND BASEYEAR EMISSIONS ----------------------
 
   # 2.1. Derive AP scenario, source, and ssp for air pollutant emissions calculation
