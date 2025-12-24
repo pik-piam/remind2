@@ -1,0 +1,35 @@
+GAINSsector;REMINDactivity;REMINDreporting;elasticity;constantef;constantemi
+CEMENT;Production|Industry|Cement (Mt/yr);Industrial Processes|+|Cement;1;0;0
+CHEM;FE|Industry|Chemicals (EJ/yr);Product Use|Solvents;1;0;0
+CUSM;Production|Industry|Steel (Mt/yr);Industrial Processes|+|Non-ferous metals;1;0;0
+NACID;FE|Industry|Chemicals (EJ/yr);Industrial Processes|+|Nitric Acid;1;0;0
+PAPER;Value Added|Industry|Other Industry (billion US$2017/yr);Industrial Processes|+|Paper;0.9;0;0
+STEEL;Production|Industry|Steel|Primary (Mt/yr);Industrial Processes|+|Steel;1;0;0
+End_Use_Industry_Bio_Trad;FE|Industry|Solids|Biomass|Traditional (EJ/yr);Energy|Demand|Industry|Solids|+|Biomass|Traditional;1;0;0
+End_Use_Industry_Coal;FE|Industry|Solids|Coal (EJ/yr);Energy|Demand|Industry|Solids|+|Coal;1;0;0
+End_Use_Industry_HLF;FE|Industry|Liquids (EJ/yr);Energy|Demand|Industry|Liquids|+|Heavy;1;0;0
+End_Use_Industry_LLF;FE|Industry|Liquids (EJ/yr);Energy|Demand|Industry|Liquids|+|Light;1;0;0
+End_Use_Industry_NatGas;FE|Industry|Gases (EJ/yr);Energy|Demand|Industry|+|Gases;1;0;0
+End_Use_Residential_Bio_Mod;FE|Solids|Biomass|Modern (EJ/yr);Energy|Demand|Residential|Solids|Biomass|+|Modern;1;0;0
+End_Use_Residential_Bio_Trad;FE|Solids|Biomass|Traditional (EJ/yr);Energy|Demand|Residential|Solids|Biomass|+|Traditional;1;0;0
+End_Use_Residential_Coal;FE|Solids|Fossil|Coal (EJ/yr);Energy|Demand|Residential|Solids|+|Coal;1;0;0
+End_Use_Residential_HLF;FE|Buildings|Liquids (EJ/yr);Energy|Demand|Residential|Liquids|+|Heavy;1;0;0
+End_Use_Residential_LLF;FE|Buildings|Liquids (EJ/yr);Energy|Demand|Residential|Liquids|+|Light;1;0;0
+End_Use_Residential_NatGas;FE|Buildings|Gases (EJ/yr);Energy|Demand|Residential|+|Gases;1;0;0
+End_Use_Services_Bio_Trad;FE|Solids|Biomass|Traditional (EJ/yr);Energy|Demand|Commercial|Solids|+|Biomass|Traditional;1;0;0
+End_Use_Services_Coal;FE|Solids without BioTrad (EJ/yr);Energy|Demand|Commercial|Solids|+|Coal;1;0;0
+End_Use_Transport_HLF;FE|Transport|Liquids (EJ/yr);Energy|Demand|Transport|Ground|Liquids|+|Heavy;1;0;0
+End_Use_Transport_LLF;FE|Transport|Liquids (EJ/yr);Energy|Demand|Transport|Ground|Liquids|+|Light;1;0;0
+End_Use_Transport_NatGas;FE|Transport|Gases (EJ/yr);Energy|Demand|Transport|Ground|+|Gases;1;0;0
+Losses_Coal;PE|Coal (EJ/yr);Energy|Supply|Extraction|+|Coal;1;0;0
+Losses_Vent_Flare;PE|Gas (EJ/yr);Energy|Supply|Extraction|+|Gases;1;0;0
+Power_Gen_Bio_Trad;SE|Electricity|Coal (EJ/yr);Energy|Supply|Electricity|Solids|+|Biomass|Traditional;1;0;0
+Power_Gen_Coal;SE|Electricity|Coal (EJ/yr);Energy|Supply|Electricity|Solids|+|Coal;1;0;0
+Power_Gen_HLF;SE|Electricity|Oil (EJ/yr);Energy|Supply|Electricity|Liquids|+|Heavy;1;0;0
+Power_Gen_LLF;SE|Electricity|Oil (EJ/yr);Energy|Supply|Electricity|Liquids|+|Light;1;0;0
+Power_Gen_NatGas;SE|Electricity|Gas (EJ/yr);Energy|Supply|Electricity|+|Gases;1;0;0
+Transformations_Coal;SE|Solids|Coal (EJ/yr);Energy|Supply|Transformation|+|Solids|Coal;1;0;0
+Transformations_HLF_Refinery;PE|Oil (EJ/yr);Energy|Supply|Transformation|+|Liquids|Heavy;1;0;0
+Transformations_NatGas;PE|Gas (EJ/yr);Energy|Supply|Transformation|+|Gases;1;0;0
+Waste_Solid_Municipal;GDP|MER (billion US$2017/yr);Waste|+|Solid;0.4;0;0
+Waste_Water_Municipal;GDP|MER (billion US$2017/yr);Waste|+|Water;0.4;0;0
