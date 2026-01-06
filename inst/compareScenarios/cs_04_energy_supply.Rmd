@@ -248,7 +248,7 @@ showLinePlots(data, "PE|Production|Biomass|1st Generation|Sunflowers_PalmOil_oth
 ```{r PE Uranium Extraction}
 showLinePlots(data, "Res|Extraction|Uranium [Energy]")
 ```
-Note: multipliy by 7.16 to obtain kt of Uranium
+Note: multiply EJ by 7.16 to obtain kt of Uranium
 
 
 ## PE Consumption (after trade)
