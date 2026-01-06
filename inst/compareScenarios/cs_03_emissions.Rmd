@@ -366,7 +366,8 @@ showLinePlots(data, "Emi|CO2|non-ES CDR",
 ```{r CDR compared to other CO2 emissions}
 tot <- "Emi|CO2"
 items <- c(
-  "Emi|CO2|Gross|Energy and Industrial Processes",
+  "Emi|CO2|Gross|Energy",
+  "Emi|CO2|Gross|Industrial Processes",
   "Emi|CO2|Gross|Waste",
   "Emi|CO2|Land-Use Change",
   "Emi|CO2|CDR|BECCS",
@@ -479,7 +480,11 @@ showLinePlots(dSpecies, tot)
 ```{r CO2 Cumulated bar plots}
 tot <- "Emi|CO2|Cumulated"
 items <- c(
-  "Emi|CO2|Cumulated|Gross|Energy and Industrial Processes",
+  "Emi|CO2|Cumulated|Gross|Energy|Supply",
+  "Emi|CO2|Cumulated|Gross|Energy|Demand|Buildings",
+  "Emi|CO2|Cumulated|Gross|Energy|Demand|Transport",
+  "Emi|CO2|Cumulated|Gross|Energy|Demand|Industry",
+  "Emi|CO2|Cumulated|Gross|Industrial Processes",
   "Emi|CO2|Cumulated|Gross|Waste",
   "Emi|CO2|Cumulated|Land-Use Change",
   "Emi|CO2|Cumulated|CDR|BECCS|Pe2Se",
@@ -569,7 +574,8 @@ showLinePlots(data, "Emi|N2O|Outside ETS and ESR")
 ```
 
 
-## CH4
+## Other species
+### CH4
 ```{r CH4 by sector}
 tot <- "Emi|CH4"
 items <- c(
@@ -581,7 +587,7 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
-## N2O
+### N2O
 ```{r N2O by sector}
 tot <- "Emi|N2O"
 items <- c(
@@ -594,12 +600,12 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```
 
-## F-Gases
+### F-Gases
 ```{r F-Gases}
 showLinePlots(data, "Emi|GHG|F-Gases")
 ```
 
-## SO2
+### SO2
 ```{r SO2 Emissions}
 tot <- "Emi|SO2"
 items <- c(
