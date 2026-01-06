@@ -3581,31 +3581,22 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
       "Emi|GHG|AFOLU (Mt CO2eq/yr)"
     )
 
-    out.lulucf <- out[, , vars.lulucf]
     # subtract shift of LULUCF emissions to be in line with national accounting
     # (note: the parameter p47_LULUCFEmi_GrassiShift has the same value over all years but is zero before cm_startyear
-    # as the regipol realization regiCarbonPrice is only used in policy runs
-    # therefore choose 2050 as some year after cm_startyear)
-    out.lulucf <- out.lulucf - collapseDim(p47_LULUCFEmi_GrassiShift[, "y2050", ]) * GtC_2_MtCO2
-    # variable names, insert "LULUCF national accouting"
-    names.lulucf <- vars.lulucf
-    names.lulucf <- gsub("\\ \\(Mt CO2eq/yr\\)", "|LULUCF national accounting (Mt CO2eq/yr)", names.lulucf)
-    names.lulucf <- gsub("\\ \\(Mt CO2/yr\\)", "|LULUCF national accounting (Mt CO2/yr)", names.lulucf)
-    names.lulucf <- gsub("\\|\\+\\|", "\\|", names.lulucf)
-    names.lulucf <- gsub("\\|\\+\\+\\|", "\\|", names.lulucf)
-    names.lulucf <- gsub("\\|\\+\\+\\+\\|", "\\|", names.lulucf)
-    getNames(out.lulucf) <- names.lulucf
+    # as the regipol realization regiCarbonPrice is only used in policy runs therefore choose 2050 as some year after cm_startyear)
+    out.lulucf <- out[, , vars.lulucf] - collapseDim(p47_LULUCFEmi_GrassiShift[, "y2050", ]) * GtC_2_MtCO2
+    # insert "LULUCF national accouting" in variable names, keeping the same unit
+    getNames(out.lulucf) <- vars.lulucf %>% deletePlus %>%
+      sub(" \\(Mt CO2", "|LULUCF national accounting (Mt CO2", .)
 
-    # also report carbon sink from existing forests which is the difference between historic Magpie and UNFCCC land-use change emissions
-    out.lulucf <- mbind(
+    out <- mbind(
+      out,
       out.lulucf,
-      setNames(
+      setNames( # also report carbon sink from existing forests which is the difference between historic Magpie and UNFCCC land-use change emissions
         p47_LULUCFEmi_GrassiShift * GtC_2_MtCO2,
         "Emi|CO2|CDR|existing forest sink|LULUCF national accounting (Mt CO2/yr)"
       )
     )
-
-    out <- mbind(out, out.lulucf)
   }
 
 
@@ -3693,23 +3684,22 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     )
   }
 
-  addBunkerString <- function(vars, add) {
-    vars <- deletePlus(vars)
-    vars <- gsub("^Emi\\|CO2", paste0("Emi|CO2|", add), vars)
-    vars <- gsub("^Emi\\|GHG", paste0("Emi|GHG|", add), vars)
-    return(vars)
+  addEmiString <- function(vars, addedString) {
+    vars %>% deletePlus %>% # remove all + from extended variables: summation checks only make sense if all sub-variables are covered 
+      sub("^Emi\\|CO2", paste0("Emi|CO2|", addedString), .) %>%
+      sub("^Emi\\|GHG", paste0("Emi|GHG|", addedString), .)
   }
 
   # emissions variables with bunkers. Insert 'w/ Bunkers' into variable name
-  names.wBunkers <- addBunkerString(emi.vars.wBunkers, "w/ Bunkers")
+  names.wBunkers <- addEmiString(emi.vars.wBunkers, "w/ Bunkers")
   out.wBunkers <- setNames(out[, , emi.vars.wBunkers], names.wBunkers)
 
   # emissions variables without bunkers. Insert 'w/o Bunkers' into variable name
-  names.woBunkers <- addBunkerString(emi.vars.wBunkers, "w/o Bunkers")
+  names.woBunkers <- addEmiString(emi.vars.wBunkers, "w/o Bunkers")
   var.bunker <- "Emi|CO2|Energy|Demand|Transport|International Bunkers (Mt CO2/yr)"
   out.woBunkers <- setNames(out[, , emi.vars.wBunkers] - out[, , var.bunker], names.woBunkers)
 
-  names.wIntraRegionBunkers <- addBunkerString(emi.vars.wBunkers, "w/ Intra-region Bunkers")
+  names.wIntraRegionBunkers <- addEmiString(emi.vars.wBunkers, "w/ Intra-region Bunkers")
   regs.wo.glob <- getRegions(out)[!getRegions(out) == "GLO"]
   out.irBunkers <- out[, , emi.vars.wBunkers]
   out.irBunkers[regs.wo.glob, , ] <- out.irBunkers[regs.wo.glob, , ] - out[regs.wo.glob, , var.bunker]
@@ -3758,11 +3748,6 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   ) %>%
   intersect(getNames(out)) # keep only variables that are in out
 
-  # variable names for cumulated emissions variables
-  namesCumul <- varsCumul %>%
-    sub("CO2", "CO2|Cumulated", .) %>%
-    sub("GHG", "GHG|Cumulated", .)
-
   # function to calculate cumulated values
   cumulatedValue <- function(var) {
     ts <- pm_ts[, getYears(var), ]
@@ -3770,20 +3755,16 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     for (t in 2:length(getYears(var))) {
       tmp[, t, ] <- setYears(
         dimSums(na.rm = TRUE, x = var[, which(getYears(var) < getYears(var)[t]), ] * ts[, which(getYears(var) < getYears(var)[t]), ], dim = 2)
-        - setYears(var[, 2005, ] * ts[, 2005, ], NULL) / 2 # half of 2005 time step
-          + setYears(var[, t, ] * ts[, t, ], NULL) / 2 # half of last time step
-        , NULL
-      )
+          - setYears(var[, 2005, ] * ts[, 2005, ], NULL) / 2 # remove half of 2005 time step
+          + setYears(var[, t, ] * ts[, t, ], NULL) / 2, # add half of last time step
+        NULL)
     }
     return(tmp)
   }
 
-  # calculate cumulated values
-  outCumul <- setNames(cumulatedValue(out[, , varsCumul]), namesCumul)
-  getNames(outCumul) <- getNames(outCumul) %>%
-    sub("\\/yr", "", .) %>% # change unit to Mt CO2
-    gsub("\\|\\+\\|", "\\|", .) # remove all + from cumulated variables as those do not cover all sectors and checking aggregation does not make sense
-
+  outCumul <- setNames(
+    cumulatedValue(out[, , varsCumul]), # calculate cumulated values
+    addEmiString(varsCumul, "Cumulated") %>% sub("\\/yr", "", .)) # create |Cumulated variables with relevant unit (eg Mt CO2 instead of Mt CO2/yr)
 
   out <- mbind(out, outCumul)
 
