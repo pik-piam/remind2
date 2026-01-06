@@ -66,20 +66,36 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   output <- mbind(output, reportCapitalStock(gdx, regionSubsetList, t, gdx_ref = gdx_ref)[, t, ])
   message("running reportEnergyInvestment...")
   output <- mbind(output, reportEnergyInvestment(gdx, regionSubsetList, t, gdx_ref = gdx_ref)[, t, ])
-  message("running reportEmiAirPol...")
-  tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t))  # test whether reportEmiAirPol works
-  if (!inherits(tmp, "try-error")) {
-    if (!is.null(tmp)) output <- mbind(output, tmp[, t, ])
-  } else {
-    message("function reportEmiAirPol does not work and is skipped")
-  }
 
   # reporting of variables that need variables from different other report functions
+  ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
+  cm_APscen <- try(readGDX(gdx, "cm_APscen", react = "error"), silent = TRUE)
+
+  if (inherits(cm_APscen, "try-error")) {
+    message("running reportEmiAirPol...")
+    tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t)) # test whether reportEmiAirPol works
+    if (!inherits(tmp, "try-error")) {
+      if (!is.null(tmp)) output <- mbind(output, tmp[, t, ])
+    } else {
+      message("function reportEmiAirPol does not work and is skipped")
+    }
+  } else {
+    # needs output from reportMacroEconomy, reportPE, reportSE, and reportFE
+    message("running reportAirPollutantEmissions...")
+    output <- mbind(
+      output,
+      reportAirPollutantEmissions(gdx, output, regionSubsetList, t, extraData)[, t, ]
+    )
+  }
+
   message("running reportEmi...") # needs output from reportFE
   output <- mbind(output, reportEmi(gdx, output, regionSubsetList, t, extraData)[, t, ])
 
   message("running reportEmiForClimateAssessment...") # minimal and specific set of emissions for CA
-  output <- mbind(output, reportEmiForClimateAssessment(gdx, output, regionSubsetList, t)[, t, ])
+  output <- mbind(
+    output,
+    reportEmiForClimateAssessment(gdx, output, regionSubsetList, t, extraData)[, t, ]
+  )
 
   message("running reportTechnology...")
   # needs output from reportSE
@@ -106,8 +122,8 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
     gdx_refpolicycost <- gdx
   }
   if (file.exists(gdx_refpolicycost)) {
-    gdp_scen <- try(readGDX(gdx, c("cm_GDPpopScen","cm_GDPscen"), react = "error"), silent = TRUE)
-    gdp_scen_ref <- try(readGDX(gdx_refpolicycost, c("cm_GDPpopScen","cm_GDPscen"), react = "error"), silent = TRUE)
+    gdp_scen <- try(readGDX(gdx, c("cm_GDPpopScen", "cm_GDPscen"), react = "error"), silent = TRUE)
+    gdp_scen_ref <- try(readGDX(gdx_refpolicycost, c("cm_GDPpopScen", "cm_GDPscen"), react = "error"), silent = TRUE)
     if (!inherits(gdp_scen, "try-error") && !inherits(gdp_scen_ref, "try-error")) {
       if (gdp_scen[1] == gdp_scen_ref[1]) {
         if (gdx == gdx_refpolicycost) {
