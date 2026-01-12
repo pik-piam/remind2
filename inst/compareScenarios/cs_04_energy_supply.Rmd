@@ -605,8 +605,12 @@ showLinePlots(data, "SE|Gases")
 ```{r SE Electricity detail line}
 
 showLinePlots(data, "SE|Electricity|Coal")
+showLinePlots(data, "SE|Electricity|Coal|w/ CC")
+showLinePlots(data, "SE|Electricity|Coal|w/o CC")
 showLinePlots(data, "SE|Electricity|Oil")
 showLinePlots(data, "SE|Electricity|Gas")
+showLinePlots(data, "SE|Electricity|Gas|w/ CC")
+showLinePlots(data, "SE|Electricity|Gas|w/o CC")
 showLinePlots(data, "SE|Electricity|Biomass")
 showLinePlots(data, "SE|Electricity|Geothermal")
 showLinePlots(data, "SE|Electricity|Nuclear")

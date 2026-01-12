@@ -106,6 +106,18 @@ showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
 
 
 ### FE Line Plots
+
+#### FE Total
+```{r FE Total}
+showLinePlots(data, "FE")
+```
+
+#### FE Total without bunkers
+```{r FE Total without bunkers}
+showLinePlots(data, "FE|w/o Bunkers")
+```
+
+
 #### Electricity
 ```{r Electricity}
 showLinePlots(data, "FE|Electricity")
