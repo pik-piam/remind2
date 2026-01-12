@@ -352,6 +352,7 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 ```{r ES Pass Modes - Line}
 showLinePlots(data, "ES|Transport|Pass with bunkers")
 showLinePlots(data, "ES|Transport|Pass|Short-Medium distance")
+showLinePlots(data, "ES|Transport|Pass|Road|LDV")
 showLinePlots(data, "ES|Transport|Pass|Road|LDV|Four Wheelers")
 showLinePlots(data, "ES|Transport|Pass|Road|LDV|Three Wheelers")
 showLinePlots(data, "ES|Transport|Pass|Road|LDV|Two Wheelers")
