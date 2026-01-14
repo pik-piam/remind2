@@ -42,6 +42,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   # get realisations
   module2realisation <- readGDX(gdx, "module2realisation")
   rownames(module2realisation) <- module2realisation$modules
+  colnames(module2realisation) <- c("modules", "realization")
 
 
   # unit conversion parameters needed
@@ -3812,7 +3813,26 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     out <- mbind(out, out.lulucf)
   }
 
+  # report NDC target emissions to plot in compare scenario
+  # to see whether NDC targets are met
+  if (module2realisation["carbonprice",]$realization == "NDC") {
+    p45_CO2eqwoLU_goal <- readGDX(gdx, "p45_CO2eqwoLU_goal",
+                                  restore_zeros = TRUE)[getRegions(out), getYears(out), ]
 
+    p45_CO2eqwoLU_goal[p45_CO2eqwoLU_goal == 0] <- NA
+
+    out <- mbind(out,
+                 setNames(
+                  p45_CO2eqwoLU_goal,
+                  "Internal|Emi|GHG|w/o Bunkers|w/o Land-Use Change|NDC Target (Mt CO2eq/yr)"
+      )
+    )
+
+    }
+
+  ## 8. Aggregate to global values ----
+
+  ## Aggregate non-intensive variables
   # add global values
   out <- mbind(out, dimSums(out, dim = 1))
   # add other region aggregations
@@ -3820,7 +3840,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
   }
 
-  ## 8. Aggregate intensive variables ----
+  ## Aggregate intensive variables
   .regionSubsetList <- c(
     list("GLO" = getItems(vm_co2CCS, dim = "all_regi")),
     regionSubsetList
