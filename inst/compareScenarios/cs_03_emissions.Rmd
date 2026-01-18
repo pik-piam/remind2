@@ -46,6 +46,13 @@ showLinePlotsWithTarget(data, items)
 ```
 
 
+### GHG total w/o Bunkers w/o LULUCF
+```{r GHG total w/o LULUCF}
+showLinePlots(data, "Emi|GHG|w/o Bunkers|w/o Land-Use Change", 
+              target = "Internal|Emi|GHG|w/o Bunkers|w/o Land-Use Change|NDC Target" )
+```
+
+
 ##  GHG Sectors
 
 ### GHG Energy w/o Bunkers
