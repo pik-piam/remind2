@@ -52,9 +52,6 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   sm_tgch4_2_pgc <- readGDX(gdx, "sm_tgch4_2_pgc") # conversion of MtCH4 to GtC Co2eq
   MtN2_to_ktN2O <- 44 / 28 * 1000 # conversion from MtN to ktN2O
 
-  # other parameters required
-  pm_ts <- readGDX(gdx, "pm_ts") # years per time step of model
-
   # switches relevant for emissions reporting
   cm_multigasscen <- readGDX(gdx, "cm_multigasscen")
 
@@ -3943,17 +3940,19 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # 10. Cumulative Emissions ----
 
-  # function to calculate cumulated values
-  cumulatedValue <- function(var, i_pm_ts = pm_ts) {
-    ts <- i_pm_ts[, getYears(var), ]
+  # function to recursively calculate cumulated values
+  # for REMIND timesteps t = 2005, 2010, ... , 2055, 2060, ... , 2110, 2130, 2150,
+  # it calculates cumulated values from the middle of 2005 to the middle of the respective timesteps
+  cumulatedValue <- function(var) {
+    years <- getYears(var, as.integer = TRUE)
     tmp <- new.magpie(getRegions(var), getYears(var), magclass::getNames(var), fill = 0)
-    for (t in 2:length(getYears(var))) {
-      tmp[, t, ] <- setYears(
-        dimSums(na.rm = TRUE, x = var[, which(getYears(var) < getYears(var)[t]), ] * ts[, which(getYears(var) < getYears(var)[t]), ], dim = 2)
-        - setYears(var[, 2005, ] * ts[, 2005, ], NULL) / 2 # half of 2005 time step
-          + setYears(var[, t, ] * ts[, t, ], NULL) / 2 # half of last time step
-        , NULL
-      )
+    # First element is 0
+    tmp[, 1, ] <- 0
+    # Recursive calculation: cumulatedValue(timestep i) =
+    # cumulatedValue(timestep i-1) + (time interval between timesteps i-1 and i)/2 * (value(timestep i-1) + value(timestep i))
+    for (ts in 2:length(years)) {
+      dt <- years[ts] - years[ts - 1] # length of time interval
+      tmp[, ts, ] <- tmp[, ts - 1, ] + dt / 2 * (var[, ts - 1, ] + var[, ts, ])
     }
     return(tmp)
   }
