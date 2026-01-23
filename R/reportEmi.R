@@ -3987,14 +3987,16 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     "Emi|CO2|CDR|+|EW (Mt CO2/yr)",
     "Emi|CO2|CDR|+|OAE (Mt CO2/yr)",
     "Emi|CO2|CDR|+|Land-Use Change (Mt CO2/yr)",
-    "Emi|CO2|CDR|+|Materials (Mt CO2/yr)"
+    "Emi|CO2|CDR|+|Materials (Mt CO2/yr)",
+    "Carbon Management|Storage (Mt CO2/yr)"
   )
 
   # variable names for cumulated emissions variables
   names.cumul <- vars.cumulate
   names.cumul <- gsub("Emi\\|CO2", "Emi|CO2|Cumulated", names.cumul)
   names.cumul <- gsub("Emi\\|GHG", "Emi|GHG|Cumulated", names.cumul)
-
+  names.cumul <- gsub("Carbon Management\\|Storage", "Carbon Management|Storage|Cumulated", names.cumul)
+  
   # calculate cumulated values
   out.cumul <- setNames(cumulatedValue(out[, , vars.cumulate]), names.cumul)
   # change unit to Mt CO2
