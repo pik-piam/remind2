@@ -247,8 +247,8 @@ showLinePlots(data, "PE|Production|Biomass|1st Generation|Sunflowers_PalmOil_oth
 ### PE Uranium Extraction
 ```{r PE Uranium Extraction}
 showLinePlots(data, "Res|Extraction|Uranium [Energy]")
-showLinePlots(data, "Res|Extraction|Uranium")
 ```
+Note: multiply EJ by 7.16 to obtain kt of Uranium
 
 
 ## PE Consumption (after trade)
@@ -319,6 +319,11 @@ showLinePlots(data, tot)
 showAreaAndBarPlots(data, items, tot = tot, orderVars = "user", scales = "fixed")
 ```
 
+### PE Nuclear
+```{r PE Nuclear}
+showLinePlots(data, "PE|Nuclear")
+```
+
 ### PE Geothermal
 ```{r PE Geothermal}
 tot <- "PE|Geothermal"
@@ -329,7 +334,6 @@ items <- c(
 
 showLinePlots(data, tot)
 showAreaAndBarPlots(data, items, tot = tot, orderVars = "user", scales = "fixed")
-
 ```
 
 ## SE Mix
