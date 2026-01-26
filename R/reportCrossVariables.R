@@ -79,9 +79,6 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
     / dimSums(mselect(demPE,all_enty="pebiolc"),dim=3),    "SE|Liquids|Biomass|Cellulosic|++|Energy Crops (EJ/yr)"))
 
 
-  tmp <- mbind(tmp,setNames(
-    output[r,,"Energy Investments (billion US$2017/yr)"]
-    -output[r,,"Energy Investments|Electricity (billion US$2017/yr)"],"Energy Investments|Non-Electricity (billion US$2017/yr)"))
   # gas capacity factor
   tmp <- mbind(tmp,setNames(
     output[r,,"SE|Electricity|Gas (EJ/yr)"] / output[r,,"Cap|Electricity|Gas (GW)"] / TWa_2_EJ * 1000 * 100,
