@@ -2,7 +2,7 @@
 % Please edit documentation in R/reportEnergyInvestment.R
 \name{reportEnergyInvestment}
 \alias{reportEnergyInvestment}
-\title{Read in GDX and calculate prices, used in convGDX2MIF.R for the reporting}
+\title{Report energy investments}
 \usage{
 reportEnergyInvestment(
   gdx,
@@ -26,21 +26,16 @@ It is used to guarantee consistency before 'cm_startyear' for investment variabl
 using time averaging.}
 }
 \value{
-MAgPIE object - contains the price variables
+magclass object
 }
 \description{
-Read in price information from GDX file, information used in convGDX2MIF.R
-for the reporting
+Report energy investments
 }
 \examples{
 \dontrun{
 reportEnergyInvestment(gdx)
 }
-
 }
 \seealso{
 \code{\link{convGDX2MIF}}
-}
-\author{
-Anastasis Giannousaki
 }
