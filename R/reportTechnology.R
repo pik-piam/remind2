@@ -160,7 +160,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   if (CDR_mod != "off") {
     cdrmap <- c("dac" = "DAC",
-                "ccsinje" = "CO2 Storage")
+                "ccsinjeon" = "CO2 Storage")
   } else {
     cdrmap <- c()
   }

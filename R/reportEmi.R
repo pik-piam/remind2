@@ -207,7 +207,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   v_co2capturevalve <- readGDX(gdx, "v_co2capturevalve", field = "l", restore_zeros = FALSE)[, t, ]
 
   # maximum annual CO2 storage potential assumed
-  max_geolStorage <- readGDX(gdx, "vm_co2CCS", field = "up", restore_zeros = FALSE)[, t, "ccsinje.1"] # CO2 captured per industry subsector
+  max_geolStorage <- readGDX(gdx, "vm_co2CCS", field = "up", restore_zeros = FALSE)[, t, "ccsinjeon.1"] # CO2 captured per industry subsector
 
   ## Read CO2 captured per industry subsector ----
   # NOTE: The parameter pm_IndstCO2Captured was calculated without taking into

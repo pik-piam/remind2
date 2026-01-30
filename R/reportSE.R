@@ -391,7 +391,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   teprodCoupleSeel <- getNames(mselect(prodCouple_tmp, all_enty2 = "seel"), dim = 3)
   CoeffOwnConsSeel <- prodCouple_tmp[, , teprodCoupleSeel]
   CoeffOwnConsSeel[CoeffOwnConsSeel > 0] <- 0
-  CoeffOwnConsSeel_woCCS <- CoeffOwnConsSeel[, , "ccsinje", invert = TRUE]
+  CoeffOwnConsSeel_woCCS <- CoeffOwnConsSeel[, , "ccsinjeon", invert = TRUE]
 
   # FE and SE production that has own consumption of electricity
   # calculate prodSE back to TWa (was in EJ before), but prod couple coefficient is defined in TWa(input)/Twa(output)
@@ -400,7 +400,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   out <- mbind(out, setNames(
     -TWa_2_EJ *
       (dimSums(CoeffOwnConsSeel_woCCS * prodOwnCons[, , getNames(CoeffOwnConsSeel_woCCS, dim = 3)], dim = 3, na.rm = TRUE) +
-        dimSums(CoeffOwnConsSeel[, , "ccsinje"] * vm_co2CCS[, , "ccsinje"], dim = 3,  na.rm = TRUE)),
+        dimSums(CoeffOwnConsSeel[, , "ccsinjeon"] * vm_co2CCS[, , "ccsinjeon"], dim = 3,  na.rm = TRUE)),
     "SE|Input|Electricity|Self Consumption Energy System (EJ/yr)"))
 
   # electricity for central ground heat pumps
