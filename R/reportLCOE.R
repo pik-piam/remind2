@@ -1208,8 +1208,6 @@ reportLCOE <- function(gdx, output.type = "both") {
       mutate(co2_dem = co2_dem * 3.66 / s_twa2mwh * 1e9)
 
     ### 13. calculate share stored carbon from capture carbon
-    vm_co2CCS <- readGDX(gdx, "vm_co2CCS", field = "l", restore_zeros = FALSE)
-    vm_co2capture <- readGDX(gdx, c("vm_co2capture","v_co2capture"), field = "l", restore_zeros = FALSE)
 
     if (getSets(vm_co2capture)[[3]] == "emiAll") {
       sel_vm_co2capture_cco2 <- mselect(vm_co2capture, emiAll = "cco2")
@@ -1277,7 +1275,6 @@ reportLCOE <- function(gdx, output.type = "both") {
     ### Calculate CCS tax ----
 
     # following q21_taxrevCCS
-    vm_co2CCS <- readGDX(gdx, "vm_co2CCS", field = "l", restore_zeros = FALSE)
     sm_ccsinjecrate <- readGDX(gdx, c("sm_ccsinjecrate", "s_ccsinjecrate"), format = "first_found")
     pm_ccsinjecrate <- readGDX(gdx, "pm_ccsinjecrate", react = "silent")
     if (is.null(pm_ccsinjecrate)) pm_ccsinjecrate <- sm_ccsinjecrate
@@ -1287,9 +1284,6 @@ reportLCOE <- function(gdx, output.type = "both") {
     # calculate storage share of captured CO2,
     # for now take the storage share of the construction year of plant, it will not change much over time
     # (if CCS, then no CCU and v_capturevalve is mostly small)
-    vm_co2CCS <- readGDX(gdx, "vm_co2CCS", field = "l", restore_zeros = FALSE)
-    vm_co2capture <- readGDX(gdx, c("vm_co2capture","v_co2capture"), field = "l", restore_zeros = FALSE)
-
 
     # calculate stored CO2 per output of capture technology (GtC/TWa)
     pm_eff <- mbind(pm_eta_conv, pm_dataeta[, , setdiff(getNames(pm_dataeta), getNames(pm_eta_conv))])
