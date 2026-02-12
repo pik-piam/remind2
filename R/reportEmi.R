@@ -207,7 +207,8 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   v_co2capturevalve <- readGDX(gdx, "v_co2capturevalve", field = "l", restore_zeros = FALSE)[, t, ]
 
   # maximum annual CO2 storage potential assumed
-  max_geolStorage <- readGDX(gdx, "vm_co2CCS", field = "up", restore_zeros = FALSE)[, t, "ccsinjeon.1"] # CO2 captured per industry subsector
+  # collapseDim removes 'cco2', 'ico2', and 'rlf' dimensions and keeps only 'ccsijneon/ccsinjeoff'
+  max_geolStorage <- collapseDim(readGDX(gdx, "vm_co2CCS", field = "up", restore_zeros = FALSE))
 
   ## Read CO2 captured per industry subsector ----
   # NOTE: The parameter pm_IndstCO2Captured was calculated without taking into
@@ -2213,6 +2214,14 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
       dimSums(vm_co2CCS, dim = 3, na.rm = TRUE) * GtC_2_MtCO2,
       "Carbon Management|Storage (Mt CO2/yr)"
     ),
+    setNames(
+      dimSums(vm_co2CCS[,,"ccsinjeon"], dim = 3, na.rm = TRUE) * GtC_2_MtCO2,
+      "Carbon Management|Storage|Onshore (Mt CO2/yr)"
+    ),
+    setNames(
+      dimSums(vm_co2CCS[,,"ccsinjeoff"], dim = 3, na.rm = TRUE) * GtC_2_MtCO2,
+      "Carbon Management|Storage|Offshore (Mt CO2/yr)"
+    ),
     # carbon in synfuels
     setNames(
       collapseDim(dimSums(vm_co2CCUshort[, , c("MeOH", "h22ch4")], dim = 3, na.rm = TRUE)) * GtC_2_MtCO2,
@@ -2231,22 +2240,41 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   )
 
   # share of stored carbon from total captured carbon
+  
+  dimSums(vm_co2CCS, dim = 3, na.rm = TRUE) / vm_co2capture
+  
   out <- mbind(
     out,
     setNames(
-      p_share_CCS * 100,
+      dimSums(vm_co2CCS, dim = 3, na.rm = TRUE) / vm_co2capture * 100,
       "Carbon Management|Share of Stored CO2 from Captured CO2 (%)"
-    )
+    ) %>% ifelse(is.finite(.), ., 0),
+    setNames(
+      dimSums(vm_co2CCS[,,"ccsinjeon"], dim = 3, na.rm = TRUE) / vm_co2capture * 100,
+      "Carbon Management|Share of Stored CO2 from Captured CO2|Onshore (%)"
+    ) %>% ifelse(is.finite(.), ., 0),
+    setNames(
+      dimSums(vm_co2CCS[,,"ccsinjeoff"], dim = 3, na.rm = TRUE) / vm_co2capture * 100,
+      "Carbon Management|Share of Stored CO2 from Captured CO2|Offshore (%)"
+    ) %>% ifelse(is.finite(.), ., 0)
   )
 
   ### 3.5 Carbon storage ----
 
-  # maximum annual carbon storage and share that is used
+  # maximum annual carbon storage potential
   out <- mbind(
     out,
     setNames(
       dimSums(max_geolStorage, dim = 3, na.rm = TRUE) * GtC_2_MtCO2,
       "Carbon Management|Storage|Maximum annual CO2 storage potential (Mt CO2/yr)"
+    ),
+    setNames(
+      max_geolStorage[,,"ccsinjeon"] * GtC_2_MtCO2,
+      "Carbon Management|Storage|Maximum annual CO2 storage potential|Onshore (Mt CO2/yr)"
+    ),
+    setNames(
+      max_geolStorage[,,"ccsinjeoff"] * GtC_2_MtCO2,
+      "Carbon Management|Storage|Maximum annual CO2 storage potential|Offshore (Mt CO2/yr)"
     )
   )
 
@@ -2256,6 +2284,16 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     setNames(
       dimSums(vm_co2CCS, dim = 3, na.rm = TRUE) / dimSums(max_geolStorage, dim = 3, na.rm = TRUE) * 100,
       "Carbon Management|Storage|Share of annual potential used (%)"
+    ) %>%
+      ifelse(is.finite(.), ., 0),
+    setNames(
+      dimSums(vm_co2CCS[,,"ccsinjeon"], dim = 3, na.rm = TRUE) / max_geolStorage[,,"ccsinjeon"] * 100,
+      "Carbon Management|Storage|Share of annual potential used|Onshore (%)"
+    ) %>%
+      ifelse(is.finite(.), ., 0),
+    setNames(
+      dimSums(vm_co2CCS[,,"ccsinjeoff"], dim = 3, na.rm = TRUE) / max_geolStorage[,,"ccsinjeoff"] * 100,
+      "Carbon Management|Storage|Share of annual potential used|Offshore (%)"
     ) %>%
       ifelse(is.finite(.), ., 0)
   )
@@ -3842,24 +3880,46 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     list("GLO" = getItems(vm_co2CCS, dim = "all_regi")),
     regionSubsetList
   )
-  i <- seq_along(.regionSubsetList)
+
   for (i in seq_along(.regionSubsetList)) {
-    var1 <- "Carbon Management|Share of Stored CO2 from Captured CO2 (%)"
-    var2 <- "Carbon Management|Storage|Share of annual potential used (%)"
     target_region <- .regionSubsetList[i]
     source_regions <- .regionSubsetList[[i]]
-    out[names(target_region), , var1] <- (
-      dimSums(vm_co2CCS[source_regions, , ], dim = c(1, 3), na.rm = TRUE)
-      / dimSums(vm_co2capture[source_regions, , ], dim = c(1, 3))
-        * 100
-    ) %>%
-      ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
 
-    out[names(target_region), , var2] <- (
+    out[names(target_region), , "Carbon Management|Share of Stored CO2 from Captured CO2 (%)"] <- (
+      dimSums(vm_co2CCS[source_regions, , ], dim = c(1, 3), na.rm = TRUE)
+      / dimSums(vm_co2capture[source_regions, , ], dim = 1)
+      * 100
+    ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+    
+    out[names(target_region), , "Carbon Management|Share of Stored CO2 from Captured CO2|Onshore (%)"] <- (
+      dimSums(vm_co2CCS[source_regions, ,"ccsinjeon"], dim = c(1, 3), na.rm = TRUE)
+      / dimSums(vm_co2capture[source_regions, ,], dim = 1)
+      * 100
+    ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+
+    out[names(target_region), , "Carbon Management|Share of Stored CO2 from Captured CO2|Offshore (%)"] <- (
+      dimSums(vm_co2CCS[source_regions, ,"ccsinjeoff"], dim = c(1, 3), na.rm = TRUE)
+      / dimSums(vm_co2capture[source_regions, ,], dim = 1)
+      * 100
+    ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+
+    out[names(target_region), , "Carbon Management|Storage|Share of annual potential used (%)"] <- (
       dimSums(vm_co2CCS[source_regions, , ], dim = c(1, 3), na.rm = TRUE)
       / dimSums(max_geolStorage[source_regions, , ], dim = c(1, 3), na.rm = TRUE)
-        * 100) %>%
-      ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+        * 100
+      ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+
+    out[names(target_region), , "Carbon Management|Storage|Share of annual potential used|Onshore (%)"] <- (
+      dimSums(vm_co2CCS[source_regions, ,"ccsinjeon"], dim = c(1, 3), na.rm = TRUE)
+      / dimSums(max_geolStorage[source_regions, ,"ccsinjeon"], dim = c(1, 3), na.rm = TRUE)
+        * 100
+      ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+
+    out[names(target_region), , "Carbon Management|Storage|Share of annual potential used|Offshore (%)"] <- (
+      dimSums(vm_co2CCS[source_regions, ,"ccsinjeoff"], dim = c(1, 3), na.rm = TRUE)
+      / dimSums(max_geolStorage[source_regions, ,"ccsinjeoff"], dim = c(1, 3), na.rm = TRUE)
+        * 100
+      ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
   }
 
   # 9. Bunker Correction ----
@@ -3915,7 +3975,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   }
 
   addEmiString <- function(vars, addedString) {
-    vars %>% deletePlus %>% # remove all + from extended variables: summation checks only make sense if all sub-variables are covered 
+    vars %>% deletePlus %>% # remove all + from extended variables: summation checks only make sense if all sub-variables are covered
       sub("^Emi\\|CO2", paste0("Emi|CO2|", addedString), .) %>%
       sub("^Emi\\|GHG", paste0("Emi|GHG|", addedString), .)
   }
