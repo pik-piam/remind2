@@ -207,7 +207,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   v_co2capturevalve <- readGDX(gdx, "v_co2capturevalve", field = "l", restore_zeros = FALSE)[, t, ]
 
   # maximum annual CO2 storage potential assumed
-  # collapseDim removes 'cco2', 'ico2', and 'rlf' dimensions and keeps only 'ccsijneon/ccsinjeoff'
+  # collapseDim removes 'cco2', 'ico2', and 'rlf' dimensions and keeps only 'ccsinjeon/ccsinjeoff'
   max_geolStorage <- collapseDim(readGDX(gdx, "vm_co2CCS", field = "up", restore_zeros = FALSE))
 
   ## Read CO2 captured per industry subsector ----
