@@ -602,7 +602,7 @@ reportLCOE <- function(gdx, output.type = "both") {
     #### Carbon Transport and storage ("ccsinjeon" and "ccsinjeoff")
     LCOE.ccsinje <- NULL
     for (ccsinje in teccsinje) {
-      mbind(LCOE.ccsinje,
+      LCOE.ccsinje <- mbind(LCOE.ccsinje,
         setNames(te_annual_inv_cost[, ttot_from2005, ccsinje] / vm_co2CCS_tCO2[, , ccsinje][,,"1"],
                  paste0("LCOCS|average|", "ico2|", ccsinje, "|carbon management", "|Investment Cost")),
         setNames(te_annual_inv_cost_wadj[, ttot_from2005, ccsinje] / vm_co2CCS_tCO2[, , ccsinje][,,"1"],
