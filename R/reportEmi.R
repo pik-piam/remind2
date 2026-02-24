@@ -2241,8 +2241,6 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # share of stored carbon from total captured carbon
   
-  dimSums(vm_co2CCS, dim = 3, na.rm = TRUE) / vm_co2capture
-  
   out <- mbind(
     out,
     setNames(
