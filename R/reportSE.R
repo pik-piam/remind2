@@ -32,7 +32,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   ####### conversion factors ##########
   TWa_2_EJ <- 3600 * 24 * 365 / 1e6
   s_tBC_2_TWa <- readGDX(gdx, name = "sm_tBC_2_TWa", format = "first_found", react = "silent") # Biochar calorific value
-  if (is.null(s_tBC_2_TWa)){ 
+  if (is.null(s_tBC_2_TWa)){
     s_tBC_2_TWa <- 1          # necessary to avoid division by zero for versions preceding biochar introduction; to be removed with v360 (TD)
   }
 
@@ -59,7 +59,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   prodSE <- mselect(prodSE, all_enty1 = entySe)
   storLoss <- readGDX(gdx, name = "v32_storloss", # total energy loss from storage for a given technology [TWa]
     field = "l", restore_zeros = TRUE) * TWa_2_EJ
-    
+
   # calculate minimal temporal resolution #####
   y <- Reduce(intersect, list(getYears(prodSE), getYears(storLoss)))
 
@@ -274,7 +274,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_prodSE("pebios", seLiq,                 name = "SE|Liquids|Biomass|Conventional Ethanol (EJ/yr)"),
     get_prodSE(peBio, seLiq, "bioftcrec",       name = "SE|Liquids|Biomass|BioFTR|w/ CC (EJ/yr)"),
     get_prodSE(peBio, seLiq, "bioftrec",        name = "SE|Liquids|Biomass|BioFTR|w/o CC (EJ/yr)"),
-    get_prodSE(peBio, seLiq, "biopyrliq",       name = "SE|Liquids|Biomass|BioFTR|w/ pyrolysis (EJ/yr)"), 
+    get_prodSE(peBio, seLiq, "biopyrliq",       name = "SE|Liquids|Biomass|BioFTR|w/ pyrolysis (EJ/yr)"),
     get_prodSE(peBio, seLiq, "biodiesel",       name = "SE|Liquids|Biomass|Biodiesel (EJ/yr)"),
     get_prodSE(peBio, seLiq, "bioethl",         name = "SE|Liquids|Biomass|Lignocellulosic Ethanol (EJ/yr)"),
     get_prodSE("pebioil", seLiq,                name = "SE|Liquids|Biomass|Non-Cellulosic|+|Oil-based (EJ/yr)"),
@@ -391,7 +391,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   teprodCoupleSeel <- getNames(mselect(prodCouple_tmp, all_enty2 = "seel"), dim = 3)
   CoeffOwnConsSeel <- prodCouple_tmp[, , teprodCoupleSeel]
   CoeffOwnConsSeel[CoeffOwnConsSeel > 0] <- 0
-  CoeffOwnConsSeel_woCCS <- CoeffOwnConsSeel[, , "ccsinje", invert = TRUE]
+  CoeffOwnConsSeel_woCCS <- CoeffOwnConsSeel[, , c("ccsinjeon","ccsinjeoff"), invert = TRUE]
 
   # FE and SE production that has own consumption of electricity
   # calculate prodSE back to TWa (was in EJ before), but prod couple coefficient is defined in TWa(input)/Twa(output)
@@ -400,7 +400,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   out <- mbind(out, setNames(
     -TWa_2_EJ *
       (dimSums(CoeffOwnConsSeel_woCCS * prodOwnCons[, , getNames(CoeffOwnConsSeel_woCCS, dim = 3)], dim = 3, na.rm = TRUE) +
-        dimSums(CoeffOwnConsSeel[, , "ccsinje"] * vm_co2CCS[, , "ccsinje"], dim = 3,  na.rm = TRUE)),
+        dimSums(CoeffOwnConsSeel[, , c("ccsinjeon","ccsinjeoff")] * vm_co2CCS[, , c("ccsinjeon","ccsinjeoff")], dim = 3,  na.rm = TRUE)),
     "SE|Input|Electricity|Self Consumption Energy System (EJ/yr)"))
 
   # electricity for central ground heat pumps
