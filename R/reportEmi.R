@@ -2216,11 +2216,11 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     ),
     setNames(
       dimSums(vm_co2CCS[,,"ccsinjeon"], dim = 3, na.rm = TRUE) * GtC_2_MtCO2,
-      "Carbon Management|Storage|Onshore (Mt CO2/yr)"
+      "Carbon Management|Storage|++|Onshore (Mt CO2/yr)"
     ),
     setNames(
       dimSums(vm_co2CCS[,,"ccsinjeoff"], dim = 3, na.rm = TRUE) * GtC_2_MtCO2,
-      "Carbon Management|Storage|Offshore (Mt CO2/yr)"
+      "Carbon Management|Storage|++|Offshore (Mt CO2/yr)"
     ),
     # carbon in synfuels
     setNames(
