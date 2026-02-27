@@ -117,7 +117,8 @@ reportLCOE <- function(gdx, output.type = "both") {
     se2fe     <- readGDX(gdx, "se2fe")
     pe2se     <- readGDX(gdx, "pe2se")
     teCCS     <- readGDX(gdx, "teCCS") # capture technologies
-    teccsinje <- readGDX(gdx, "teccsinje") # transport and storage technologies
+    teccsinje <- readGDX(gdx, "teccsinje", react = "silent") # transport and storage technologies
+    teccsinje <- ifelse(is.null(teccsinje), "ccsinje", teccsinje) # necessary to avoid errors for versions having only a single CCS injection technology; to be removed with release 3.6.0
     teReNoBio <- readGDX(gdx, "teReNoBio")
     teCDR     <- readGDX(gdx, "te_used33")
     EW_name   <- "weathering" # necessary for backward compatibility
@@ -827,7 +828,8 @@ reportLCOE <- function(gdx, output.type = "both") {
     teStor <- readGDX(gdx, "teStor") # storage technologies for VREs
     teGrid <- readGDX(gdx, "teGrid") # grid technologies for VREs
     ccs2te    <- readGDX(gdx, "ccs2te")    # ccs transport and storage technologies (mapping to other enty)
-    teccsinje <- readGDX(gdx, "teccsinje") # ccs transport and storage technologies (technologies only)
+    teccsinje <- readGDX(gdx, "teccsinje", react = "silent") # ccs transport and storage technologies (technologies only)
+    teccsinje <- ifelse(is.null(teccsinje), "ccsinje", teccsinje) # necessary to avoid errors for versions having only a single CCS injection technology; to be removed with release 3.6.0
     teReNoBio <- readGDX(gdx, "teReNoBio") # renewable technologies without biomass
     teCCS <- readGDX(gdx, "teCCS") # ccs technologies
     teReNoBio <- c(teReNoBio) # renewables without biomass
@@ -1295,6 +1297,11 @@ reportLCOE <- function(gdx, output.type = "both") {
     pm_ccsinjecrate <- readGDX(gdx, "pm_ccsinjecrate", react = "silent")
     if (is.null(pm_ccsinjecrate)) pm_ccsinjecrate <- sm_ccsinjecrate
     pm_dataccs <- readGDX(gdx, "pm_dataccs", restore_zeros = FALSE)
+
+    # necessary to avoid errors for versions using the old input data that had to technology dimension; to be removed with release 3.6.0
+    if(!"ccsinje" %in% getNames(pm_dataccs)) {
+      pm_dataccs <- setNames(pm_dataccs, "quan.ccsinje")
+    }
 
     # calculate storage share of captured CO2,
     # for now take the storage share of the construction year of plant, it will not change much over time

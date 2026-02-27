@@ -42,6 +42,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   teReNoBio <- readGDX(gdx, "teReNoBio") # renewable technologies except for biomass
   teCCS     <- readGDX(gdx, "teCCS") # technologies with carbon capture
   teNoCCS   <- readGDX(gdx, "teNoCCS") # technologies without CCS
+  teccsinje <- readGDX(gdx, "teccsinje", react = "silent") # CCS injection technologies
   entyPe    <- readGDX(gdx, "entyPe") # primary energy types (PE)
   entySe    <- readGDX(gdx, "entySe") # secondary energy types
   peFos     <- readGDX(gdx, "peFos") # primary energy fossil fuels
@@ -53,6 +54,8 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   seLiq <- intersect(c("seliqfos", "seliqbio", "seliqsyn"), entySe)
   seGas <- intersect(c("segafos", "segabio", "segasyn"), entySe)
   seSol <- intersect(c("sesofos", "sesobio"), entySe)
+
+  teccsinje <- ifelse(is.null(teccsinje), "ccsinje", teccsinje) # necessary to avoid errors for versions having only a single CCS injection technology; to be removed with release 3.6.0
 
   ## variables
   prodSE <- readGDX(gdx, name = "vm_prodSe", field = "l", restore_zeros = FALSE) * TWa_2_EJ
@@ -391,7 +394,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   teprodCoupleSeel <- getNames(mselect(prodCouple_tmp, all_enty2 = "seel"), dim = 3)
   CoeffOwnConsSeel <- prodCouple_tmp[, , teprodCoupleSeel]
   CoeffOwnConsSeel[CoeffOwnConsSeel > 0] <- 0
-  CoeffOwnConsSeel_woCCS <- CoeffOwnConsSeel[, , c("ccsinjeon","ccsinjeoff"), invert = TRUE]
+  CoeffOwnConsSeel_woCCS <- CoeffOwnConsSeel[, , teccsinje, invert = TRUE]
 
   # FE and SE production that has own consumption of electricity
   # calculate prodSE back to TWa (was in EJ before), but prod couple coefficient is defined in TWa(input)/Twa(output)
@@ -400,7 +403,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   out <- mbind(out, setNames(
     -TWa_2_EJ *
       (dimSums(CoeffOwnConsSeel_woCCS * prodOwnCons[, , getNames(CoeffOwnConsSeel_woCCS, dim = 3)], dim = 3, na.rm = TRUE) +
-        dimSums(CoeffOwnConsSeel[, , c("ccsinjeon","ccsinjeoff")] * vm_co2CCS[, , c("ccsinjeon","ccsinjeoff")], dim = 3,  na.rm = TRUE)),
+        dimSums(CoeffOwnConsSeel[, , teccsinje] * vm_co2CCS[, , teccsinje], dim = 3,  na.rm = TRUE)),
     "SE|Input|Electricity|Self Consumption Energy System (EJ/yr)"))
 
   # electricity for central ground heat pumps

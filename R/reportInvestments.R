@@ -578,24 +578,33 @@ reportInvestments <- function(gdx,
   # Investments into DAC
   tmp <- mbind(tmp, setNames(dimSums(inv[, , "dac"]), "Investment|Energy Supply|+|DAC (billion US$2017/yr)"))
 
-  # Investments into CCS Trans and Stor (Onshore)
-  tmp <- mbind(tmp, setNames(
-    dimSums(inv[, , "ccsinjeon"]),
-    "Investment|Energy Supply|CO2 Trans&Stor|+|Onshore (billion US$2017/yr)"
-  ))
+  if ("ccsinje" %in% getItems(inv, dim = "all_te")) {
+    # Investments into CCS Trans and Stor (Onshore)
+    tmp <- mbind(tmp, setNames(
+      dimSums(inv[, , "ccsinje"]),
+      "Investment|Energy Supply|+|CO2 Trans&Stor (billion US$2017/yr)"
+    ))
 
-  # Investments into CCS Trans and Stor (Offshore)
-  tmp <- mbind(tmp, setNames(
-    dimSums(inv[, , "ccsinjeoff"]),
-    "Investment|Energy Supply|CO2 Trans&Stor|+|Offshore (billion US$2017/yr)"
-  ))
+  } else {
+    # Investments into CCS Trans and Stor (Onshore)
+    tmp <- mbind(tmp, setNames(
+      dimSums(inv[, , "ccsinjeon"]),
+      "Investment|Energy Supply|CO2 Trans&Stor|+|Onshore (billion US$2017/yr)"
+    ))
 
-  # Investments into CCS Trans and Stor (Total)
-  tmp <- mbind(tmp, setNames(
-    tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Onshore (billion US$2017/yr)"] +
-    tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Offshore (billion US$2017/yr)"],
-    "Investment|Energy Supply|+|CO2 Trans&Stor (billion US$2017/yr)"
-  ))
+    # Investments into CCS Trans and Stor (Offshore)
+    tmp <- mbind(tmp, setNames(
+      dimSums(inv[, , "ccsinjeoff"]),
+      "Investment|Energy Supply|CO2 Trans&Stor|+|Offshore (billion US$2017/yr)"
+    ))
+
+    # Investments into CCS Trans and Stor (Total)
+    tmp <- mbind(tmp, setNames(
+      tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Onshore (billion US$2017/yr)"] +
+      tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Offshore (billion US$2017/yr)"],
+      "Investment|Energy Supply|+|CO2 Trans&Stor (billion US$2017/yr)"
+    ))
+  }
 
   # Add non-electricity aggregate
   tmp <- mbind(tmp, setNames(
