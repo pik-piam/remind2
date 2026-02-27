@@ -13,6 +13,8 @@
 #' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
 #' @param gdx_ref a GDX object as created by readGDX, or the path to a gdx of the reference run.
 #' It is used to guarantee consistency for Moving Avg prices before cm_startyear
+#' @param extraData path to extra data files to be used in the reporting
+#' (might be needed when reportEmi is executed from within this function)
 #'
 #' @return MAgPIE object - contains the price variables
 #' @author Alois Dirnaichner, Felix Schreyer, David Klein, Renato Rodrigues, Falk Benke
@@ -33,7 +35,7 @@
 #' @export
 reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
                          t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
-                         gdx_ref = NULL) {
+                         gdx_ref = NULL, extraData = NULL) {
   ## bind to output object
   if (is.null(output)) {
     message("reportPrices executes reportPE ", appendLF = FALSE)
@@ -43,7 +45,7 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
     message("- reportFE ", appendLF = FALSE)
     output <- mbind(output, reportFE(gdx, regionSubsetList = regionSubsetList, t = t))
     message("- reportEmi ", appendLF = FALSE)
-    output <- mbind(output, reportEmi(gdx, output = output, regionSubsetList = regionSubsetList, t = t))
+    output <- mbind(output, reportEmi(gdx, output = output, regionSubsetList = regionSubsetList, t = t, extraData = extraData))
     message("- reportExtraction ", appendLF = FALSE)
     output <- mbind(output, reportExtraction(gdx, regionSubsetList = regionSubsetList, t = t))
     message("- reportMacroEconomy")

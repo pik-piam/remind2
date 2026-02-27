@@ -9,7 +9,8 @@ reportPrices(
   output = NULL,
   regionSubsetList = NULL,
   t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
-  gdx_ref = NULL
+  gdx_ref = NULL,
+  extraData = NULL
 )
 }
 \arguments{
@@ -26,6 +27,9 @@ t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)}
 
 \item{gdx_ref}{a GDX object as created by readGDX, or the path to a gdx of the reference run.
 It is used to guarantee consistency for Moving Avg prices before cm_startyear}
+
+\item{extraData}{path to extra data files to be used in the reporting
+(might be needed when reportEmi is executed here)}
 }
 \value{
 MAgPIE object - contains the price variables
