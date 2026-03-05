@@ -326,6 +326,23 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   # Add aggregates for each pollutant
   output_AP_aggregated <- addAirPollutantEmissionsAggregation(output_AP_unaggregated)
 
+
+  # 5. REPORTING OF land use emissions provided by MAgPIE -------------------------------------
+  magpie <- read.magpie(file.path(extraData, "AirPollutantsMAgPIE.cs4r"))
+  getSets(magpie) <- c("region", "year", "ssp", "rcp", "variable")
+  #cm_rcp_scen <- readGDX(gdx, "cm_rcp_scen")
+  # Subset the chosen scenario and SSP
+  #cm_rcp_scen <- "rcp45"
+  #ap_ssp <- "SSP2"
+  magpie <- magpie[, , list(ssp = ap_ssp, rcp = cm_rcp_scen)]
+  magpie <- collapseDim(magpie, dim = c("ssp", "rcp"))
+  # Add gobal totals for MAgPIE variables
+  GLO <- dimSums(magpie, dim = 1)
+  getItems(GLO, dim = 1) <- "GLO"
+  magpie <- mbind(magpie, GLO)
+
+  output_AP_aggregated <- mbind(output_AP_aggregated, magpie[,t,])
+
   # TEMPORARY SOLUTION TO GET TOTALS FOR reportEmiForClimateAssessment
   ## AP emissions from shipping and aviation can only be computed in
   ## reportExtraEmissions based on EDGE-T variables. Thus, they can
