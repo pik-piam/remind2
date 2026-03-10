@@ -4061,25 +4061,8 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   ) %>%
   intersect(getNames(out)) # keep only variables that are in out
 
-  # function to recursively calculate cumulated values
-  # for REMIND timesteps t = 2005, 2010, ... , 2055, 2060, ... , 2110, 2130, 2150,
-  # it calculates cumulated values from the middle of 2005 to the middle of the respective timesteps
-  cumulatedValue <- function(var) {
-    years <- getYears(var, as.integer = TRUE)
-    tmp <- new.magpie(getRegions(var), getYears(var), magclass::getNames(var), fill = 0)
-    # First element is 0
-    tmp[, 1, ] <- 0
-    # Recursive calculation: cumulatedValue(timestep i) =
-    # cumulatedValue(timestep i-1) + (time interval between timesteps i-1 and i)/2 * (value(timestep i-1) + value(timestep i))
-    for (ts in 2:length(years)) {
-      dt <- years[ts] - years[ts - 1] # length of time interval
-      tmp[, ts, ] <- tmp[, ts - 1, ] + dt / 2 * (var[, ts - 1, ] + var[, ts, ])
-    }
-    return(tmp)
-  }
-
   outCumul <- setNames(
-    cumulatedValue(out[, , varsCumul]), # calculate cumulated values
+    time_cumulate(out[, , varsCumul], includeEndYear = TRUE), # calculate cumulated values
     addEmiString(varsCumul, "Cumulated") %>% sub("\\/yr", "", .)) # create |Cumulated variables with relevant unit (eg Mt CO2 instead of Mt CO2/yr)
 
   out <- mbind(out, outCumul)
