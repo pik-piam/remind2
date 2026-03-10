@@ -349,7 +349,8 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
       paste0("Emi|", airpollutants, "|Energy|Supply"),
       paste0("Emi|", airpollutants, "|Industrial Processes"),
       paste0("Emi|", airpollutants, "|Product Use|Solvents"),
-      paste0("Emi|", airpollutants, "|Waste")
+      paste0("Emi|", airpollutants, "|Waste"),
+      paste0("Emi|", airpollutants, "|AFOLU")
     )
     reportAgg <- report %>%
       filter(.data$variable %in% reportAPvars) %>%
@@ -444,7 +445,8 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         setNames(
           dimSums(reportAgg[, , c(
             paste0("Emi|", spec, "|Product Use|Solvents.Mt ", spec, "/yr"),
-            paste0("Emi|", spec, "|Waste.Mt ", spec, "/yr")
+            paste0("Emi|", spec, "|Waste.Mt ", spec, "/yr"),
+            paste0("Emi|", spec, "|AFOLU.Mt ", spec, "/yr")
           )], dim = 3) +
             out[, , paste0("Emi|", spec, "|w/o Bunkers|Energy and Industrial Processes (Mt ", spec, "/yr)")],
           paste0("Emi|", spec, "|w/o Bunkers (Mt ", spec, "/yr)")
@@ -456,7 +458,8 @@ reportExtraEmissions <- function(mif, extraData, gdx) {
         setNames(
           dimSums(reportAgg[, , c(
             paste0("Emi|", spec, "|Product Use|Solvents.Mt ", spec, "/yr"),
-            paste0("Emi|", spec, "|Waste.Mt ", spec, "/yr")
+            paste0("Emi|", spec, "|Waste.Mt ", spec, "/yr"),
+            paste0("Emi|", spec, "|AFOLU.Mt ", spec, "/yr")
           )], dim = 3) +
             out[, , paste0("Emi|", spec, "|w/ Bunkers|Energy and Industrial Processes (Mt ", spec, "/yr)")],
           paste0("Emi|", spec, "|w/ Bunkers (Mt ", spec, "/yr)")

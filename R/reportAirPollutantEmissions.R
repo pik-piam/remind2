@@ -341,6 +341,11 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   getItems(GLO, dim = 1) <- "GLO"
   magpie <- mbind(magpie, GLO)
 
+  # Add other region aggregations
+  if (!is.null(regionSubsetList)) {
+    magpie <- mbind(magpie, calc_regionSubset_sums(magpie, regionSubsetList))
+  }
+
   output_AP_aggregated <- mbind(output_AP_aggregated, magpie[,t,])
 
   # TEMPORARY SOLUTION TO GET TOTALS FOR reportEmiForClimateAssessment
@@ -352,7 +357,7 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   ## Thus, we compute incomplete aggregate from available top level variabes
   ## "Energy|Demand|Industry", "Energy|Demand|Buildings",
   ## "Energy|Demand|Transport|Ground", "Energy|Supply", "Industrial Processes",
-  ## "Product Use|Solvents", and "Waste" to TOTAL
+  ## "Product Use|Solvents", "Waste", and "AFOLU" to TOTAL
   if (addTmpTotal) {
     tmp_AP_total <- NULL
     for (pollutant in airpollutants) {
@@ -364,7 +369,8 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
           paste0("Emi|", pollutant, "|Energy|Supply (Mt ", pollutant, "/yr)"),
           paste0("Emi|", pollutant, "|Industrial Processes (Mt ", pollutant, "/yr)"),
           paste0("Emi|", pollutant, "|Product Use|Solvents (Mt ", pollutant, "/yr)"),
-          paste0("Emi|", pollutant, "|Waste (Mt ", pollutant, "/yr)")
+          paste0("Emi|", pollutant, "|Waste (Mt ", pollutant, "/yr)"),
+          paste0("Emi|", pollutant, "|AFOLU (Mt ", pollutant, "/yr)")
         )], dim = 3),
         paste0("Emi|", pollutant, " (Mt ", pollutant, "/yr)")
       ))
