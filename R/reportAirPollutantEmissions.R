@@ -336,7 +336,8 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   #ap_ssp <- "SSP2"
   magpie <- magpie[, , list(ssp = ap_ssp, rcp = cm_rcp_scen)]
   magpie <- collapseDim(magpie, dim = c("ssp", "rcp"))
-  # Add gobal totals for MAgPIE variables
+
+  # Add sum across regions as global
   GLO <- dimSums(magpie, dim = 1)
   getItems(GLO, dim = 1) <- "GLO"
   magpie <- mbind(magpie, GLO)
@@ -344,6 +345,32 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   # Add other region aggregations
   if (!is.null(regionSubsetList)) {
     magpie <- mbind(magpie, calc_regionSubset_sums(magpie, regionSubsetList))
+  }
+
+  # Add aggregates
+  airpollutants <- c("BC", "CO", "NH3", "NOx", "OC", "SO2", "VOC")
+
+  for (pollutant in airpollutants) {
+    magpie <- mbind(
+      magpie,
+      setNames(
+        dimSums(magpie[, , c(
+          paste0("Emi|", pollutant, "|AFOLU|+|Agriculture (Mt ", pollutant, "/yr)"),
+          paste0("Emi|", pollutant, "|AFOLU|+|Agricultural Waste Burning (Mt ", pollutant, "/yr)")
+        )], dim = 3),
+        paste0("Emi|", pollutant, "|AFOLU (Mt ", pollutant, "/yr)")
+      ),
+      setNames(
+        dimSums(magpie[, , c(
+          paste0("Emi|", pollutant, "|AFOLU|Land|+|Peatland (Mt ", pollutant, "/yr)"),
+          paste0("Emi|", pollutant, "|AFOLU|Land|+|Fires (Mt ", pollutant, "/yr)"),
+          paste0("Emi|", pollutant, "|AFOLU|Land|Fires|+|Forest Burning (Mt ", pollutant, "/yr)"),
+          paste0("Emi|", pollutant, "|AFOLU|Land|Fires|+|Grassland Burning (Mt ", pollutant, "/yr)"),
+          paste0("Emi|", pollutant, "|AFOLU|Land|Fires|+|Peat Burning (Mt ", pollutant, "/yr)")
+        )], dim = 3),
+        paste0("Emi|", pollutant, "|AFOLU|+|Land (Mt ", pollutant, "/yr)")
+      )
+    )
   }
 
   output_AP_aggregated <- mbind(output_AP_aggregated, magpie[,t,])
