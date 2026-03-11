@@ -1298,8 +1298,8 @@ reportLCOE <- function(gdx, output.type = "both") {
     if (is.null(pm_ccsinjecrate)) pm_ccsinjecrate <- sm_ccsinjecrate
     pm_dataccs <- readGDX(gdx, "pm_dataccs", restore_zeros = FALSE)
 
-    # necessary to avoid errors for versions using the old input data that had to technology dimension; to be removed with release 3.6.0
-    if(!"ccsinje" %in% getNames(pm_dataccs)) {
+    # necessary to avoid errors for versions using the old input data that had a rlf dimension instead of a technology dimension; to be removed with release 3.6.0
+    if(!"ccsinjeon" %in% getNames(pm_dataccs, dim = 2)) {
       pm_dataccs <- setNames(pm_dataccs, "quan.ccsinje")
     }
 

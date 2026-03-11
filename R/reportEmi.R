@@ -2278,7 +2278,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     )
   )
 
-  if("ccsinjeon" %in% getNames(max_geolStorage)) {
+  if("ccsinjeon" %in% getNames(max_geolStorage, dim = "all_te")) {
     out <- mbind(
       out,
       setNames(
@@ -2302,7 +2302,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
       ifelse(is.finite(.), ., 0)
   )
 
-  if("ccsinjeon" %in% getNames(max_geolStorage)) {
+  if("ccsinjeon" %in% getNames(max_geolStorage, dim = "all_te")) {
     out <- mbind(
       out,
       setNames(
