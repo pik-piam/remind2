@@ -255,12 +255,17 @@ reportTax <- function(gdx,output=NULL,regionSubsetList=NULL,t=c(seq(2005,2060,5)
                           "Revenue|Government|Tax|Carbon|+|Demand|Transport (billion US$2017/yr)"),
                setNames(output_wo_GLO[, , "Price|Carbon|Demand|Industry (US$2017/t CO2)"]  * output_wo_GLO[, , "Emi|GHG|Industry (Mt CO2eq/yr)"] / 1000,
                           "Revenue|Government|Tax|Carbon|+|Demand|Industry (billion US$2017/yr)"),
+               # AM: novel CDR (excluding biochar and BECCS), i.e. DACCS, ERW ad OAE (BECCS and biochar are accounted under energy supply)
+               # For now no separate price for removals, identical to Energy supply CO2 price. 
+               setNames(output_wo_GLO[, , "Price|Carbon|Supply (US$2017/t CO2)"]  * output_wo_GLO[, , "Emi|GHG|+++|non-ES CDR (Mt CO2eq/yr)"] / 1000,
+                        "Revenue|Government|Tax|Carbon|+|non-ES CDR (billion US$2017/yr)"),
                setNames(output_wo_GLO[, , "Price|Carbon|Supply (US$2017/t CO2)"]           * output_wo_GLO[, , "Emi|GHG|Energy|+|Supply (Mt CO2eq/yr)"] / 1000,
                           "Revenue|Government|Tax|Carbon|+|Supply (billion US$2017/yr)")
                )
   out <- mbind(out, setNames(out[, , "Revenue|Government|Tax|Carbon|+|Demand|Buildings (billion US$2017/yr)"]
                            + out[, , "Revenue|Government|Tax|Carbon|+|Demand|Transport (billion US$2017/yr)"]
                            + out[, , "Revenue|Government|Tax|Carbon|+|Demand|Industry (billion US$2017/yr)"]
+                           + out[, , "Revenue|Government|Tax|Carbon|+|non-ES CDR (billion US$2017/yr)"]
                            + out[, , "Revenue|Government|Tax|Carbon|+|Supply (billion US$2017/yr)"],
                                          "Revenue|Government|Tax|Carbon (billion US$2017/yr)")
                   )
