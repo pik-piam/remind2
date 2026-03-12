@@ -372,10 +372,7 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
       setNames(
         dimSums(magpie[, , c(
           paste0("Emi|", pollutant, "|AFOLU|Land|+|Peatland (Mt ", pollutant, "/yr)"),
-          paste0("Emi|", pollutant, "|AFOLU|Land|+|Fires (Mt ", pollutant, "/yr)"),
-          paste0("Emi|", pollutant, "|AFOLU|Land|Fires|+|Forest Burning (Mt ", pollutant, "/yr)"),
-          paste0("Emi|", pollutant, "|AFOLU|Land|Fires|+|Grassland Burning (Mt ", pollutant, "/yr)"),
-          paste0("Emi|", pollutant, "|AFOLU|Land|Fires|+|Peat Burning (Mt ", pollutant, "/yr)")
+          paste0("Emi|", pollutant, "|AFOLU|Land|+|Fires (Mt ", pollutant, "/yr)")
         )], dim = 3),
         paste0("Emi|", pollutant, "|AFOLU|+|Land (Mt ", pollutant, "/yr)")
       )
