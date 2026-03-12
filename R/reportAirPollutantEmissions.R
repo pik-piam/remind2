@@ -328,7 +328,16 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
 
 
   # 5. REPORTING OF land use emissions provided by MAgPIE -------------------------------------
-  magpie <- read.magpie(file.path(extraData, "AirPollutantsMAgPIE.cs4r"))
+  if (is.null(extraData)) {
+    stop("Argument 'extraData' is NULL. Please provide a valid path to extra data files containing 'AirPollutantsMAgPIE.cs4r'.")
+    # ToDo: 
+    # - download file from RSE server
+    # - enable different regional resolutions
+    # fileMAgPIEAP <- ...
+  } else {
+    fileMAgPIEAP <- "AirPollutantsMAgPIE.cs4r"
+  }
+  magpie <- read.magpie(file.path(extraData, fileMAgPIEAP))
   getSets(magpie) <- c("region", "year", "ssp", "rcp", "variable")
   #cm_rcp_scen <- readGDX(gdx, "cm_rcp_scen")
   # Subset the chosen scenario and SSP
