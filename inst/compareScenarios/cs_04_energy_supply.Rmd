@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 # Energy Supply
 
 ## Investments Electricity
@@ -610,11 +615,11 @@ showLinePlots(data, "SE|Gases")
 
 showLinePlots(data, "SE|Electricity|Coal")
 showLinePlots(data, "SE|Electricity|Coal|w/ CC")
-showLinePlots(data, "SE|Electricity|Coal|w/o CC")
+showLinePlots(data, "SE|Electricity|Coal|w/o CC", histVars = "SE|Electricity|Coal")
 showLinePlots(data, "SE|Electricity|Oil")
 showLinePlots(data, "SE|Electricity|Gas")
 showLinePlots(data, "SE|Electricity|Gas|w/ CC")
-showLinePlots(data, "SE|Electricity|Gas|w/o CC")
+showLinePlots(data, "SE|Electricity|Gas|w/o CC", histVars = "SE|Electricity|Gas")
 showLinePlots(data, "SE|Electricity|Biomass")
 showLinePlots(data, "SE|Electricity|Geothermal")
 showLinePlots(data, "SE|Electricity|Nuclear")
@@ -623,7 +628,7 @@ showLinePlots(data, "SE|Electricity|Wind")
 showLinePlots(data, "SE|Electricity|Wind|Onshore")
 showLinePlots(data, "SE|Electricity|Wind|Offshore")
 showLinePlots(data, "SE|Electricity|Solar")
-showLinePlots(data, "SE|Electricity|Solar|PV")
+showLinePlots(data, "SE|Electricity|Solar|PV", histVars = "SE|Electricity|Solar")
 showLinePlots(data, "SE|Electricity|Solar|CSP")
 showLinePlots(data, "SE|Electricity|Hydrogen")
 ```
