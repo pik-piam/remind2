@@ -15,3 +15,5 @@
 ^Makefile$
 ^.*CITATION.cff$
 pull_request_template.md
+^_pkgdown\.yml$
+^\.claude$

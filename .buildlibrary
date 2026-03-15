@@ -1,4 +1,4 @@
-ValidationKey: '4143020'
+ValidationKey: '4289725'
 AcceptedWarnings:
 - .*following variables are expected in the piamInterfaces.*
 - Summation checks have revealed some gaps.*
@@ -11,3 +11,4 @@ allowLinterWarnings: yes
 enforceVersionUpdate: yes
 skipCoverage: yes
 AutocreateCITATION: yes
+UsePkgDown: no
