@@ -3,7 +3,7 @@
 ## Electricity generating technology capital costs vs. time (by regions)
 ### Renewables, storage and nuclear
 ```{r Renewables, storage and nuclear}
-showLinePlots(data, "Tech|Electricity|Solar|PV|Capital Costs")
+showLinePlots(data %>% filter(period >= 2020), "Tech|Electricity|Solar|PV|Capital Costs")
 showLinePlots(data, "Tech|Electricity|Wind|Onshore|Capital Costs")
 showLinePlots(data, "Tech|Electricity|Wind|Offshore|Capital Costs")
 showLinePlots(data, "Tech|Electricity|Storage|Battery|For PV|Capital Costs")
