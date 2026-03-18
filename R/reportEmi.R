@@ -3833,9 +3833,9 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   # emissions national LULUCF accounting
   # (including carbon sink from existing forests calculated by difference between historic Magpie and UNFCCC data)
 
-  p47_LULUCFEmi_GrassiShift <- readGDX(gdx, "p47_LULUCFEmi_GrassiShift", restore_zeros = TRUE, react = "silent")[getRegions(out), getYears(out), ]
+  pm_emiLULUCF_GrassiShift <- readGDX(gdx, c("pm_emiLULUCF_GrassiShift", "p47_LULUCFEmi_GrassiShift"), restore_zeros = TRUE, react = "silent")[getRegions(out), getYears(out), ]
 
-  if (!is.null(p47_LULUCFEmi_GrassiShift)) {
+  if (!is.null(pm_emiLULUCF_GrassiShift)) {
     # variables of which version with national LULUCF accounting should be added
     vars.lulucf <- c(
       "Emi|GHG (Mt CO2eq/yr)",
@@ -3850,9 +3850,9 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     )
 
     # subtract shift of LULUCF emissions to be in line with national accounting
-    # (note: the parameter p47_LULUCFEmi_GrassiShift has the same value over all years but is zero before cm_startyear
+    # (note: the parameter pm_emiLULUCF_GrassiShift has the same value over all years but is zero before cm_startyear
     # as the regipol realization regiCarbonPrice is only used in policy runs therefore choose 2050 as some year after cm_startyear)
-    out.lulucf <- out[, , vars.lulucf] - collapseDim(p47_LULUCFEmi_GrassiShift[, "y2050", ]) * GtC_2_MtCO2
+    out.lulucf <- out[, , vars.lulucf] - collapseDim(pm_emiLULUCF_GrassiShift[, "y2050", ]) * GtC_2_MtCO2
     # insert "LULUCF national accouting" in variable names, keeping the same unit
     getNames(out.lulucf) <- vars.lulucf %>% deletePlus %>%
       sub(" \\(Mt CO2", "|LULUCF national accounting (Mt CO2", .)
@@ -3861,7 +3861,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
       out,
       out.lulucf,
       setNames( # also report carbon sink from existing forests which is the difference between historic Magpie and UNFCCC land-use change emissions
-        p47_LULUCFEmi_GrassiShift * GtC_2_MtCO2,
+        pm_emiLULUCF_GrassiShift * GtC_2_MtCO2,
         "Emi|CO2|CDR|existing forest sink|LULUCF national accounting (Mt CO2/yr)"
       )
     )
@@ -3989,7 +3989,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
 
   # add emissions variables with LULUCF national accounting
-  if (!is.null(p47_LULUCFEmi_GrassiShift)) {
+  if (!is.null(pm_emiLULUCF_GrassiShift)) {
     emi.vars.wBunkers <- c(
       emi.vars.wBunkers,
       "Emi|GHG|LULUCF national accounting (Mt CO2eq/yr)",

@@ -586,6 +586,16 @@ showLinePlots(data, "FE|Transport|w/o Bunkers")
 showLinePlots(data, "FE|Transport|Road")
 ```
 
+#### Pass Road
+```{r Pass Road}
+showLinePlots(data, "FE|Transport|Pass|Road")
+```
+
+#### Freight Road
+```{r Freight Road}
+showLinePlots(data, "FE|Transport|Freight|Road")
+```
+
 #### Pass International Aviation 
 ```{r Pass International Aviation}
 showLinePlots(data, "FE|Transport|Bunkers|Pass|International Aviation")
@@ -619,6 +629,21 @@ showLinePlots(data, "FE|Transport|Pass|Road|Bus")
 #### Rail
 ```{r Rail}
 showLinePlots(data, "FE|Transport|Rail")
+```
+
+#### Rail - Pass
+```{r Rail - Pass}
+showLinePlots(data, "FE|Transport|Pass|Rail")
+```
+
+#### Rail - Freight
+```{r Rail - Freight}
+showLinePlots(data, "FE|Transport|Freight|Rail")
+```
+
+#### Freight
+```{r Freight}
+showLinePlots(data, "FE|Transport|Freight")
 ```
 
 #### Freight Road
