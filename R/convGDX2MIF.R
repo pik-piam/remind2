@@ -68,25 +68,12 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   output <- mbind(output, reportInvestments(gdx, regionSubsetList, t, gdx_ref = gdx_ref)[, t, ])
 
   # reporting of variables that need variables from different other report functions
-  ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
-  cm_APscen <- try(readGDX(gdx, "cm_APscen", react = "error"), silent = TRUE)
-
-  if (inherits(cm_APscen, "try-error")) {
-    message("running reportEmiAirPol...")
-    tmp <- try(reportEmiAirPol(gdx, regionSubsetList, t)) # test whether reportEmiAirPol works
-    if (!inherits(tmp, "try-error")) {
-      if (!is.null(tmp)) output <- mbind(output, tmp[, t, ])
-    } else {
-      message("function reportEmiAirPol does not work and is skipped")
-    }
-  } else {
-    # needs output from reportMacroEconomy, reportPE, reportSE, and reportFE
-    message("running reportAirPollutantEmissions...")
-    output <- mbind(
-      output,
-      reportAirPollutantEmissions(gdx, output, regionSubsetList, t, extraData)[, t, ]
-    )
-  }
+  message("running reportAirPollutantEmissions...") 
+  # needs output from reportMacroEconomy, reportPE, reportSE, and reportFE
+  output <- mbind(
+    output,
+    reportAirPollutantEmissions(gdx, output, regionSubsetList, t, extraData)[, t, ]
+  )
 
   message("running reportEmi...") # needs output from reportFE
   output <- mbind(output, reportEmi(gdx, output, regionSubsetList, t, extraData)[, t, ])
