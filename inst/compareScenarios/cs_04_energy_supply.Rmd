@@ -175,7 +175,6 @@ showLinePlots(data, "Cap|Hydrogen|Gas|w/ CC")
 ### Mix of Heat Capacities
 ```{r Capacities Heat}
 items <- c(
-  "Cap|Heat|Solar",
   "Cap|Heat|Electricity|Heat Pump",
   "Cap|Heat|Biomass",
   "Cap|Heat|Gas",
@@ -195,11 +194,6 @@ showLinePlots(data, "Cap|Heat|Electricity|Heat Pump")
 showLinePlots(data, "Cap|Heat|Biomass")
 ```
 
-### Solar
-```{r Cap Solar}
-showLinePlots(data, "Cap|Heat|Solar")
-```
-
 ### Gas
 ```{r Cap Gas}
 showLinePlots(data, "Cap|Heat|Gas")
@@ -209,6 +203,41 @@ showLinePlots(data, "Cap|Heat|Gas")
 ```{r Cap Coal}
 showLinePlots(data, "Cap|Heat|Coal")
 ```
+
+
+## Capacities other carriers
+### Capacities Solids
+```{r Capacities Solids}
+showAreaAndBarPlots(data, c(
+  "Cap|Solids|Biomass",
+  "Cap|Solids|Coal",
+  NULL), tot = "Cap|Solids",
+  orderVars = "user", scales = "fixed")
+```
+
+### Capacities Liquids
+```{r Capacities Liquids}
+showAreaAndBarPlots(data, c(
+  "Cap|Liquids|Hydrogen",
+  "Cap|Liquids|Biomass",
+  "Cap|Liquids|Gas",
+  "Cap|Liquids|Oil",
+  "Cap|Liquids|Coal",
+  NULL), tot = "Cap|Liquids",
+  orderVars = "user", scales = "fixed")
+```
+
+### Capacities Gases
+```{r Capacities Gases}
+showAreaAndBarPlots(data, c(
+  "Cap|Gases|Hydrogen",
+  "Cap|Gases|Biomass",
+  "Cap|Gases|Gas",
+  "Cap|Gases|Coal",
+  NULL), tot = "Cap|Gases",
+  orderVars = "user", scales = "fixed")
+```
+
 
 
 ## PE Extraction (before trade)
