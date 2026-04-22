@@ -148,7 +148,8 @@ for (v in vars) {
 
 ### Buildings
 ```{r buildings-2050}
-vars <- c("feelcb", "fehob", "fesob", "feelhpb", "feelrhb", "feheb", "fegab", "feh2b")
+vars <- c("feelcb", "fehob", "fesob", "feelhpb", "feelrhb", "feheb", "fegab", "feh2b", "feelrhcob", "feelalb", "feelictb", "feelscb")
+vars <- vars[vars %in% unique(data$variable)]
 
 for (v in vars) {
   if (any(regionsH12 %in% unique(data$region))) {
@@ -226,7 +227,8 @@ for (v in vars) {
 
 ### Buildings
 ```{r buildings-all}
-vars <- c("feelcb", "fehob", "fesob", "feelhpb", "feelrhb", "feheb", "fegab", "feh2b")
+vars <- c("feelcb", "fehob", "fesob", "feelhpb", "feelrhb", "feheb", "fegab", "feh2b", "feelrhcob", "feelalb", "feelictb", "feelscb")
+vars <- vars[vars %in% unique(data$variable)]
 
 for (v in vars) {
   if (any(regionsH12 %in% unique(data$region))) {

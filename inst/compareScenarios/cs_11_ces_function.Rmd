@@ -12,6 +12,7 @@ showLinePlots(data, "Internal|CES Function|CES Price|fesob")
 showLinePlots(data, "Internal|CES Function|CES Price|fehob")
 showLinePlots(data, "Internal|CES Function|CES Price|feelhpb")
 showLinePlots(data, "Internal|CES Function|CES Price|feelrhb")
+showLinePlots(data, "Internal|CES Function|CES Price|feelrhcob")
 showLinePlots(data, "Internal|CES Function|CES Price|feheb")
 
 showLinePlots(data, "Internal|CES Function|CES Price|enhb")
@@ -104,6 +105,7 @@ showLinePlots(data, "Internal|CES Function|MRS|feelhpb|fegab")
 showLinePlots(data, "Internal|CES Function|MRS|feelhpb|fehob")
 showLinePlots(data, "Internal|CES Function|MRS|feelhpb|fesob")
 showLinePlots(data, "Internal|CES Function|MRS|feelhpb|feelrhb")
+showLinePlots(data, "Internal|CES Function|MRS|feelhpb|feelrhcob")
 
 showLinePlots(data, "Internal|CES Function|MRS|feh2b|fegab")
 ```
@@ -163,6 +165,9 @@ showLinePlots(data, "Internal|CES Function|MRS|feh2_otherInd|feso_otherInd")
 showLinePlots(data, "Internal|CES Function|Value|enb")
 showLinePlots(data, "Internal|CES Function|Value|enhb")
 showLinePlots(data, "Internal|CES Function|Value|feelcb")
+showLinePlots(data, "Internal|CES Function|Value|feelalb")
+showLinePlots(data, "Internal|CES Function|Value|feelictb")
+showLinePlots(data, "Internal|CES Function|Value|feelscb")
 ```
 
 ### Industry

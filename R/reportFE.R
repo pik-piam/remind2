@@ -574,17 +574,27 @@ reportFE <- function(gdx, regionSubsetList = NULL,
   if (buil_mod == "simple") {
     # PPF in REMIND and the respective reporting variables
     carrierBuild <- c(
-      feelcb  = "FE|Buildings|non-Heating|Electricity|Conventional (EJ/yr)",
-      feelrhb = "FE|Buildings|Heating|Electricity|Resistance (EJ/yr)",
-      feelhpb = "FE|Buildings|Heating|Electricity|Heat pump (EJ/yr)",
-      feheb   = "FE|Buildings|Heating|District Heating (EJ/yr)",
-      fesob   = "FE|Buildings|Heating|Solids (EJ/yr)",
-      fehob   = "FE|Buildings|Heating|Liquids (EJ/yr)",
-      fegab   = "FE|Buildings|Heating|Gases (EJ/yr)",
-      feh2b   = "FE|Buildings|Heating|Hydrogen (EJ/yr)")
-    # all final energy (FE) demand in buildings without coventional electricity
-    # is summed as heating
-    carrierBuildHeating <- tail(carrierBuild, -1)
+      feelcb    = "FE|Buildings|non-Heating|Electricity|Conventional (EJ/yr)",
+      feelrhb   = "FE|Buildings|Heating|Electricity|Resistance (EJ/yr)",
+      feelhpb   = "FE|Buildings|Heating|Electricity|Heat pump (EJ/yr)",
+      feheb     = "FE|Buildings|Heating|District Heating (EJ/yr)",
+      fesob     = "FE|Buildings|Heating|Solids (EJ/yr)",
+      fehob     = "FE|Buildings|Heating|Liquids (EJ/yr)",
+      fegab     = "FE|Buildings|Heating|Gases (EJ/yr)",
+      feh2b     = "FE|Buildings|Heating|Hydrogen (EJ/yr)",
+      feelalb   = "FE|Buildings|non-Heating|Electricity|Appliances and Lighting (EJ/yr)",
+      feelictb  = "FE|Buildings|non-Heating|Electricity|ICT (EJ/yr)",
+      feelscb   = "FE|Buildings|non-Heating|Electricity|Space Cooling (EJ/yr)",
+      feelrhcob = "FE|Buildings|Heating|Electricity|Resistance (EJ/yr)"
+    )
+
+    # Filter to only variables that exist in the data
+    availableVars <- getItems(vm_cesIO, 3)
+    carrierBuild <- carrierBuild[names(carrierBuild) %in% availableVars]
+
+    # all final energy (FE) demand in buildings that is heating-related
+    heatingVarNames <- c("feelrhb", "feelrhcob", "feelhpb", "feheb", "fesob", "fehob", "fegab", "feh2b")
+    carrierBuildHeating <- carrierBuild[names(carrierBuild) %in% heatingVarNames]
 
     # FE demand in buildings for each carrier
     # (electricity split: heat pumps, resistive heating, rest)
