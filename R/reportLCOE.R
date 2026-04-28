@@ -1158,7 +1158,7 @@ reportLCOE <- function(gdx, output.type = "both") {
     # DAC energy demand per unit captured CO2 (EJ/GtC)
 
     LCOD <- new.magpie(getRegions(vm_costTeCapital), getYears(vm_costTeCapital),
-                       c("Investment Cost", "OMF Cost", "Electricity Cost", "Heat Cost", "Total LCOE"), fill = 0)
+                       c("Investment Cost", "OMF Cost", "Electricity Cost", "Heat Cost", "Adjustment Cost", "Total LCOE"), fill = 0)
 
     if ("dac" %in% te) {
       p33_fedem <- readGDX(gdx, "p33_fedem", restore_zeros = FALSE, react = "silent")
@@ -1170,14 +1170,46 @@ reportLCOE <- function(gdx, output.type = "both") {
         p33_fedem[, , "dac.fehes"] <- p33_dac_fedem_heat[, , "fehes"]
       }
 
-      Fuel.Price <- magclass::matchDim(Fuel.Price, p33_fedem, dim = c(1), fill = 0)
+      #Fuel.Price <- magclass::matchDim(p33_fedem, Fuel.Price, dim = c(1), fill = 0)
       # capital cost in trUSD2017/GtC -> convert to USD2015/tCO2
       LCOD[, , "Investment Cost"] <- vm_costTeCapital[, , "dac"] * s_usd2017t2015 / 3.66 / vm_capFac[, , "dac"] * p_teAnnuity[, , "dac"] * 1e3
       LCOD[, , "OMF Cost"] <-  pm_data_omf[, , "dac"] * vm_costTeCapital[, , "dac"] * s_usd2017t2015 / 3.66 / vm_capFac[, , "dac"] * 1e3
       # electricity cost (convert DAC FE demand to GJ/tCO2 and fuel price to USD/GJ)
       LCOD[, , "Electricity Cost"] <-  p33_fedem[, , "dac.feels"] / 3.66 * Fuel.Price[, , "seel"] / 3.66
-      # TODO: adapt to FE prices and new CDR FE structure, temporary: conversion as above, assume for now that heat is always supplied by district heat
-      LCOD[, , "Heat Cost"] <- p33_fedem[, , "dac.fehes"] / 3.66 * Fuel.Price[, , "sehe"]  / 3.66
+      # Choose cheaper fuel price between sehe and seel (next ton would be removed utilising the cheaper energy carrier)
+      min_fuel_price <- pmin(Fuel.Price[, , "sehe"],
+                             Fuel.Price[, , "seel"])
+      # calculate heat cost using the cheaper option
+      LCOD[, , "Heat Cost"] <- p33_fedem[, , "dac.fehes"] / 3.66 * min_fuel_price / 3.66
+      
+      # DAC marginal adjustment costs
+      ttot <- as.numeric(readGDX(gdx,"ttot"))
+      ttot_from2005 <- paste0("y",ttot[which(ttot >= 2005)])
+      ttot_from2010 <- paste0("y",ttot[which(ttot >= 2010)])
+      
+      vm_deltaCap <- readGDX(gdx,name=c("vm_deltaCap"),field="l",format="first_found")[,ttot_from2005,]
+      vm_capFac <- readGDX(gdx, "vm_capFac", field = "l", restore_zeros = F)
+      p_adj_seed_reg <- readGDX(gdx, "p_adj_seed_reg", restore_zeros = TRUE)[,ttot_from2005,]
+      p_adj_seed_te <- readGDX(gdx, "p_adj_seed_te", restore_zeros = FALSE)
+      p_adj_coeff <- readGDX(gdx,"p_adj_coeff", restore_zeros = FALSE)
+      v_adjFactor <- readGDX(gdx, "v_adjFactor", restore_zeros = FALSE, field = "l")
+      vm_costTeCapital <- readGDX(gdx,"vm_costTeCapital", restore_zeros = FALSE, field = "l")[,ttot_from2005,]
+      vm_costInvTeAdj_dac <- readGDX(gdx,"vm_costInvTeAdj",restore_zeros = FALSE, field = "l")[,ttot_from2005,"dac"]
+
+      vm_deltaCap_dac <- dimSums(mselect(vm_deltaCap, all_te = "dac"), dim=3.2)
+      y <- getYears(vm_deltaCap, as.integer = TRUE)
+      
+      derivative <- as.magpie(
+        as.array(vm_deltaCap_dac[,-1,]) + 1/(vm_capFac[,-1,"dac"]* 3.66 * 1e9 ) - as.array(vm_deltaCap_dac[,-nyears(vm_deltaCap_dac),]) # to compute marginal
+      )
+      derivative <- sweep(derivative, MARGIN=2, diff(y), '/')
+      adjFac_eps <- as.magpie(
+        derivative ** 2 / (as.array(vm_deltaCap_dac[,-nyears(vm_deltaCap_dac),]) + p_adj_seed_reg[,ttot_from2010,] * p_adj_seed_te[,ttot_from2010,"dac"] + 1e-12)
+      )
+      adjFac_eps <- mbind(new.magpie(getRegions(adjFac_eps), c("y2005"), getNames(adjFac_eps), fill = 0), adjFac_eps)
+      marginal_adj_cost <- vm_costTeCapital[,,"dac"] * p_adj_coeff[,,"dac"] * (adjFac_eps - v_adjFactor[,,"dac"])* 1e12 * 1.2 * p_teAnnuity[,,"dac"]
+      LCOD[,,"Adjustment Cost"] <- marginal_adj_cost
+      
       LCOD[, , "Total LCOE"] <- LCOD[, , "Investment Cost"] + LCOD[, , "OMF Cost"] + LCOD[, , "Electricity Cost"] + LCOD[, , "Heat Cost"]
     }
 
@@ -1191,7 +1223,86 @@ reportLCOE <- function(gdx, output.type = "both") {
       add_dimension(add = "type", nm = "marginal") %>%
       add_dimension(add = "sector", dim = 3.4, nm = "carbon management")
 
-
+    
+    
+    ### BECCS: calculate Levelized Cost of captured CO2 from BEC --------------------------------------------------technical cost of BECCS per ton of co2 (??) without ccsinje, without taxes -------
+    # BECCS energy demand per unit captured CO2 (EJ/GtC)
+    # pm_emifac holds emission factors per unit of PE for enty = co2, pm_emifac_cco2 for enty = cco2
+    TeBioCCS <- data.frame("CCS" = c("bioftcrec","bioigccc","bioh2c","biogasc"), "SE" = c("seliqbio","seel","seh2", "segabio"))
+    pm_data_omv <- readGDX(gdx, "pm_data")[,,"omv"]
+    s_twapertc2mwhpertco2 <- s_twa2mwh / (3.66 * 1e9)
+    pm_eff <- mbind(pm_eta_conv, pm_dataeta[, , setdiff(getNames(pm_dataeta), getNames(pm_eta_conv))])
+    
+    #Levelised cost calculation for BECCS technologies--------------
+    LCOBioCC <- new.magpie(getRegions(vm_costTeCapital), getYears(vm_costTeCapital), 
+                           c("Investment Cost","OMF Cost","OMV Cost","Fuel Cost","Energy Revenues","Total LCOE"))
+    LCOBioCC <- LCOBioCC %>% 
+      add_dimension(add = "tech", nm = TeBioCCS[,1])
+    for (i in 1:nrow(TeBioCCS)){
+      # Investment costs for BECCS per captured ton of CO2 
+      LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".Investment Cost")] <- 
+        # Investment costs parameter in trUSD2005/TWa for BECCS technology
+        (vm_costTeCapital[,,TeBioCCS[i,1]]
+         # amount of PE necessary for 1 GtC captured in TWa
+         * 1/pm_emifac_cco2[,,TeBioCCS[i,1]] 
+         # transformation to SE with efficiency factor eta (dimensionless)
+         * pm_eff[,,TeBioCCS[i,1]] 
+         # scaled to necessary capacity addition (dimensionless)
+         / vm_capFac[,,TeBioCCS[i,1]]
+         # multiplied with annuity factor
+         * p_teAnnuity[,,TeBioCCS[i,1]] )*
+        # Conversion factor: capital cost in trUSD2005/GtC -> convert to USD2015/tCO2 
+        1.2 / 3.66 * 1e3
+      
+      # OMF Cost BECCS per ton of CO2
+      LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".OMF Cost")] <- 
+        #OMF costs for bio-technology with carbon capture (as fraction of Investment cost)
+        pm_data_omf[,,TeBioCCS[i,1]]*LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".Investment Cost")] 
+      
+      
+      # OMV Costs BECCS per ton of CO2
+      LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".OMV Cost")] <- 
+        pm_data_omv[,,TeBioCCS[i,1]] *
+        # SE amount yielding 1 GtC captured in technology with CCS
+        1/pm_emifac_cco2[,,TeBioCCS[i,1]]* pm_eff[,,TeBioCCS[i,1]] *
+        # Conversion factor: capital cost in trUSD2005/GtC -> convert to USD2015/tCO2 
+        1.2 / 3.66 * 1e3 
+      
+      # Fuel costs BECCS per ton of CO2
+      LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".Fuel Cost")] <- 
+        1/ pm_emifac_cco2[,,TeBioCCS[i,1]] *
+        s_twapertc2mwhpertco2 *
+        Fuel.Price[,,"pebiolc"] 
+      
+      # Energy Revenue per ton of CO2
+      LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".Energy Revenues")] <- 
+        # SE amount yielding 1 GtC captured 
+        (1/pm_emifac_cco2[,,TeBioCCS[i,1]]* pm_eff[,,TeBioCCS[i,1]]) * 
+        # conversion from TWa/GtC to MWh/tCO2 
+        #s_twa2mwh * 3.66 *1e9 * 
+        s_twapertc2mwhpertco2 *
+        Fuel.Price[,,TeBioCCS[i,2]] 
+      
+      # Total LCOBioCC
+      LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".Total LCOE")] <- 
+        (LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".Investment Cost")]
+         +LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".OMF Cost")]
+         +LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".OMV Cost")]
+         +LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".Fuel Cost")]
+         -LCOBioCC[,,paste0(toString(TeBioCCS[i,1]),".Energy Revenues")])
+    }
+    getSets(LCOBioCC)[3] <- "cost"
+    
+    # add dimensions to fit to other tech LCOE
+    LCOBioCC <- LCOBioCC %>% 
+      add_dimension(add = "output", dim=3.1, nm = "cco2") %>% 
+      add_dimension(add = "type", dim=3.1, nm = "marginal") %>% 
+      add_dimension(add = "sector", dim=3.4, nm = "carbon management")  %>%
+      add_dimension(add = "unit", dim=3.5, nm = "US$2015/tCO2")
+    
+    
+    
+    
     # Co2 Capture price, marginal of q_balcapture,  convert from tr USD 2017/GtC to USD2015/tCO2
     qm_balcapture  <- readGDX(gdx, "q_balcapture", field = "m", restore_zeros = FALSE)
     Co2.Capt.Price <- qm_balcapture /
