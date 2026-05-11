@@ -613,9 +613,9 @@ reportFE <- function(gdx, regionSubsetList = NULL,
     # estimated here assuming the FE-UE efficiency of the basline (from EDGE-B)
     p36_uedemand_build <- readGDX(gdx, "p36_uedemand_build", react = "silent")[, t, ]
     if (!is.null(p36_uedemand_build)) {
-      pm_fedemand <- readGDX(gdx, "pm_fedemand")[, t, ]
+      pm_fedemandBuild <- readGDX(gdx, "pm_fedemandBuild")[, t, ]
       feUeEff_build <- p36_uedemand_build[,, names(carrierBuild)] /
-        pm_fedemand[,, names(carrierBuild)]
+        pm_fedemandBuild[,, names(carrierBuild)]
       feUeEff_build[is.na(feUeEff_build) | is.infinite(feUeEff_build)] <- 1
       # assume efficiency for all gases also for H2
       feUeEff_build[,, "feh2b"] <- setNames(feUeEff_build[,, "fegab"], "feh2b")
