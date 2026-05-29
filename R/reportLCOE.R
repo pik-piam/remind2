@@ -1701,6 +1701,8 @@ reportLCOE <- function(gdx, output.type = "both") {
 
     # add DAC levelized cost, buildings UE LCOE to marginal LCOE
     LCOE.mar.out <- mbind(LCOE.mar.out, LCOD)
+    # AM Add levelised cost of captured carbon from BEC
+    LCOE.mar.out <- mbind(LCOE.mar.out, LCOBioCC)
     # bind to previous calculations (if there are)
     LCOE.out <- mbind(LCOE.out, LCOE.mar.out)
 
