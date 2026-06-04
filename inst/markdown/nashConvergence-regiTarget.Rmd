@@ -243,7 +243,7 @@ plotData <-
             "<br>",
             "Rescale Type : ",
             ifelse(
-              rescaleType %in% c("slope_prevIteration", "slope_firstIteration"),
+              rescaleType %in% c("slope_refIteration", "slope_firstIteration", "slope_repeatPrev_positiveSlope"),
               paste0(
                 rescaleType,
                 " ( slope=",
