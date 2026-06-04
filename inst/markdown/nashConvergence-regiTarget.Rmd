@@ -246,7 +246,7 @@ plotData <-
               rescaleType %in% c("slope_refIteration", "slope_firstIteration", "slope_repeatPrev_positiveSlope"),
               paste0(
                 rescaleType,
-                " ( slope=",
+                " (slope=",
                 round(p47_factorRescaleSlope_iter, 2),
                 ")"
               ),
