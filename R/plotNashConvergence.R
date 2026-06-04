@@ -366,6 +366,9 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
 
       pmEmiMktTargetDevIter <- pmEmiMktTargetDevIter %>%
         as.quitte() %>%
+        {
+          if ("region" %in% colnames(.)) rename(., "ext_regi" = "region") else .
+        } %>%
         filter(!is.na(.data$value)) %>% # remove unwanted combinations introduced by readGDX
         select("period", "iteration", "ext_regi", "emiMktExt", "value") %>%
         mutate("converged" = .data$value <= emiMktTarget_tolerance[.data$ext_regi])
@@ -431,6 +434,9 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
 
       pmImplicitQttyTarget <- readGDX(gdx, name = "pm_implicitQttyTarget", restore_zeros = FALSE, react = "error") %>%
         as.quitte() %>%
+        {
+          if ("region" %in% colnames(.)) rename(., "ext_regi" = "region") else .
+        } %>%
         select("period", "ext_regi", "taxType", "qttyTarget", "qttyTargetGroup")
 
       pmImplicitQttyTargetIsLimited <- readGDX(gdx, name = "pm_implicitQttyTarget_isLimited", restore_zeros = FALSE, react = "error")
@@ -438,6 +444,9 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       p80ImplicitQttyTargetDevIter <- readGDX(gdx, name = "p80_implicitQttyTarget_dev_iter",
                                               restore_zeros = FALSE, react = "error") %>%
         as.quitte() %>%
+        {
+          if ("region" %in% colnames(.)) rename(., "ext_regi" = "region") else .
+        } %>%
         select("period", "value", "iteration", "ext_regi", "qttyTarget", "qttyTargetGroup")
 
       if(all(lengths(attr(pmImplicitQttyTargetIsLimited, 'dimnames')) != 0)){
