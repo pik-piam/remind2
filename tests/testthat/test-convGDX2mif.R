@@ -22,6 +22,7 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
     from <- gdxList[i]
     to   <- file.path(tempdir(), names(gdxList[i]))
     if (!file.exists(to)) {
+      options(timeout = max(300, getOption("timeout")))
       utils::download.file(from, to, mode = "wb", quiet = TRUE)
     }
     gdxPaths <- c(gdxPaths, to)
