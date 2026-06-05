@@ -179,6 +179,13 @@ p47_dampedFactorRescaleemiMktCO2Tax_iter <- tryGetPlotData("p47_dampedFactorResc
 #aesthetics
 booleanColor <- c("yes" = "#00BFC4", "no" = "#F8766D")
 qttyPriceColor <- c("qtty" = "#00BFC4", "price" = "#F8766D")
+methodPalette <- c(
+  "sq·1st"   = "#e41a1c", "sq·match" = "#ff7f00", "sq·small" = "#f7c842",
+  "sq·win"   = "#984ea3", "sq·+sl"   = "#a65628", "sq·clamp" = "#f781bf",
+  "sq·degen" = "#aaaaaa",
+  "sl·ref"   = "#1f78b4", "sl·1st"   = "#377eb8", "sl·rep"   = "#00BFC4",
+  "converged"= "#e5f5e0"
+)
 
 g <- NULL
 
@@ -354,7 +361,7 @@ g[["qtty_and_price"]] <-
           xaxis = list(
             zeroline = FALSE,
             range = c(0.5, max(d$iteration) + 0.5),
-            title = "Iterations",
+            title = "",
             gridcolor = "#e8e8e8",
             mirror = TRUE,
             ticks = 'outside',
@@ -490,7 +497,28 @@ g[["deviation"]] <-
                            breaks = 1:max(d$iteration)) +
         theme(plot.margin = margin(0, 42, 0, 22, "pt")) # t,r,b,l
       
-      plotly::ggplotly(p, tooltip = c("text"), height = 200) #, autosize = FALSE
+      tol_frac         <- emiMktTarget_tolerance[[reg]]
+      tol_pct          <- round(100 * tol_frac, 2)
+      emiMktExt_first  <- tgts %>% filter(ext_regi == reg, ttot2 == tgtPeriod) %>% slice(1) %>% pull(emiMktExt)
+      refYear_val      <- pm_emiMktRefYear %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExt_first) %>%
+        slice(1) %>% pull(pm_emiMktRefYear)
+      tol_MtCO2 <- if (length(refYear_val) > 0 && !is.na(refYear_val))
+        round(tol_frac * refYear_val * 3.66667 * 1000, 1) else NA
+      tol_label <- paste0("Tolerance: ±", tol_pct, "%",
+                          if (!is.na(tol_MtCO2)) paste0(" (±", tol_MtCO2, " MtCO₂)") else "")
+
+      plotly::ggplotly(p, tooltip = c("text"), height = 200) %>%
+        plotly::layout(annotations = list(list(
+          text      = tol_label,
+          xref      = "paper", yref = "paper",
+          x = 0.99, y = 0.02,
+          xanchor   = "right", yanchor = "bottom",
+          showarrow = FALSE,
+          font      = list(size = 10, color = "#666"),
+          bgcolor   = "rgba(255,255,255,0.75)"
+        ))) %>%
+        plotly::config(displayModeBar = FALSE)
     })
   })
 
@@ -563,6 +591,10 @@ tableData <- pm_emiMktTarget_dev_iter %>%
     if (nrow(p47_dampedFactorRescaleemiMktCO2Tax_iter) > 0) p47_dampedFactorRescaleemiMktCO2Tax_iter %>% select(-ttot) else data.frame(),
     by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
   ) %>%
+  arrange(ext_regi, ttot2, emiMktExt, iteration) %>%
+  group_by(ext_regi, ttot2, emiMktExt) %>%
+  mutate(delta_dev_raw = pm_emiMktTarget_dev_iter - lag(pm_emiMktTarget_dev_iter)) %>%
+  ungroup() %>%
   mutate(
     method     = sapply(strsplit(rescaleType, " + ", fixed = TRUE), function(types) {
       codes <- rescaleTypeAbbrev[types]
@@ -570,22 +602,33 @@ tableData <- pm_emiMktTarget_dev_iter %>%
     }),
     dev_pct    = round(100 * pm_emiMktTarget_dev_iter, 2),
     converged  = ifelse(!is.na(p47_targetConverged_iter) & p47_targetConverged_iter == 1, "✓", "✗"),
-    slope_ref  = if ("p47_slopeReferenceIteration_iter"     %in% names(.)) p47_slopeReferenceIteration_iter     else NA_real_,
-    raw_slope  = if ("p47_clampedRescaleSlope_iter"         %in% names(.)) round(p47_clampedRescaleSlope_iter, 3)         else NA_real_,
-    clamp_bnd  = if ("p47_slopeUpperClampBound_iter"        %in% names(.)) round(p47_slopeUpperClampBound_iter, 3)        else NA_real_,
-    clamp_act  = if ("p47_upperClampActive_iter"            %in% names(.)) dplyr::case_when(
-      is.na(p47_upperClampActive_iter) ~ NA_character_,
-      p47_upperClampActive_iter == 1   ~ "✓",
-      TRUE                             ~ "—"
-    ) else NA_character_,
     used_slope = round(p47_factorRescaleSlope_iter, 3),
-    pre_damp   = if ("p47_dampedFactorRescaleemiMktCO2Tax_iter" %in% names(.)) round(p47_dampedFactorRescaleemiMktCO2Tax_iter, 3) else NA_real_,
-    final_rsc  = round(p47_factorRescaleemiMktCO2Tax_iter, 3)
-  ) %>%
+    final_rsc  = round(p47_factorRescaleemiMktCO2Tax_iter, 3),
+    delta_dev  = round(abs(100 * delta_dev_raw), 2)
+  )
+
+tableData$slope_ref  <- if ("p47_slopeReferenceIteration_iter" %in% names(tableData)) tableData$p47_slopeReferenceIteration_iter else NA_real_
+tableData$raw_slope  <- if ("p47_clampedRescaleSlope_iter" %in% names(tableData)) round(tableData$p47_clampedRescaleSlope_iter, 3) else NA_real_
+tableData$clamp_bnd  <- if ("p47_slopeUpperClampBound_iter" %in% names(tableData)) round(tableData$p47_slopeUpperClampBound_iter, 3) else NA_real_
+tableData$clamp_act  <- if ("p47_upperClampActive_iter" %in% names(tableData)) {
+  ifelse(is.na(tableData$p47_upperClampActive_iter), NA_character_,
+         ifelse(tableData$p47_upperClampActive_iter == 1, "✓", "—"))
+} else {
+  NA_character_
+}
+tableData$pre_damp   <- if ("p47_dampedFactorRescaleemiMktCO2Tax_iter" %in% names(tableData)) round(tableData$p47_dampedFactorRescaleemiMktCO2Tax_iter, 3) else NA_real_
+tableData$damped     <- if ("p47_dampedFactorRescaleemiMktCO2Tax_iter" %in% names(tableData)) {
+  ifelse(is.na(tableData$p47_dampedFactorRescaleemiMktCO2Tax_iter), NA_character_,
+         ifelse(abs(tableData$p47_dampedFactorRescaleemiMktCO2Tax_iter - tableData$p47_factorRescaleemiMktCO2Tax_iter) > 1e-4, "✓", "—"))
+} else {
+  NA_character_
+}
+
+tableData <- tableData %>%
   select(iteration, ttot2, ext_regi, emiMktExt,
-         method, rescaleType, dev_pct, converged,
+         method, rescaleType, dev_pct, delta_dev, converged,
          slope_ref, raw_slope, clamp_bnd, clamp_act, used_slope,
-         pre_damp, final_rsc)
+         pre_damp, final_rsc, damped)
 
 legendRow <- function(code, fullname, what, when) {
   htmltools::tags$tr(
@@ -615,26 +658,28 @@ makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
   )
 
   # ── parameter metadata ────────────────────────────────────────────────────
-  param_order  <- c("method","dev_pct","converged",
+  param_order  <- c("method","dev_pct","delta_dev","converged",
                     "slope_ref","raw_slope","clamp_bnd","clamp_act","used_slope",
-                    "pre_damp","final_rsc")
+                    "pre_damp","final_rsc","damped")
   param_labels <- c(
     method     = "Method",
     dev_pct    = "Deviation (%)",
+    delta_dev  = "|Δdev| (%)",
     converged  = "Converged",
     slope_ref  = "Ref. iter.",
     raw_slope  = "Raw slope",
     clamp_bnd  = "Clamp bound",
     clamp_act  = "Clamp active",
     used_slope = "Used slope",
-    pre_damp   = "Pre-damp rescale",
-    final_rsc  = "Final rescale"
+    pre_damp   = "Pre-damp factor",
+    final_rsc  = "Applied factor",
+    damped     = "Damped"
   )
   param_groups <- c(
-    method="Convergence", dev_pct="Convergence", converged="Convergence",
+    method="Convergence", dev_pct="Convergence", delta_dev="Convergence", converged="Convergence",
     slope_ref="Slope", raw_slope="Slope", clamp_bnd="Slope",
     clamp_act="Slope", used_slope="Slope",
-    pre_damp="Rescale Factor", final_rsc="Rescale Factor"
+    pre_damp="Rescale Factor", final_rsc="Rescale Factor", damped="Rescale Factor"
   )
   group_colors <- c(Convergence="#4a9eca", Slope="#e07b39", `Rescale Factor`="#5cb85c")
 
@@ -727,7 +772,7 @@ makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
     pagination = FALSE,
     theme = reactable::reactableTheme(
       headerStyle = list(borderBottom = "2px solid #ccc", fontSize = "0.88em",
-                         background = "#f8f8f8")
+                         background = "#eeeeee")
     )
   )
 
@@ -765,7 +810,6 @@ makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
   )
 
   htmltools::tagList(
-    htmltools::div(style = "font-size:0.85em; color:#555; margin-bottom:4px; font-style:italic;", caption_text),
     tbl,
     legend
   )
@@ -773,12 +817,535 @@ makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
 
 ```
 
+```{r rescaleFactorChart, echo=FALSE, include=FALSE}
+
+g[["rescale_factor"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+      d <- tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>% arrange(iteration)
+
+      hasDamp <- !all(is.na(d$pre_damp))
+      p <- plot_ly(data = d, height = 280) %>%
+        add_segments(x = min(d$iteration) - 0.5, xend = max(d$iteration) + 0.5,
+                     y = 1, yend = 1, showlegend = FALSE,
+                     line = list(color = "#aaaaaa", dash = "dot", width = 1)) %>%
+        add_trace(x = ~iteration, y = ~final_rsc,
+                  name = "Final rescale", mode = "lines+markers", type = "scatter",
+                  line = list(color = "#5cb85c", width = 2),
+                  marker = list(color = "#5cb85c", size = 6),
+                  hovertemplate = "Iter %{x}<br>Final: %{y:.3f}<extra></extra>")
+
+      if (hasDamp) {
+        d_damp <- d %>% filter(!is.na(pre_damp) & abs(pre_damp - final_rsc) > 1e-4)
+        if (nrow(d_damp) > 0) {
+          p <- p %>% add_trace(data = d_damp,
+                               x = ~iteration, y = ~pre_damp,
+                               name = "Pre-damp", mode = "markers", type = "scatter",
+                               marker = list(color = "#e07b39", size = 10, symbol = "circle-open",
+                                             line = list(width = 2, color = "#e07b39")),
+                               opacity = 0.7,
+                               hovertemplate = "Iter %{x}<br>Pre-damp: %{y:.3f}<extra></extra>")
+        }
+      }
+
+      p %>% layout(
+        hovermode = "x unified", showlegend = TRUE,
+        legend = list(orientation = "h", y = -0.18),
+        xaxis = list(title = "Iteration", zeroline = FALSE,
+                     range = c(0.5, max(d$iteration) + 0.5),
+                     gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                     showline = TRUE, linecolor = "#adadad", linewidth = 2),
+        yaxis = list(title = "Rescale factor", gridcolor = "#e8e8e8",
+                     ticks = "outside", showline = TRUE, linecolor = "#adadad", linewidth = 2)
+      )
+    })
+  })
+
+```
+
+
+```{r phaseDiagramChart, echo=FALSE, include=FALSE}
+
+g[["phase_diagram"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+
+      emi_d <- p47_emiMktCurrent_iter %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+        mutate(emissions = p47_emiMktCurrent_iter * 3.66667 * 1000) %>%
+        select(iteration, emissions)
+
+      price_d <- price %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+        select(iteration, pm_taxemiMkt_iteration) %>%
+        rename(carbon_price = pm_taxemiMkt_iteration)
+
+      d_phase <- emi_d %>%
+        inner_join(price_d, by = "iteration") %>%
+        left_join(tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod,
+                                       emiMktExt == emiMktExtVal) %>%
+                    select(iteration, method, converged), by = "iteration") %>%
+        arrange(iteration)
+
+      tgt_emi_MtCO2 <- tryCatch({
+        v <- pm_emiMktTarget %>%
+          filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+          slice(1) %>% pull(pm_emiMktTarget)
+        if (length(v) == 1 && !is.na(v)) v * 3.66667 * 1000 else NULL
+      }, error = function(e) NULL)
+
+      p <- plot_ly(data = d_phase, height = 350)
+
+      if (!is.null(tgt_emi_MtCO2)) {
+        p <- p %>% add_segments(
+          x = min(d_phase$carbon_price, na.rm = TRUE),
+          xend = max(d_phase$carbon_price, na.rm = TRUE),
+          y = tgt_emi_MtCO2, yend = tgt_emi_MtCO2,
+          showlegend = FALSE,
+          line = list(color = "#e07b39", dash = "dash", width = 1.5)
+        )
+      }
+
+      d_phase <- d_phase %>%
+        mutate(
+          primary_method = sub(" \\+.*", "", ifelse(is.na(method), "unknown", method)),
+          primary_method = ifelse(primary_method %in% names(methodPalette), primary_method, "unknown"),
+          point_color    = ifelse(primary_method %in% names(methodPalette),
+                                  methodPalette[primary_method], "#aaaaaa")
+        )
+
+      p <- p %>%
+        add_trace(x = ~carbon_price, y = ~emissions,
+                  type = "scatter", mode = "lines",
+                  line = list(color = "#cccccc", width = 1),
+                  showlegend = FALSE, hoverinfo = "skip")
+
+      for (meth in unique(d_phase$primary_method)) {
+        d_sub <- d_phase %>% filter(primary_method == meth)
+        col   <- if (meth %in% names(methodPalette)) methodPalette[[meth]] else "#aaaaaa"
+        p <- p %>% add_trace(
+          data = d_sub,
+          x = ~carbon_price, y = ~emissions,
+          type = "scatter", mode = "markers+text",
+          name = meth,
+          text = ~as.character(iteration), textposition = "top right",
+          textfont = list(size = 9, color = "#555"),
+          marker = list(size = 8, color = col),
+          customdata = ~paste0("Iter: ", iteration,
+                               "<br>Price: ", round(carbon_price), " US$2005/t CO2",
+                               "<br>Emi: ", round(emissions), " Mt CO2",
+                               "<br>Method: ", ifelse(is.na(method), "—", method)),
+          hovertemplate = "%{customdata}<extra></extra>"
+        )
+      }
+
+      seg_arrows <- if (nrow(d_phase) > 1)
+        lapply(seq_len(nrow(d_phase) - 1), function(i)
+          list(
+            ax       = d_phase$carbon_price[i],
+            ay       = d_phase$emissions[i],
+            x        = d_phase$carbon_price[i + 1],
+            y        = d_phase$emissions[i + 1],
+            xref = "x", yref = "y", axref = "x", ayref = "y",
+            arrowhead = 2, arrowsize = 0.8, arrowwidth = 1.2,
+            arrowcolor = "#aaaaaa",
+            showarrow = TRUE, text = ""
+          )
+        ) else list()
+
+      p %>% layout(
+          showlegend = TRUE,
+          legend = list(orientation = "h", y = -0.22, font = list(size = 11)),
+          annotations = seg_arrows,
+          xaxis = list(title = "Carbon price (US$2005/t CO2)", zeroline = FALSE,
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2),
+          yaxis = list(title = "Emissions (Mt CO2)", zeroline = FALSE,
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2)
+        )
+    })
+  })
+
+```
+
+
+```{r methodTimelineChart, echo=FALSE, include=FALSE}
+
+g[["method_timeline"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+      d <- tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+        arrange(iteration) %>%
+        mutate(
+          primary = sub(" \\+.*", "", method),
+          primary = ifelse(!is.na(converged) & converged == "✓", "converged",
+                           ifelse(is.na(primary) | nchar(trimws(primary)) == 0, "inactive", primary)),
+          color   = ifelse(primary == "inactive", "#eeeeee",
+                           ifelse(primary %in% names(methodPalette), as.character(methodPalette[primary]), "#aaaaaa")),
+          label = ifelse(is.na(method) | nchar(trimws(method)) == 0, "target not active", method)
+        )
+
+      present_methods <- intersect(names(methodPalette), unique(d$primary))
+
+      # Single bar trace — continuous strip, per-bar color from d$color
+      p <- plot_ly(height = 70) %>%
+        add_bars(
+          data = d,
+          x = ~iteration, y = rep(1, nrow(d)),
+          marker = list(color = d$color, line = list(width = 0)),
+          hovertemplate = ~paste0("Iter ", iteration, ": ", label, "<extra></extra>"),
+          showlegend = FALSE
+        )
+
+      # Circle legend entries — placed off-chart so they appear without fading
+      for (meth in names(methodPalette)) {
+        if (!meth %in% present_methods) next
+        col <- methodPalette[[meth]]
+        p <- p %>% add_trace(
+          type = "scatter", mode = "markers",
+          x = -999L, y = -999,
+          name = meth,
+          marker = list(color = col, symbol = "circle", size = 8),
+          showlegend = TRUE,
+          hoverinfo = "skip"
+        )
+      }
+
+      p %>% layout(
+        barmode  = "stack",
+        showlegend = TRUE,
+        legend = list(
+          orientation = "h",
+          x = 0.98, xanchor = "right",
+          y = 0.45, yanchor = "top",
+          font = list(size = 10),
+          traceorder = "normal",
+          bgcolor = "rgba(0,0,0,0)",
+          borderwidth = 0
+        ),
+        xaxis = list(title = "", zeroline = FALSE,
+                     range = c(0.5, max(d$iteration) + 0.5),
+                     fixedrange = TRUE,
+                     showticklabels = FALSE, showgrid = FALSE),
+        yaxis = list(title = "", showticklabels = FALSE, zeroline = FALSE,
+                     range = c(0, 1.01), fixedrange = TRUE, showgrid = FALSE),
+        margin = list(t = 2, b = 50, l = 80, r = 60)
+      )
+    })
+  })
+
+```
+
+
+```{r slopeClampChart, echo=FALSE, include=FALSE}
+
+g[["slope_clamp"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+      d <- tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>% arrange(iteration)
+
+      p <- plot_ly(data = d, height = 280)
+
+      if ("clamp_bnd" %in% names(d) && !all(is.na(d$clamp_bnd))) {
+        p <- p %>% add_trace(x = ~iteration, y = ~clamp_bnd,
+                             name = "Adaptive clamp bound", type = "scatter", mode = "lines",
+                             line = list(color = "#e07b39", width = 1.5, dash = "dot", shape = "hv"),
+                             hovertemplate = "Iter %{x}<br>Clamp bound: %{y:.3f}<extra></extra>")
+      }
+      if ("raw_slope" %in% names(d) && !all(is.na(d$raw_slope))) {
+        p <- p %>% add_trace(x = ~iteration, y = ~raw_slope,
+                             name = "Raw slope (pre-clamp)", type = "scatter", mode = "markers",
+                             marker = list(color = "#e07b39", size = 9, symbol = "circle-open",
+                                           line = list(width = 2, color = "#e07b39")),
+                             opacity = 0.7,
+                             hovertemplate = "Iter %{x}<br>Raw slope: %{y:.3f}<extra></extra>")
+      }
+
+      p %>%
+        add_trace(x = ~iteration, y = ~used_slope,
+                  name = "Used slope", type = "scatter", mode = "lines+markers",
+                  line = list(color = "#4a9eca", width = 2),
+                  marker = list(color = "#4a9eca", size = 6),
+                  hovertemplate = "Iter %{x}<br>Used slope: %{y:.3f}<extra></extra>") %>%
+        add_segments(x = min(d$iteration) - 0.5, xend = max(d$iteration) + 0.5,
+                     y = 0, yend = 0, showlegend = FALSE,
+                     line = list(color = "#e8e8e8", width = 2)) %>%
+        layout(
+          hovermode = "x unified", showlegend = TRUE,
+          legend = list(orientation = "h", y = -0.2),
+          xaxis = list(title = "Iteration", zeroline = FALSE,
+                       range = c(0.5, max(d$iteration) + 0.5),
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2),
+          yaxis = list(title = "Slope", gridcolor = "#e8e8e8",
+                       mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2)
+        )
+    })
+  })
+
+```
+
+
+```{r convergenceRateChart, echo=FALSE, include=FALSE}
+
+g[["convergence_rate"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+      d <- tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+        arrange(iteration) %>% filter(!is.na(delta_dev)) %>%
+        mutate(abs_delta = delta_dev)
+
+      plot_ly(data = d, height = 220) %>%
+        add_bars(x = ~iteration, y = ~abs_delta,
+                 marker = list(color = "#4a9eca", opacity = 0.85),
+                 hovertemplate = "Iter %{x}<br>|Δdev|: %{y:.2f}%<extra></extra>",
+                 showlegend = FALSE) %>%
+        layout(
+          xaxis = list(title = "Iteration", zeroline = FALSE,
+                       range = c(0.5, max(d$iteration) + 0.5),
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2),
+          yaxis = list(title = "|Δdeviation| (%)", zeroline = FALSE,
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2)
+        )
+    })
+  })
+
+```
+
+
+```{r summaryData, echo=FALSE, include=FALSE}
+
+activity_long <- tableData %>%
+  mutate(
+    target_label = paste(ext_regi, ttot2, emiMktExt, sep = " · "),
+    primary      = sub(" \\+.*", "", method),
+    primary      = ifelse(!is.na(converged) & converged == "✓", "converged",
+                          ifelse(is.na(primary) | nchar(trimws(primary)) == 0, "inactive", primary)),
+    cell_color   = ifelse(primary == "inactive", "#eeeeee",
+                          ifelse(primary %in% names(methodPalette), as.character(methodPalette[primary]), "#aaaaaa")),
+    is_conv = !is.na(converged) & converged == "✓",
+    tooltip = ifelse(
+      primary == "inactive",
+      paste0(
+        gsub(" · ", " | ", target_label), " — Iter ", iteration,
+        "<br>Method: not active"
+      ),
+      paste0(
+        gsub(" · ", " | ", target_label), " — Iter ", iteration,
+        "<br>Method: ", ifelse(is.na(method) | nchar(trimws(method)) == 0, "not active", method),
+        "<br>Deviation: ", ifelse(is.na(dev_pct), "—", paste0(dev_pct, "%")),
+        "<br>|Δdev|: ", ifelse(is.na(delta_dev), "—", paste0(delta_dev, "%")),
+        "<br>Applied factor: ", ifelse(is.na(final_rsc), "—", as.character(final_rsc)),
+        "<br>Converged: ", ifelse(is_conv, "✓", "✗")
+      )
+    )
+  )
+
+conv_first <- activity_long %>%
+  filter(is_conv) %>%
+  group_by(target_label) %>%
+  summarise(first_conv = min(iteration), .groups = "drop")
+
+target_summary_df <- tableData %>%
+  group_by(ext_regi, ttot2, emiMktExt) %>%
+  arrange(iteration) %>%
+  summarise(
+    n_total_iters   = max(iteration),
+    n_active        = sum(!is.na(method)),
+    n_conv_iters    = sum(!is.na(converged) & converged == "✓"),
+    first_conv_iter = { ci <- iteration[!is.na(converged) & converged == "✓"]
+                        if (length(ci) > 0) min(ci) else NA_integer_ },
+    last_conv_iter  = { ci <- iteration[!is.na(converged) & converged == "✓"]
+                        if (length(ci) > 0) max(ci) else NA_integer_ },
+    pct_conv        = round(100 * sum(!is.na(converged) & converged == "✓") /
+                            max(1, max(iteration)), 1),
+    final_dev_pct   = last(dev_pct),
+    final_conv      = last(converged),
+    peak_abs_dev    = round(max(abs(dev_pct), na.rm = TRUE), 2),
+    n_damped        = sum(!is.na(damped) & damped == "✓"),
+    methods_used    = {
+      pm <- sub(" \\+.*", "", method[!is.na(method)])
+      pm <- pm[nchar(trimws(pm)) > 0]
+      if (length(pm) == 0) "—"
+      else { mc <- sort(table(pm), decreasing = TRUE)
+             paste(paste0(names(mc), " (", as.integer(mc), ")"), collapse = " · ") }
+    },
+    .groups = "drop"
+  ) %>%
+  mutate(
+    tol_pct         = round(100 * emiMktTarget_tolerance[ext_regi], 2),
+    target_label    = paste(ext_regi, ttot2, emiMktExt, sep = " · "),
+    in_tol          = !is.na(final_dev_pct) & abs(final_dev_pct) <= tol_pct,
+    first_conv_disp = ifelse(is.na(first_conv_iter), "—", as.character(first_conv_iter)),
+    last_conv_disp  = ifelse(is.na(last_conv_iter),  "—", as.character(last_conv_iter))
+  )
+
+```
+
+
+```{r summaryCharts, echo=FALSE, include=FALSE}
+
+# ── Activity heatmap + legend ─────────────────────────────────────────────
+target_order <- target_summary_df %>%
+  arrange(ext_regi, desc(ttot2), emiMktExt) %>%
+  pull(target_label) %>% rev()
+
+activity_long$target_f <- factor(activity_long$target_label, levels = target_order)
+
+p_act <- ggplot(activity_long,
+                aes(x = iteration, y = target_f, fill = cell_color, text = tooltip)) +
+  geom_tile(height = 0.82, color = NA, linewidth = 0) +
+  scale_fill_identity() +
+  theme_minimal() +
+  theme(axis.title.y = element_blank(), panel.grid = element_blank(),
+        axis.text.y = element_text(size = 9), axis.title.x = element_text(size = 9),
+        plot.margin = margin(4, 4, 4, 4, "pt")) +
+  labs(x = "Iteration")
+
+act_h <- max(100, length(target_order) * 38 + 90)
+act_plotly <- ggplotly(p_act, tooltip = "text", height = act_h) %>%
+  layout(
+    showlegend = TRUE,
+    legend = list(orientation = "h", x = 0.98, xanchor = "right",
+                  y = -0.04, yanchor = "top",
+                  font = list(size = 10), bgcolor = "rgba(0,0,0,0)", borderwidth = 0),
+    shapes = lapply(conv_first$first_conv, function(i)
+      list(type = "line", x0 = i - 0.5, x1 = i - 0.5, y0 = 0, y1 = 1,
+           yref = "paper", line = list(color = "rgba(0,0,0,0.18)", width = 1, dash = "dot")))
+  )
+
+present_in_summary <- intersect(names(methodPalette), unique(activity_long$primary))
+for (meth in names(methodPalette)) {
+  if (!meth %in% present_in_summary) next
+  act_plotly <- act_plotly %>% add_trace(
+    type = "scatter", mode = "markers",
+    x = -999L, y = target_order[1],
+    name = meth,
+    marker = list(color = methodPalette[[meth]], symbol = "circle", size = 8),
+    showlegend = TRUE, hoverinfo = "skip",
+    inherit = FALSE
+  )
+}
+g[["summary_activity"]] <- act_plotly %>%
+  layout(xaxis = list(range = c(0.5, max(activity_long$iteration) + 0.5),
+                      fixedrange = TRUE))
+
+# ── Final deviation strip ──────────────────────────────────────────────────
+dev_h         <- max(140, nrow(target_summary_df) * 42 + 80)
+tgt_order_dev <- target_summary_df %>% arrange(ext_regi, ttot2, emiMktExt) %>% pull(target_label)
+
+dev_data <- target_summary_df %>%
+  arrange(ext_regi, ttot2, emiMktExt) %>%
+  mutate(dot_color = ifelse(in_tol, "#00BFC4", "#F8766D"))
+
+g[["summary_conv_dev"]] <- plot_ly(dev_data, height = dev_h, width = 550) %>%
+  add_segments(x = ~-tol_pct, xend = ~tol_pct, y = ~target_label, yend = ~target_label,
+               line = list(color = "rgba(0,191,196,0.12)", width = 14),
+               showlegend = FALSE, hoverinfo = "skip") %>%
+  add_segments(x = 0, xend = ~final_dev_pct, y = ~target_label, yend = ~target_label,
+               line = list(color = "#cccccc", width = 1),
+               showlegend = FALSE, hoverinfo = "skip") %>%
+  add_markers(x = ~final_dev_pct, y = ~target_label,
+              marker = list(color = ~dot_color, size = 10),
+              text = ~paste0(target_label, "<br>Final dev: ", final_dev_pct, "%",
+                             "<br>Tolerance: ±", tol_pct, "%<br>", final_conv),
+              hoverinfo = "text", showlegend = FALSE) %>%
+  layout(
+    shapes = list(list(type = "line", x0 = 0, x1 = 0, y0 = 0, y1 = 1,
+                       yref = "paper", line = list(color = "#999", width = 1))),
+    xaxis = list(title = "Final deviation (%)", zeroline = FALSE, gridcolor = "#e8e8e8",
+                 mirror = TRUE, ticks = "outside", showline = TRUE,
+                 linecolor = "#adadad", linewidth = 2),
+    yaxis = list(title = "", zeroline = FALSE, gridcolor = "#e8e8e8",
+                 categoryorder = "array", categoryarray = rev(tgt_order_dev))
+  )
+
+# ── Summary reactable ──────────────────────────────────────────────────────
+convCell <- function(v) if (identical(v, "✓"))
+  htmltools::span(style = "color:#00BFC4;font-weight:bold;", v) else
+  htmltools::span(style = "color:#F8766D;font-weight:bold;", v)
+
+devCell <- function(v, row) {
+  tol <- target_summary_df$tol_pct[row]
+  col <- if (!is.na(v) && abs(v) <= tol) "#00BFC4" else "#F8766D"
+  htmltools::span(style = paste0("color:", col, ";"), paste0(v, "%"))
+}
+
+summary_react <- reactable::reactable(
+  target_summary_df %>%
+    select(target_label, final_conv, first_conv_disp, final_dev_pct,
+           tol_pct, n_damped, n_conv_iters, methods_used),
+  columns = list(
+    target_label    = reactable::colDef(name = "Target",         minWidth = 140),
+    final_conv      = reactable::colDef(name = "Conv.",          align = "center", width = 56,
+                                        html = TRUE, cell = convCell),
+    first_conv_disp = reactable::colDef(name = "First conv.",    align = "center", width = 80),
+    final_dev_pct   = reactable::colDef(name = "Final dev (%)",  align = "right",  width = 95,
+                                        cell = devCell),
+    tol_pct         = reactable::colDef(name = "Tolerance",      align = "right",  width = 80,
+                                        cell = function(v) paste0("±", v, "%")),
+    n_damped        = reactable::colDef(name = "Damped",         align = "center", width = 70),
+    n_conv_iters    = reactable::colDef(name = "Iters conv.",    align = "center", width = 80),
+    methods_used    = reactable::colDef(name = "Methods used",
+                                        style = list(fontSize = "0.82em", color = "#555"))
+  ),
+  striped = TRUE, highlight = TRUE, compact = TRUE, pagination = FALSE,
+  theme = reactable::reactableTheme(
+    headerStyle = list(borderBottom = "2px solid #ccc", fontSize = "0.88em",
+                       background = "#eeeeee")
+  )
+)
+
+```
+
+
 ## {.tabset}
 
 ```{r, include=FALSE}
 
 # Creating sections
-out <- ""
+out <- "### Summary\n\n"
+
+out <- paste0(out, "##### Activity and Convergence Timeline\n\n")
+out <- paste0(out, "<div class='collapsible-section'>\n")
+out <- paste0(out, "<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+out <- paste0(out, "<div class='collapsible-content'>\n\n")
+out <- paste0(out, "```{r, results='asis'}\ng$summary_activity\n```\n\n")
+out <- paste0(out, "</div></div>\n\n")
+
+out <- paste0(out, "##### Final Deviation vs Tolerance\n\n")
+out <- paste0(out, "<div class='collapsible-section'>\n")
+out <- paste0(out, "<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+out <- paste0(out, "<div class='collapsible-content'>\n\n")
+out <- paste0(out, "```{r, results='asis'}\ng$summary_conv_dev\n```\n\n")
+out <- paste0(out, "</div></div>\n\n")
+
+out <- paste0(out, "##### Summary Table\n\n")
+out <- paste0(out, "<div class='collapsible-section'>\n")
+out <- paste0(out, "<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+out <- paste0(out, "<div class='collapsible-content'>\n\n")
+out <- paste0(out, "```{r, results='asis'}\nsummary_react\n```\n\n")
+out <- paste0(out, "</div></div>\n\n")
+
 for(reg in tgtRegions){
   out <- paste0(out,knitr::knit_expand(text=paste0("### ", reg, " {.tabset}\n\n")))
   for(subGroup in tgts %>% filter(ext_regi == reg) %>% pull(group)){
@@ -793,8 +1360,13 @@ for(reg in tgtRegions){
     out <- paste0(out,"<div class='collapsible-section'>\n")
     out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
     out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"<div style='margin-bottom:-18px'>\n")
     out <- paste0(out,"```{r , results = 'asis', fig.height=10}\n\n")
     out <- paste0(out,"g$qtty_and_price[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div>\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$method_timeline[['", reg, "']][['", subGroup, "']]\n\n")
     out <- paste0(out,"```\n\n")
     out <- paste0(out,"</div></div>\n\n")
 
@@ -811,6 +1383,42 @@ for(reg in tgtRegions){
     out <- paste0(out,"<div class='collapsible-content'>\n\n")
     out <- paste0(out,"```{r , echo=FALSE}\n\n")
     out <- paste0(out,"makeRescaleTable(tableData, '",reg,"', '",tgtPeriod,"', '",emiMktExtVal,"')\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,knitr::knit_expand(text=paste0("##### Rescale Factor\n\n")))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$rescale_factor[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,knitr::knit_expand(text=paste0("##### Phase Diagram\n\n")))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$phase_diagram[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,knitr::knit_expand(text=paste0("##### Slope and Clamp Evolution\n\n")))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$slope_clamp[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,knitr::knit_expand(text=paste0("##### Convergence Rate\n\n")))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$convergence_rate[['", reg, "']][['", subGroup, "']]\n\n")
     out <- paste0(out,"```\n\n")
     out <- paste0(out,"</div></div>\n\n")
   }
