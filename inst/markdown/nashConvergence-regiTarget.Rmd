@@ -517,8 +517,7 @@ g[["deviation"]] <-
           showarrow = FALSE,
           font      = list(size = 10, color = "#666"),
           bgcolor   = "rgba(255,255,255,0.75)"
-        ))) %>%
-        plotly::config(displayModeBar = FALSE)
+        )))
     })
   })
 
@@ -1040,7 +1039,8 @@ g[["method_timeline"]] <-
         yaxis = list(title = "", showticklabels = FALSE, zeroline = FALSE,
                      range = c(0, 1.01), fixedrange = TRUE, showgrid = FALSE),
         margin = list(t = 2, b = 50, l = 80, r = 60)
-      )
+      ) %>%
+        plotly::config(displayModeBar = FALSE)
     })
   })
 
