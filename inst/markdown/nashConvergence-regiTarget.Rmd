@@ -29,6 +29,27 @@ params:
   .code-folding-btn {
     display: none;
   }
+  .collapsible-section {
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .collapse-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 100;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 6px;
+    line-height: 1.4;
+    color: #555;
+  }
+  .collapse-btn:hover {
+    background: #f0f0f0;
+  }
 </style>
 
 <script type="text/javascript">
@@ -60,8 +81,19 @@ $(document).ready(function() {
     $tocItems.filter(function() {  // ... filter for the toc items pointing to that tab
       return($(this).attr("tab") === key);
     }).toggle();  // ... and show them
-  });  
+  });
 });
+
+function toggleSection(btn) {
+  var content = btn.nextElementSibling;
+  if (content.style.display === 'none') {
+    content.style.display = '';
+    btn.innerHTML = '&#9660;';
+  } else {
+    content.style.display = 'none';
+    btn.innerHTML = '&#9654;';
+  }
+}
 </script>
 
 ```{r loading_libraries, include=FALSE}
@@ -71,6 +103,9 @@ library(ggplot2)
 library(plotly)
 library(mip)
 library(gdx)
+library(reactable)
+library(htmltools)
+library(tidyr)
 
 knitr::opts_chunk$set(
   echo = FALSE,
@@ -127,6 +162,15 @@ emiMktTarget_tolerance <-
     pm_emiMktTarget_tolerance$pm_emiMktTarget_tolerance,
     pm_emiMktTarget_tolerance$ext_regi
   )
+
+tryGetPlotData <- function(name, gdx) {
+  tryCatch(mip::getPlotData(name, gdx), error = function(e) data.frame())
+}
+p47_slopeReferenceIteration_iter     <- tryGetPlotData("p47_slopeReferenceIteration_iter",     params$gdx)
+p47_slopeUpperClampBound_iter        <- tryGetPlotData("p47_slopeUpperClampBound_iter",        params$gdx)
+p47_upperClampActive_iter            <- tryGetPlotData("p47_upperClampActive_iter",            params$gdx)
+p47_clampedRescaleSlope_iter         <- tryGetPlotData("p47_clampedRescaleSlope_iter",         params$gdx)
+p47_dampedFactorRescaleemiMktCO2Tax_iter <- tryGetPlotData("p47_dampedFactorRescaleemiMktCO2Tax_iter", params$gdx)
 
 ```
 
@@ -243,7 +287,7 @@ plotData <-
             "<br>",
             "Rescale Type : ",
             ifelse(
-              rescaleType %in% c("slope_refIteration", "slope_firstIteration", "slope_repeatPrev_positiveSlope"),
+              rescaleType %in% c("slope_prevIteration", "slope_firstIteration"),
               paste0(
                 rescaleType,
                 " (slope=",
@@ -455,6 +499,280 @@ g[["deviation"]] <-
 
 
 
+```{r rescaleTableData, echo=FALSE, include=FALSE}
+
+rescaleTypeAbbrev <- c(
+  squareDev_firstIteration       = "sq·1st",
+  squareDev_perfectMatch         = "sq·match",
+  squareDev_smallChange          = "sq·small",
+  squareDev_outsideWindow        = "sq·win",
+  squareDev_noNonPositiveSlope   = "sq·+sl",
+  squareDev_adaptiveClamp        = "sq·clamp",
+  squareDev_degenerateSlope      = "sq·degen",
+  slope_refIteration             = "sl·ref",
+  slope_firstIteration           = "sl·1st",
+  slope_repeatPrev_positiveSlope = "sl·rep"
+)
+
+safeJoin <- function(base, extra, by, extra_col_rename = NULL) {
+  if (nrow(extra) == 0) return(base)
+  if (!is.null(extra_col_rename)) extra <- dplyr::rename(extra, !!extra_col_rename)
+  dplyr::left_join(base, extra, by = by)
+}
+
+tableData <- pm_emiMktTarget_dev_iter %>%
+  select(-ttot) %>%
+  mutate(iteration = as.integer(iteration)) %>%
+  left_join(
+    regiEmiMktRescaleType %>%
+      select(-ttot) %>% rename(ttot2 = ttot1) %>%
+      mutate(iteration = as.integer(iteration)) %>% select(-any_of("value")) %>%
+      group_by(iteration, ttot2, ext_regi, emiMktExt) %>%
+      summarise(rescaleType = paste(sort(unique(rescaleType)), collapse = " + "), .groups = "drop"),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  left_join(
+    p47_targetConverged_iter %>% rename(ttot2 = ttot),
+    by = c("iteration", "ttot2", "ext_regi")
+  ) %>%
+  left_join(
+    p47_factorRescaleSlope_iter %>% select(-ttot),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  left_join(
+    p47_factorRescaleemiMktCO2Tax_iter %>% select(-ttot),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_slopeReferenceIteration_iter) > 0) p47_slopeReferenceIteration_iter %>% rename(ttot2 = ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_slopeUpperClampBound_iter) > 0) p47_slopeUpperClampBound_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_upperClampActive_iter) > 0) p47_upperClampActive_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_clampedRescaleSlope_iter) > 0) p47_clampedRescaleSlope_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_dampedFactorRescaleemiMktCO2Tax_iter) > 0) p47_dampedFactorRescaleemiMktCO2Tax_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  mutate(
+    method     = sapply(strsplit(rescaleType, " + ", fixed = TRUE), function(types) {
+      codes <- rescaleTypeAbbrev[types]
+      paste(codes[!is.na(codes)], collapse = " + ")
+    }),
+    dev_pct    = round(100 * pm_emiMktTarget_dev_iter, 2),
+    converged  = ifelse(!is.na(p47_targetConverged_iter) & p47_targetConverged_iter == 1, "✓", "✗"),
+    slope_ref  = if ("p47_slopeReferenceIteration_iter"     %in% names(.)) p47_slopeReferenceIteration_iter     else NA_real_,
+    raw_slope  = if ("p47_clampedRescaleSlope_iter"         %in% names(.)) round(p47_clampedRescaleSlope_iter, 3)         else NA_real_,
+    clamp_bnd  = if ("p47_slopeUpperClampBound_iter"        %in% names(.)) round(p47_slopeUpperClampBound_iter, 3)        else NA_real_,
+    clamp_act  = if ("p47_upperClampActive_iter"            %in% names(.)) dplyr::case_when(
+      is.na(p47_upperClampActive_iter) ~ NA_character_,
+      p47_upperClampActive_iter == 1   ~ "✓",
+      TRUE                             ~ "—"
+    ) else NA_character_,
+    used_slope = round(p47_factorRescaleSlope_iter, 3),
+    pre_damp   = if ("p47_dampedFactorRescaleemiMktCO2Tax_iter" %in% names(.)) round(p47_dampedFactorRescaleemiMktCO2Tax_iter, 3) else NA_real_,
+    final_rsc  = round(p47_factorRescaleemiMktCO2Tax_iter, 3)
+  ) %>%
+  select(iteration, ttot2, ext_regi, emiMktExt,
+         method, rescaleType, dev_pct, converged,
+         slope_ref, raw_slope, clamp_bnd, clamp_act, used_slope,
+         pre_damp, final_rsc)
+
+legendRow <- function(code, fullname, what, when) {
+  htmltools::tags$tr(
+    style = "border-bottom: 1px solid #f0f0f0;",
+    htmltools::tags$td(style = "padding: 2px 8px; font-family: monospace; white-space: nowrap;", code),
+    htmltools::tags$td(style = "padding: 2px 8px; font-family: monospace; white-space: nowrap; color: #888; font-size: 0.85em;", fullname),
+    htmltools::tags$td(style = "padding: 2px 8px;", what),
+    htmltools::tags$td(style = "padding: 2px 8px; color: #666;", when)
+  )
+}
+
+makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
+  d <- data %>%
+    filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+    arrange(iteration)
+
+  tol_frac    <- emiMktTarget_tolerance[[reg]]
+  tol_pct     <- round(100 * tol_frac, 2)
+  refYear_val <- pm_emiMktRefYear %>%
+    filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+    slice(1) %>% pull(pm_emiMktRefYear)
+  tol_MtCO2 <- if (length(refYear_val) > 0 && !is.na(refYear_val))
+    round(tol_frac * refYear_val * 3.66667 * 1000, 1) else NA
+  caption_text <- paste0(
+    "Tolerance: ±", tol_pct, "%",
+    if (!is.na(tol_MtCO2)) paste0(" (±", tol_MtCO2, " MtCO2)") else ""
+  )
+
+  # ── parameter metadata ────────────────────────────────────────────────────
+  param_order  <- c("method","dev_pct","converged",
+                    "slope_ref","raw_slope","clamp_bnd","clamp_act","used_slope",
+                    "pre_damp","final_rsc")
+  param_labels <- c(
+    method     = "Method",
+    dev_pct    = "Deviation (%)",
+    converged  = "Converged",
+    slope_ref  = "Ref. iter.",
+    raw_slope  = "Raw slope",
+    clamp_bnd  = "Clamp bound",
+    clamp_act  = "Clamp active",
+    used_slope = "Used slope",
+    pre_damp   = "Pre-damp rescale",
+    final_rsc  = "Final rescale"
+  )
+  param_groups <- c(
+    method="Convergence", dev_pct="Convergence", converged="Convergence",
+    slope_ref="Slope", raw_slope="Slope", clamp_bnd="Slope",
+    clamp_act="Slope", used_slope="Slope",
+    pre_damp="Rescale Factor", final_rsc="Rescale Factor"
+  )
+  group_colors <- c(Convergence="#4a9eca", Slope="#e07b39", `Rescale Factor`="#5cb85c")
+
+  # ── transpose: rows = parameters, cols = iterations ───────────────────────
+  iter_cols <- as.character(d$iteration)
+  d_t <- d %>%
+    select(iteration, all_of(param_order)) %>%
+    mutate(across(everything(), as.character)) %>%
+    tidyr::pivot_longer(cols = -iteration, names_to = "param", values_to = "value") %>%
+    tidyr::pivot_wider(names_from = iteration, values_from = value) %>%
+    mutate(group = param_groups[param], label = param_labels[param]) %>%
+    arrange(match(param, param_order)) %>%
+    select(group, param, label, all_of(iter_cols))
+
+  # ── per-iteration lookups for cell styling ─────────────────────────────────
+  method_per_iter    <- setNames(d$method,    iter_cols)
+  converged_per_iter <- setNames(d$converged, iter_cols)
+
+  # ── column definitions ─────────────────────────────────────────────────────
+  label_coldef <- list(
+    group = reactable::colDef(show = FALSE),
+    param = reactable::colDef(show = FALSE),
+    label = reactable::colDef(
+      name  = "",
+      width = 145,
+      style = function(value, index) {
+        list(fontWeight  = "600",
+             fontSize    = "0.82em",
+             borderLeft  = paste0("3px solid ", group_colors[d_t$group[index]]),
+             paddingLeft = "6px",
+             whiteSpace  = "nowrap")
+      }
+    )
+  )
+
+  iter_coldefs <- lapply(setNames(iter_cols, iter_cols), function(iter) {
+    method  <- method_per_iter[[iter]]
+    is_conv <- identical(converged_per_iter[[iter]], "✓")
+    is_sq   <- !is.na(method) && grepl("^sq", method)
+
+    reactable::colDef(
+      name  = iter,
+      width = 46,
+      align = "center",
+      html  = TRUE,
+      header = htmltools::div(
+        style = paste0("font-weight:bold; font-size:0.88em;",
+                       if (is_conv) " color:#c0c0c0;" else ""),
+        iter
+      ),
+      cell = function(value, index) {
+        if (is.na(value) || value == "NA")
+          return(htmltools::span(style = "color:#e8e8e8;", "—"))
+        pname <- d_t$param[index]
+        if (pname == "method")
+          gsub(" \\+ ", "<br><span style='color:#aaa; font-size:0.85em;'>+</span>",
+               value, perl = TRUE)
+        else if (pname == "converged")
+          if (value == "✓")
+            htmltools::span(style = "color:#00BFC4; font-weight:bold;", value)
+          else
+            htmltools::span(style = "color:#F8766D; font-weight:bold;", value)
+        else
+          value
+      },
+      style = function(value, index) {
+        pname <- d_t$param[index]
+        is_slope_row <- param_groups[pname] == "Slope"
+        if (is.na(value) || value == "NA") return(list(color = "#ebebeb"))
+        if (is_conv)  return(list(color = "#c8c8c8", fontSize = "0.78em"))
+        if (is_slope_row && is_sq) return(list(color = "#d0d0d0"))
+        NULL
+      }
+    )
+  })
+
+  tbl <- reactable::reactable(
+    d_t,
+    columns  = c(label_coldef, iter_coldefs),
+    rowStyle = function(index) {
+      base <- list(fontSize = "0.84em", lineHeight = "1.4")
+      if (index > 1 && d_t$group[index] != d_t$group[index - 1])
+        base <- c(base, list(borderTop = "2px solid #d8d8d8", marginTop = "4px"))
+      base
+    },
+    sortable   = FALSE,
+    bordered   = FALSE,
+    compact    = TRUE,
+    highlight  = TRUE,
+    pagination = FALSE,
+    theme = reactable::reactableTheme(
+      headerStyle = list(borderBottom = "2px solid #ccc", fontSize = "0.88em",
+                         background = "#f8f8f8")
+    )
+  )
+
+  legend <- htmltools::div(
+    style = "font-size:0.8em; color:#444; margin-top:8px;",
+    htmltools::tags$details(
+      htmltools::tags$summary(
+        style = "cursor:pointer; font-weight:bold; color:#555; padding:4px 0;",
+        "Method legend"
+      ),
+      htmltools::tags$table(
+        style = "border-collapse:collapse; margin-top:6px; width:100%;",
+        htmltools::tags$thead(
+          htmltools::tags$tr(
+            htmltools::tags$th(style = "text-align:left; padding:3px 8px; border-bottom:2px solid #ccc;", "Code"),
+            htmltools::tags$th(style = "text-align:left; padding:3px 8px; border-bottom:2px solid #ccc;", "Full name"),
+            htmltools::tags$th(style = "text-align:left; padding:3px 8px; border-bottom:2px solid #ccc;", "What it does"),
+            htmltools::tags$th(style = "text-align:left; padding:3px 8px; border-bottom:2px solid #ccc;", "When it fires")
+          )
+        ),
+        htmltools::tags$tbody(
+          legendRow("sq·1st",    "squareDev_firstIteration",       "Rescale = (1 + dev)²",                                            "First iteration, or slope reference just reset — no slope history yet"),
+          legendRow("sq·match",  "squareDev_perfectMatch",         "Rescale = (1 + dev)²",                                            "Tax identical to both reference and iteration 1 — division-by-zero guard"),
+          legendRow("sq·small",  "squareDev_smallChange",          "Rescale = (1 + dev)²",                                            "Tax change vs both reference and iteration 1 is < 1e−2 — avoids stagnation from negligible price variation"),
+          legendRow("sq·win",    "squareDev_outsideWindow",        "Rescale = (1 + dev)²",                                            "Reference near-zero denominator AND using iteration 1 would exceed the slope window"),
+          legendRow("sq·+sl",    "squareDev_noNonPositiveSlope",   "Rescale = (1 + dev)²",                                            "Slope is positive (price rise → more emissions) AND no prior slope to repeat — sign assumption violated"),
+          legendRow("sq·clamp",  "squareDev_adaptiveClamp",        "Rescale = (1 + dev)²; slope reference reset",                     "Adaptive Upper Clamp Bound fired twice consecutively at same level — slope-based convergence exhausted"),
+          legendRow("sq·degen",  "squareDev_degenerateSlope",      "Rescale = (1 + dev)²; slope reference reset",                     "Emission change negligible relative to 2005 emissions — degenerate slope from near-net-zero starting point"),
+          legendRow("sl·ref",    "slope_refIteration",             "Rescale = (target − current) / (slope × price) + 1",         "Normal path — slope computed against the current Slope Reference Iteration"),
+          legendRow("sl·1st",    "slope_firstIteration",           "Rescale = (target − current) / (slope × price) + 1",         "Reference denominator near-zero, but iteration 1 is within slope window — uses iteration 1 as baseline"),
+          legendRow("sl·rep",    "slope_repeatPrev_positiveSlope", "Rescale = (target − current) / (slope × price) + 1 (prev.)", "Computed slope is positive, but prior slope exists with same reference — repeats previous slope to avoid sign anomaly")
+        )
+      )
+    )
+  )
+
+  htmltools::tagList(
+    htmltools::div(style = "font-size:0.85em; color:#555; margin-bottom:4px; font-style:italic;", caption_text),
+    tbl,
+    legend
+  )
+}
+
+```
+
 ## {.tabset}
 
 ```{r, include=FALSE}
@@ -464,21 +782,37 @@ out <- ""
 for(reg in tgtRegions){
   out <- paste0(out,knitr::knit_expand(text=paste0("### ", reg, " {.tabset}\n\n")))
   for(subGroup in tgts %>% filter(ext_regi == reg) %>% pull(group)){
-    
-    tgtPeriod <- strsplit(subGroup,"_",fixed=T)[[1]][1]
-    unit <- pm_emiMktTarget %>% filter(ext_regi == reg, ttot2 == tgtPeriod) %>% pull(emi_type_47)
-    
+
+    tgtPeriod    <- strsplit(subGroup,"_",fixed=T)[[1]][1]
+    unit         <- pm_emiMktTarget %>% filter(ext_regi == reg, ttot2 == tgtPeriod) %>% pull(emi_type_47)
+    emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == subGroup) %>% pull(emiMktExt)
+
     out <- paste0(out,knitr::knit_expand(text=paste0("#### ", subGroup, "\n\n")))
-    
+
     out <- paste0(out,knitr::knit_expand(text=paste0("##### Emissions and Carbon Price (", unit, ")\n\n")))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
     out <- paste0(out,"```{r , results = 'asis', fig.height=10}\n\n")
     out <- paste0(out,"g$qtty_and_price[['", reg, "']][['", subGroup, "']]\n\n")
     out <- paste0(out,"```\n\n")
-    
-#    out <- paste0(out,knitr::knit_expand(text=paste0("##### Deviation per iteration\n\n")))
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
     out <- paste0(out,"```{r , results = 'asis', fig.height=10}\n\n")
     out <- paste0(out,"g$deviation[['", reg, "']][['", subGroup, "']]\n\n")
     out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , echo=FALSE}\n\n")
+    out <- paste0(out,"makeRescaleTable(tableData, '",reg,"', '",tgtPeriod,"', '",emiMktExtVal,"')\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
   }
 }
 
