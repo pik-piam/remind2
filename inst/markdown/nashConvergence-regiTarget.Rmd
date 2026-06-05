@@ -184,7 +184,7 @@ methodPalette <- c(
   "sq·win"   = "#984ea3", "sq·+sl"   = "#a65628", "sq·clamp" = "#f781bf",
   "sq·degen" = "#aaaaaa",
   "sl·ref"   = "#1f78b4", "sl·1st"   = "#377eb8", "sl·rep"   = "#00BFC4",
-  "converged"= "#e5f5e0"
+  "converged"= "#93c47d"
 )
 
 g <- NULL
