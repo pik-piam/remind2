@@ -38,8 +38,8 @@ showLinePlots(
 )
 
 items <- c(
-  "scenario" = "Emi|GHG", # scenario
-  "historical" = "Emi|GHGtot" # historical
+  "scenario" = "Emi|GHG|w/ Intra-region Bunkers|LULUCF national accounting", # scenario
+  "historical" = "Emi|GHG|LULUCF national accounting" # historical
 ) 
 
 showLinePlotsWithTarget(data, items)
