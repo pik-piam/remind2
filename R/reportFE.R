@@ -589,23 +589,40 @@ reportFE <- function(gdx, regionSubsetList = NULL,
     heatingVarNames <- c("feelrhb", "feelrhcob", "feelhpb", "feheb", "fesob", "fehob", "fegab", "feh2b")
     carrierBuildHeating <- carrierBuild[names(carrierBuild) %in% heatingVarNames]
 
+    # Read climate correction factors and CES offset quantities
+    pm_climateCorrection <- readGDX(gdx, "pm_climateCorrection", react = "silent")[, t, ]
+
+    # Apply climate correction and offset to get actual FE demand
+    # Following equation: vm_demFeSector = vm_cesIO_raw * pm_climateCorrection + offset_quantity
+    # Note: vm_cesIO already has offset added (see lines 552-557), so we need to remove it first
+    vm_cesIO_climateCorrected <- vm_cesIO[,, names(carrierBuild)]
+    if (!is.null(pm_climateCorrection)) {
+      # Apply climate correction factor: (vm_cesIO - offset) * climateCorrection + offset
+      for (c in names(carrierBuild)) {
+        if (c %in% getItems(pm_climateCorrection, 3)) {
+          offsetCarrier <- if (!is.null(offset) && c %in% getItems(offset, 3)) {
+            setNames(offset[,, c], NULL)
+          } else {
+            0
+          }
+
+          # Remove offset, apply correction, add offset back
+          vm_cesIO_climateCorrected[,, c] <- (vm_cesIO[,, c] - offsetCarrier) * pm_climateCorrection[,, c] + offsetCarrier
+        }
+      }
+    }
+
     # FE demand in buildings for each carrier
     # (electricity split: heat pumps, resistive heating, rest)
     for (c in names(carrierBuild)) {
-      out <- mbind(out, setNames(
-        dimSums(vm_cesIO[, , c], dim = 3, na.rm = TRUE),
-        carrierBuild[c]
-      ))
+      out <- mbind(out, setNames(dimSums(vm_cesIO_climateCorrected[,, c], dim = 3, na.rm = TRUE),
+                                 carrierBuild[c]))
     }
 
     # sum of heating FE demand
-    out <- mbind(
-      out,
-      setNames(
-        dimSums(vm_cesIO[, , names(carrierBuildHeating)], dim = 3, na.rm = TRUE),
-        "FE|Buildings|Heating (EJ/yr)"
-      )
-    )
+    out <- mbind(out,
+                 setNames(dimSums(vm_cesIO_climateCorrected[,, names(carrierBuildHeating)], dim = 3, na.rm = TRUE),
+                          "FE|Buildings|Heating (EJ/yr)"))
 
     # UE demand in buildings for each carrier
     # this buildings realisation only works on a FE level but the UE demand is
@@ -617,9 +634,9 @@ reportFE <- function(gdx, regionSubsetList = NULL,
         pm_fedemandBuild[, , names(carrierBuild)]
       feUeEff_build[is.na(feUeEff_build) | is.infinite(feUeEff_build)] <- 1
       # assume efficiency for all gases also for H2
-      feUeEff_build[, , "feh2b"] <- setNames(feUeEff_build[, , "fegab"], "feh2b")
-      # apply efficiency to get UE levels
-      uedemand_build <- vm_cesIO[, , names(carrierBuild)] * feUeEff_build
+      feUeEff_build[,, "feh2b"] <- setNames(feUeEff_build[,, "fegab"], "feh2b")
+      # apply efficiency to get UE levels (using climate-corrected FE demand)
+      uedemand_build <- vm_cesIO_climateCorrected * feUeEff_build
       getItems(uedemand_build, 3) <-
         gsub("^FE", "UE", carrierBuild)[getItems(uedemand_build, 3)]
       out <- mbind(out, uedemand_build)
