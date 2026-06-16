@@ -442,22 +442,34 @@ walk(cdrVars, showLinePlots, data = data)
 
 ## Cumulated Emissions
 ```{r}
-# calculate cumulated CO2 and GHG emissions relative to 2020
+# calculate cumulated CO2 and GHG emissions since 2020 (incl. the 2020 emissions)
 dCumul <- data %>%
   filter(grepl("^Emi.*Cumulated", variable))
 dCumul <- dCumul %>%
+  rename(cum.value = value) %>%
+  mutate(variable.noncumul = sub("\\|Cumulated", "", variable)) %>%
+  # cum.value2020: cumulated value in 2020
   left_join(
-    dCumul %>% filter(period == 2020),
-    by = c("model", "scenario", "region", "variable", "unit"),
-    suffix = c("", "2020")) %>%
-  mutate(value = (value - value2020) / 1000,
-         unit = "Gt CO2")
+    dCumul %>%
+      filter(period == 2020) %>%
+      select(model, scenario, region, variable, unit, cum.value2020 = value),
+    by = c("model", "scenario", "region", "variable", "unit")) %>%
+  # value2020: 2020 emissions of the corresponding non-cumulated variable
+  left_join(
+    data %>%
+      filter(period == 2020) %>%
+      mutate(variable.noncumul = as.character(variable)) %>%
+      select(model, scenario, region, variable.noncumul, value2020 = value),
+    by = c("model", "scenario", "region", "variable.noncumul")) %>%
+  mutate(value = (cum.value - cum.value2020 + value2020) / 1000,
+         unit = "Gt CO2") %>%
+  select(model, scenario, region, variable, unit, period, value)
 
 # define lines for usual CO2 budgets of standard REMIND runs
 pkBudg <- tribble(
       ~region, ~period, ~value, ~variable,                      
-      "World", 2020,    500,    "|target|500 Gt from",
       "World", 2020,    650,    "|target|650 Gt from",
+      "World", 2020,    750,    "|target|750 Gt from",
       "World", 2020,    1000,   "|target|1000 Gt from",
   )
 ```

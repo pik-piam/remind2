@@ -32,7 +32,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   ####### conversion factors ##########
   TWa_2_EJ <- 3600 * 24 * 365 / 1e6
   s_tBC_2_TWa <- readGDX(gdx, name = "sm_tBC_2_TWa", format = "first_found", react = "silent") # Biochar calorific value
-  if (is.null(s_tBC_2_TWa)){ 
+  if (is.null(s_tBC_2_TWa)){
     s_tBC_2_TWa <- 1          # necessary to avoid division by zero for versions preceding biochar introduction; to be removed with v360 (TD)
   }
 
@@ -42,6 +42,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   teReNoBio <- readGDX(gdx, "teReNoBio") # renewable technologies except for biomass
   teCCS     <- readGDX(gdx, "teCCS") # technologies with carbon capture
   teNoCCS   <- readGDX(gdx, "teNoCCS") # technologies without CCS
+  teccsinje <- readGDX(gdx, "teccsinje", react = "silent") # CCS injection technologies
   entyPe    <- readGDX(gdx, "entyPe") # primary energy types (PE)
   entySe    <- readGDX(gdx, "entySe") # secondary energy types
   peFos     <- readGDX(gdx, "peFos") # primary energy fossil fuels
@@ -54,12 +55,17 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   seGas <- intersect(c("segafos", "segabio", "segasyn"), entySe)
   seSol <- intersect(c("sesofos", "sesobio"), entySe)
 
+  # necessary to avoid errors for versions having only a single CCS injection technology; to be removed with release 3.6.0
+  if(is.null(teccsinje)){
+    teccsinje <- "ccsinje"
+  }
+
   ## variables
   prodSE <- readGDX(gdx, name = "vm_prodSe", field = "l", restore_zeros = FALSE) * TWa_2_EJ
   prodSE <- mselect(prodSE, all_enty1 = entySe)
   storLoss <- readGDX(gdx, name = "v32_storloss", # total energy loss from storage for a given technology [TWa]
     field = "l", restore_zeros = TRUE) * TWa_2_EJ
-    
+
   # calculate minimal temporal resolution #####
   y <- Reduce(intersect, list(getYears(prodSE), getYears(storLoss)))
 
@@ -226,19 +232,20 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
 
   ## Heat
   out <- mbind(out,
-    get_prodSE(entyPe, "sehe",                   name = "SE|Heat (EJ/yr)"),
-    get_prodSE( peBio, "sehe",                   name = "SE|Heat|+|Biomass (EJ/yr)"),
-    get_prodSE("pecoal", "sehe",                 name = "SE|Heat|+|Coal (EJ/yr)"),
-    get_prodSE("pegas", "sehe",                  name = "SE|Heat|+|Gas (EJ/yr)"),
-    get_prodSE("pegeo", "sehe",                  name = "SE|Heat|+|Geothermal (EJ/yr)"), # same as SE|Heat|Electricity|Heat Pump
-    get_prodSE("pegeo", "sehe",                  name = "SE|Heat|Electricity|Heat Pump (EJ/yr)"),
-    get_prodSE("pesol", "sehe",                  name = "SE|Heat|+|Solar (EJ/yr)"),
-    get_prodSE( entyPe, "sehe", te = teChp,      name = "SE|Heat|Combined Heat and Power (EJ/yr)"),
-    get_prodSE("pecoal", "sehe", te = "coalchp", name = "SE|Heat|Coal|Combined Heat and Power (EJ/yr)"),
-    get_prodSE("pegas", "sehe", te = "gaschp",   name = "SE|Heat|Gas|Combined Heat and Power (EJ/yr)"),
-    get_prodSE( peBio, "sehe", te = "biochp",    name = "SE|Heat|Biomass|+|Combined Heat and Power (EJ/yr)"),
-    get_prodSE( peBio, "sehe", te = "biohp",     name = "SE|Heat|Biomass|+|Heat (EJ/yr)"),
-    get_prodSE( peBio, "sehe", te = c("biopyrchp", "biopyrhe"),    name = "SE|Heat|Biomass|+|Pyrolysis (EJ/yr)")
+    get_prodSE(entyPe,    "sehe",                 name = "SE|Heat (EJ/yr)"),
+    get_prodSE(peBio,     "sehe",                 name = "SE|Heat|+|Biomass (EJ/yr)"),
+    get_prodSE("pecoal",  "sehe",                 name = "SE|Heat|+|Coal (EJ/yr)"),
+    get_prodSE("pegas",   "sehe",                 name = "SE|Heat|+|Gas (EJ/yr)"),
+    get_prodSE("pegeo",   "sehe",                 name = "SE|Heat|+|Geothermal (EJ/yr)"), # same as SE|Heat|Electricity|Heat Pump
+    get_prodSE("pegeo",   "sehe",                 name = "SE|Heat|Electricity|Heat Pump (EJ/yr)"), # same as SE|Heat|+|Geothermal
+    get_prodSE("pesol",   "sehe",                 name = "SE|Heat|+|Solar (EJ/yr)"),
+    get_prodSE(peFos,     "sehe",                 name = "SE|Heat|Fossil (EJ/yr)"),
+    get_prodSE(entyPe,    "sehe", te = teChp,     name = "SE|Heat|Combined Heat and Power (EJ/yr)"),
+    get_prodSE("pecoal",  "sehe", te = "coalchp", name = "SE|Heat|Coal|Combined Heat and Power (EJ/yr)"),
+    get_prodSE("pegas",   "sehe", te = "gaschp",  name = "SE|Heat|Gas|Combined Heat and Power (EJ/yr)"),
+    get_prodSE(peBio,     "sehe", te = "biochp",  name = "SE|Heat|Biomass|+|Combined Heat and Power (EJ/yr)"),
+    get_prodSE(peBio,     "sehe", te = "biohp",   name = "SE|Heat|Biomass|+|Heat (EJ/yr)"),
+    get_prodSE(peBio,     "sehe", te = c("biopyrchp", "biopyrhe"),    name = "SE|Heat|Biomass|+|Pyrolysis (EJ/yr)")
   )
 
   ## Hydrogen
@@ -275,7 +282,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_prodSE("pebios", seLiq,                 name = "SE|Liquids|Biomass|Conventional Ethanol (EJ/yr)"),
     get_prodSE(peBio, seLiq, "bioftcrec",       name = "SE|Liquids|Biomass|BioFTR|w/ CC (EJ/yr)"),
     get_prodSE(peBio, seLiq, "bioftrec",        name = "SE|Liquids|Biomass|BioFTR|w/o CC (EJ/yr)"),
-    get_prodSE(peBio, seLiq, "biopyrliq",       name = "SE|Liquids|Biomass|BioFTR|w/ pyrolysis (EJ/yr)"), 
+    get_prodSE(peBio, seLiq, "biopyrliq",       name = "SE|Liquids|Biomass|BioFTR|w/ pyrolysis (EJ/yr)"),
     get_prodSE(peBio, seLiq, "biodiesel",       name = "SE|Liquids|Biomass|Biodiesel (EJ/yr)"),
     get_prodSE(peBio, seLiq, "bioethl",         name = "SE|Liquids|Biomass|Lignocellulosic Ethanol (EJ/yr)"),
     get_prodSE("pebioil", seLiq,                name = "SE|Liquids|Biomass|Non-Cellulosic|+|Oil-based (EJ/yr)"),
@@ -353,6 +360,10 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   vm_demFeSector <- readGDX(gdx, "vm_demFeSector", field = "l", restore_zeros = FALSE)[, y, ] * TWa_2_EJ
   vm_demFeSector[is.na(vm_demFeSector)] <- 0
 
+  ## Ensure backwards compatibility for release version 3.6.0 (can be removed with 3.7.0)
+  getNames(vm_demFeSector, dim = 3) <- tolower(getNames(vm_demFeSector, dim = 3))
+  ## End backwards compatibility
+
   # SE demand
   vm_demSe <- readGDX(gdx, "vm_demSe", field = "l", restore_zeros = FALSE)[, y, ] * TWa_2_EJ
   # SE demand of specific energy system technologies
@@ -392,7 +403,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   teprodCoupleSeel <- getNames(mselect(prodCouple_tmp, all_enty2 = "seel"), dim = 3)
   CoeffOwnConsSeel <- prodCouple_tmp[, , teprodCoupleSeel]
   CoeffOwnConsSeel[CoeffOwnConsSeel > 0] <- 0
-  CoeffOwnConsSeel_woCCS <- CoeffOwnConsSeel[, , "ccsinje", invert = TRUE]
+  CoeffOwnConsSeel_woCCS <- CoeffOwnConsSeel[, , teccsinje, invert = TRUE]
 
   # FE and SE production that has own consumption of electricity
   # calculate prodSE back to TWa (was in EJ before), but prod couple coefficient is defined in TWa(input)/Twa(output)
@@ -401,7 +412,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   out <- mbind(out, setNames(
     -TWa_2_EJ *
       (dimSums(CoeffOwnConsSeel_woCCS * prodOwnCons[, , getNames(CoeffOwnConsSeel_woCCS, dim = 3)], dim = 3, na.rm = TRUE) +
-        dimSums(CoeffOwnConsSeel[, , "ccsinje"] * vm_co2CCS[, , "ccsinje"], dim = 3,  na.rm = TRUE)),
+        dimSums(CoeffOwnConsSeel[, , teccsinje] * vm_co2CCS[, , teccsinje], dim = 3,  na.rm = TRUE)),
     "SE|Input|Electricity|Self Consumption Energy System (EJ/yr)"))
 
   # electricity for central ground heat pumps
@@ -457,7 +468,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feelt", emi_sectors = "trans"), dim = 3) /
       mselect(pm_eta_conv, all_te = "tdelt"),
     "SE|Input|Electricity|Transport (EJ/yr)"),
-    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "CDR"), dim = 3) /
+    setNames(dimSums(mselect(vm_demFeSector, all_enty = "seel", all_enty1 = "feels", emi_sectors = "cdr"), dim = 3) /
       mselect(pm_eta_conv, all_te = "tdels"),
     "SE|Input|Electricity|CDR (EJ/yr)"),
     setNames(dimSums(mselect(vm_demSe, all_enty = "seel", all_enty1 = "seh2"), dim = 3),

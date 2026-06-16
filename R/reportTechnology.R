@@ -41,9 +41,14 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
   module2realisation <- readGDX(gdx, "module2realisation", react = "silent")
   tran_mod <- module2realisation[module2realisation$modules == "transport", 2]
 
-  CDR_mod <- module2realisation[module2realisation$modules == "CDR", 2]
+  ## Ensure backwards compatibility for release version 3.6.0 (can be removed with 3.7.0)
+  if ("CDR" %in% module2realisation$modules) {
+    CDR_mod <- module2realisation[module2realisation$modules == "CDR", 2]
+  } else {
+    CDR_mod <- module2realisation[module2realisation$modules == "carbonRemoval", 2]
+  }
 
-  sety       <- readGDX(gdx, c("entySe", "sety"), format = "first_found")
+  sety <- readGDX(gdx, c("entySe", "sety"), format = "first_found")
   te <- readGDX(gdx, "te")
 
   # calculate maximal temporal resolution ----
@@ -159,8 +164,14 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
   }
 
   if (CDR_mod != "off") {
-    cdrmap <- c("dac" = "DAC",
-                "ccsinje" = "CO2 Storage")
+    if('ccsinje' %in% te) {
+      cdrmap <- c("dac" = "DAC",
+                "ccsinje"  = "CO2 Storage")
+    } else {
+      cdrmap <- c("dac" = "DAC",
+                  "ccsinjeon"  = "CO2 Storage Onshore",
+                  "ccsinjeoff" = "CO2 Storage Offshore")
+    }
   } else {
     cdrmap <- c()
   }
@@ -232,7 +243,12 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
       # CDR technologies need special mapping
       # for global avgs we use CO2 flows as weights
       int2ext[[report_str("DAC", category, unit)]] <- report_str("DAC", unit = "Mt CO2/yr", predicate = "Carbon Management|Carbon Capture")
-      int2ext[[report_str("CO2 Storage", category, unit)]] <- report_str("Storage", unit = "Mt CO2/yr", predicate = "Carbon Management")
+      if('ccsinje' %in% te) {
+        int2ext[[report_str("CO2 Storage", category, unit)]] <- report_str("Storage", unit = "Mt CO2/yr", predicate = "Carbon Management")
+      } else {
+        int2ext[[report_str("CO2 Storage Onshore", category, unit)]]  <- report_str("Storage|Onshore",  unit = "Mt CO2/yr", predicate = "Carbon Management")
+        int2ext[[report_str("CO2 Storage Offshore", category, unit)]] <- report_str("Storage|Offshore", unit = "Mt CO2/yr", predicate = "Carbon Management")
+      }
     }
     return(int2ext)
   }

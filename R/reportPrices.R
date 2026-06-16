@@ -13,6 +13,8 @@
 #' t=c(seq(2005,2060,5),seq(2070,2110,10),2130,2150)
 #' @param gdx_ref a GDX object as created by readGDX, or the path to a gdx of the reference run.
 #' It is used to guarantee consistency for Moving Avg prices before cm_startyear
+#' @param extraData path to extra data files to be used in the reporting
+#' (might be needed when reportEmi is executed from within this function)
 #'
 #' @return MAgPIE object - contains the price variables
 #' @author Alois Dirnaichner, Felix Schreyer, David Klein, Renato Rodrigues, Falk Benke
@@ -33,7 +35,7 @@
 #' @export
 reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
                          t = c(seq(2005, 2060, 5), seq(2070, 2110, 10), 2130, 2150),
-                         gdx_ref = NULL) {
+                         gdx_ref = NULL, extraData = NULL) {
   ## bind to output object
   if (is.null(output)) {
     message("reportPrices executes reportPE ", appendLF = FALSE)
@@ -43,7 +45,7 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
     message("- reportFE ", appendLF = FALSE)
     output <- mbind(output, reportFE(gdx, regionSubsetList = regionSubsetList, t = t))
     message("- reportEmi ", appendLF = FALSE)
-    output <- mbind(output, reportEmi(gdx, output = output, regionSubsetList = regionSubsetList, t = t))
+    output <- mbind(output, reportEmi(gdx, output = output, regionSubsetList = regionSubsetList, t = t, extraData = extraData))
     message("- reportExtraction ", appendLF = FALSE)
     output <- mbind(output, reportExtraction(gdx, regionSubsetList = regionSubsetList, t = t))
     message("- reportMacroEconomy")
@@ -137,11 +139,11 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
 
 
   sector <- emi_sectors <- all_emiMkt <- NULL
+
   fe.entries <- entyFe2Sector %>%
     left_join(sector2emiMkt, by = "emi_sectors", relationship = "many-to-many") %>%
     rename(sector = emi_sectors, emiMkt = all_emiMkt) %>%
-    filter(sector != "CDR")
-
+    filter(!(sector %in% c("CDR", "cdr")))
 
   fe.entries.dot <- paste(fe.entries[, 1], fe.entries[, 2], fe.entries[, 3], sep = ".")
 
@@ -364,7 +366,7 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
         indst = "Industry",
         build = "Buildings",
         trans = "Transport",
-        CDR = "CDR"
+        cdr = "CDR"
       ),
       emiMkt = c(
         ETS = "ETS",
@@ -373,12 +375,26 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
       )
     )
 
+    ## Ensure backwards compatibility for release version 3.6.0 (can be removed with 3.7.0)
+
+    if ("CDR" %in% se.fe.sector.emiMkt$sector) {
+      varName[["sector"]] <- c(
+        indst = "Industry",
+        build = "Buildings",
+        trans = "Transport",
+        CDR = "CDR"
+      )
+    }
+    ## End backwards compatibility
+
     ## add rawdata price variables, calculated from marginals, to the reporting
     addVar <- function(input, var, namevector, fe, se, sector, emiMkt) { # function to add only variables if they were not saved already
       name <- paste0("Price|Final Energy|", paste(namevector, collapse = "|"), " (US$2017/GJ)")
       name <- gsub("||", "|", name, fixed = TRUE)
       name <- gsub("| (", " (", name, fixed = TRUE)
-      if (any(is.na(namevector))) warning("In reportPrices, addVar called with a NA value: ", name)
+      if (any(is.na(namevector))) {
+        stop("In reportPrices, addVar called with a NA value: ", name)
+      }
       if (name %in% getItems(input, 3)) {
         return(NULL)
       } else {
@@ -718,7 +734,7 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   fixedyears <- getYears(out)[getYears(out, as.integer = TRUE) < cm_startyear]
   if (!is.null(gdx_ref) && length(fixedyears) > 0) {
     message("reportPrices loads price for < cm_startyear from gdx_ref.")
-    priceRef <- try(reportPrices(gdx_ref, output = NULL, regionSubsetList = regionSubsetList, t = t))
+    priceRef <- try(reportPrices(gdx_ref, output = NULL, regionSubsetList = regionSubsetList, t = t, extraData = extraData))
     if (!inherits(priceRef, "try-error")) {
       joinedNamesRep <- intersect(getNames(out), getNames(priceRef))
       joinedRegions <- intersect(getItems(priceRef, dim = 1), getItems(out, dim = 1))

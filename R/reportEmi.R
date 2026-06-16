@@ -126,6 +126,11 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   vm_demPE <- readGDX(gdx, "vm_demPE", field = "l", restore_zeros = FALSE)[, t, ]
   # final energy demand (se2fe emissions factors applied to)
   vm_demFeSector <- readGDX(gdx, "vm_demFeSector", field = "l", restore_zeros = FALSE)[, t, ]
+
+  ## Ensure backwards compatibility for release version 3.6.0 (can be removed with 3.7.0)
+  getNames(vm_demFeSector, dim = 3) <- tolower(getNames(vm_demFeSector, dim = 3))
+  ## End backwards compatibility
+
   # set NA values to 0,
   vm_demFeSector[is.na(vm_demFeSector)] <- 0
   # FE demand per industry subsector
@@ -148,10 +153,6 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   pm_prodCouple <- readGDX(gdx, "pm_prodCouple", field = "l", restore_zeros = FALSE)
 
   ### Carbon management variables
-  # total captured CO2
-  vm_co2capture <- readGDX(gdx, c("vm_co2capture", "v_co2capture"), field = "l", restore_zeros = FALSE)[, t, ]
-  vm_co2capture <- magclass::matchDim(vm_co2capture, vm_co2eq, dim = 1)
-
   vm_emiCdr_co2 <- readGDX(gdx, "vm_emiCdr", field = "l", restore_zeros = FALSE)[, t, "co2"]
   vm_emiCdrTeDetail <- readGDX(gdx, c("vm_emiCdrTeDetail", "v33_emi"), field = "l", restore_zeros = FALSE, react = "silent")[, t, ]
 
@@ -168,6 +169,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # CO2 captured from CDR-related activities that does not come from the atmosphere
   vm_co2capture <- readGDX(gdx, c("vm_co2capture", "v_co2capture"), field = "l", restore_zeros = FALSE)[, t, ]
+  vm_co2capture <- dimSums(vm_co2capture) # backwards-comp: previously had multiple (irrelevant) dimensions in the third dimension with only one value
 
   vm_co2emi_cdrFE_beforeCapture <- readGDX(gdx, c("vm_co2emi_cdrFE_beforeCapture", "v33_co2emi_non_atm_gas"), field = "l", restore_zeros = FALSE, react = "silent")[, t, ]
   v33_co2emi_non_atm_calcination <- readGDX(gdx, "v33_co2emi_non_atm_calcination", field = "l", restore_zeros = FALSE, react = "silent")[, t, ]
@@ -207,7 +209,13 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   v_co2capturevalve <- readGDX(gdx, "v_co2capturevalve", field = "l", restore_zeros = FALSE)[, t, ]
 
   # maximum annual CO2 storage potential assumed
-  max_geolStorage <- readGDX(gdx, "vm_co2CCS", field = "up", restore_zeros = FALSE)[, t, "ccsinje.1"] # CO2 captured per industry subsector
+  # collapseDim removes 'cco2', 'ico2', and 'rlf' dimensions and keeps only 'ccsinjeon/ccsinjeoff'
+  # in some cases there are more technologies and more grades. Thus, explicitly pick ccsinje* techs and their only grade '1'
+  max_geolStorage <- readGDX(gdx, "vm_co2CCS", field = "up", restore_zeros = FALSE)
+  if ("ccsinjeon" %in% getItems(max_geolStorage, dim = "all_te")) {
+    max_geolStorage <- max_geolStorage[,,c("ccsinjeon","ccsinjeoff"), pmatch = TRUE][,,"1"]
+  }
+  max_geolStorage <- collapseDim(max_geolStorage, keepdim = "all_te")
 
   ## Read CO2 captured per industry subsector ----
   # NOTE: The parameter pm_IndstCO2Captured was calculated without taking into
@@ -421,7 +429,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
 
   # compute share of stored carbon from total captured carbon
-  p_share_CCS <- dimSums(vm_co2CCS, dim = 3, na.rm = TRUE) / dimSums(vm_co2capture, dim = 3)
+  p_share_CCS <- dimSums(vm_co2CCS, dim = 3, na.rm = TRUE) / vm_co2capture
   p_share_CCS[is.infinite(p_share_CCS)] <- 0
   p_share_CCS[is.na(p_share_CCS)] <- 0
 
@@ -715,9 +723,14 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     all_enty1 = getItems(pm_emifac.co2.fe, dim = "all_enty1", full = TRUE)
   ) %>%
     left_join(entyFe2Sector, by = "all_enty1", relationship = "many-to-many") %>%
-    left_join(sector2emiMkt, by = "emi_sectors", relationship = "many-to-many") %>%
-    mutate(name = paste(all_enty, all_enty1, emi_sectors, all_emiMkt, sep = "."))
+    left_join(sector2emiMkt, by = "emi_sectors", relationship = "many-to-many")
 
+  ## Ensure backwards compatibility for release version 3.6.0 (can be removed with 3.7.0)
+  emi.map.fe[,"emi_sectors"] <- tolower(emi.map.fe[,"emi_sectors"])
+  ## End backwards compatibility
+
+  emi.map.fe <- emi.map.fe %>%
+    mutate(name = paste(all_enty, all_enty1, emi_sectors, all_emiMkt, sep = "."))
 
   # calculate captured CO2 per pe2se technology
   sel_pm_emifac_pe2seCCO2 <- if (getSets(pm_emifac)[[6]] == "emiAll") {
@@ -948,7 +961,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     ),
     # cdr energy requirement emissions: fe carrier emissions subtracting captured and stored emissions
     setNames(
-      (dimSums(EmiFeCarrier[, , "CDR"], dim = 3)
+      (dimSums(EmiFeCarrier[, , "cdr"], dim = 3)
       - sm_capture_rate_cdrmodule * dimSums(vm_co2emi_cdrFE_beforeCapture, dim = 3) * p_share_CCS)
       * GtC_2_MtCO2,
       "Emi|CO2|Energy|Demand|+|CDR Sector (Mt CO2/yr)"
@@ -1060,11 +1073,11 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     ),
     # CDR
     setNames(
-      (dimSums(mselect(EmiFeCarrier, all_enty1 = c("fedie"), emi_sectors = "CDR"), dim = 3)) * GtC_2_MtCO2,
+      (dimSums(mselect(EmiFeCarrier, all_enty1 = c("fedie"), emi_sectors = "cdr"), dim = 3)) * GtC_2_MtCO2,
       "Emi|CO2|Energy|Demand|CDR Sector|+|Liquids (Mt CO2/yr)"
     ),
     setNames(
-      (dimSums(mselect(EmiFeCarrier, all_enty1 = c("fegas"), emi_sectors = "CDR"), dim = 3)
+      (dimSums(mselect(EmiFeCarrier, all_enty1 = c("fegas"), emi_sectors = "cdr"), dim = 3)
       - sm_capture_rate_cdrmodule * dimSums(vm_co2emi_cdrFE_beforeCapture, dim = 3) * p_share_CCS) * GtC_2_MtCO2,
       "Emi|CO2|Energy|Demand|CDR Sector|+|Gases (Mt CO2/yr)"
     )
@@ -1782,7 +1795,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   )
 
 
-  vm_demFeSector_CDR <- mselect(mselect(vm_demFeSector_woNonEn, all_enty1 = "fegas"), emi_sectors = "CDR")
+  vm_demFeSector_CDR <- mselect(mselect(vm_demFeSector_woNonEn, all_enty1 = "fegas"), emi_sectors = "cdr")
   vm_demFeSector_CDR_totalfegas <- dimSums(vm_demFeSector_CDR, dim = 3)
   # replace zeros by -1 to avoid division by zero if no fegas is used
   vm_demFeSector_CDR_totalfegas[vm_demFeSector_CDR_totalfegas == 0] <- -1
@@ -2230,18 +2243,48 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     )
   )
 
+  if ("ccsinjeon" %in% getItems(vm_co2CCS, dim = "all_te")) {
+    out <- mbind(
+      out,
+      # sub-categories of underground carbon storage
+      setNames(
+        dimSums(vm_co2CCS[, , "ccsinjeon"], dim = 3, na.rm = TRUE) * GtC_2_MtCO2,
+        "Carbon Management|Storage|++|Onshore (Mt CO2/yr)"
+      ),
+      setNames(
+        dimSums(vm_co2CCS[, , "ccsinjeoff"], dim = 3, na.rm = TRUE) * GtC_2_MtCO2,
+        "Carbon Management|Storage|++|Offshore (Mt CO2/yr)"
+      )
+    )
+  }
+
   # share of stored carbon from total captured carbon
+
   out <- mbind(
     out,
     setNames(
-      p_share_CCS * 100,
+      dimSums(vm_co2CCS, dim = 3, na.rm = TRUE) / vm_co2capture * 100,
       "Carbon Management|Share of Stored CO2 from Captured CO2 (%)"
-    )
+    ) %>% ifelse(is.finite(.), ., 0)
   )
+
+  if ("ccsinjeon" %in% getItems(vm_co2CCS, dim = "all_te")) {
+    out <- mbind(
+      out,
+      setNames(
+        dimSums(vm_co2CCS[, , "ccsinjeon"], dim = 3, na.rm = TRUE) / vm_co2capture * 100,
+        "Carbon Management|Share of Stored CO2 from Captured CO2|Onshore (%)"
+      ) %>% ifelse(is.finite(.), ., 0),
+      setNames(
+        dimSums(vm_co2CCS[, , "ccsinjeoff"], dim = 3, na.rm = TRUE) / vm_co2capture * 100,
+        "Carbon Management|Share of Stored CO2 from Captured CO2|Offshore (%)"
+      ) %>% ifelse(is.finite(.), ., 0)
+    )
+  }
 
   ### 3.5 Carbon storage ----
 
-  # maximum annual carbon storage and share that is used
+  # maximum annual carbon storage potential
   out <- mbind(
     out,
     setNames(
@@ -2249,6 +2292,20 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
       "Carbon Management|Storage|Maximum annual CO2 storage potential (Mt CO2/yr)"
     )
   )
+
+  if ("ccsinjeon" %in% getNames(max_geolStorage, dim = "all_te")) {
+    out <- mbind(
+      out,
+      setNames(
+        max_geolStorage[, , "ccsinjeon"] * GtC_2_MtCO2,
+        "Carbon Management|Storage|Maximum annual CO2 storage potential|Onshore (Mt CO2/yr)"
+      ),
+      setNames(
+        max_geolStorage[, , "ccsinjeoff"] * GtC_2_MtCO2,
+        "Carbon Management|Storage|Maximum annual CO2 storage potential|Offshore (Mt CO2/yr)"
+      )
+    )
+  }
 
   # share of annual storage potential used
   out <- mbind(
@@ -2260,6 +2317,21 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
       ifelse(is.finite(.), ., 0)
   )
 
+  if ("ccsinjeon" %in% getNames(max_geolStorage, dim = "all_te")) {
+    out <- mbind(
+      out,
+      setNames(
+        dimSums(vm_co2CCS[, , "ccsinjeon"], dim = 3, na.rm = TRUE) / max_geolStorage[, , "ccsinjeon"] * 100,
+        "Carbon Management|Storage|Share of annual potential used|Onshore (%)"
+      ) %>%
+        ifelse(is.finite(.), ., 0),
+      setNames(
+        dimSums(vm_co2CCS[, , "ccsinjeoff"], dim = 3, na.rm = TRUE) / max_geolStorage[, , "ccsinjeoff"] * 100,
+        "Carbon Management|Storage|Share of annual potential used|Offshore (%)"
+      ) %>%
+        ifelse(is.finite(.), ., 0)
+    )
+  }
 
   # calculate carbon storage variables from selected Carbon Management|Carbon Capture variables
   vars <- getItems(out, dim = 3)
@@ -2306,12 +2378,11 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     emi_Biochar <- dimSums(mselect(EmiPe2Se, all_enty1 = "sebiochar"), dim = 3)
   }
 
-
   out <- mbind(
     out,
     # total negative land-use change emissions
     setNames(
-      EmiCDR.LUC,
+      out[, , "Emi|CO2|Land-Use Change|Negative|+|Intentional (Mt CO2/yr)"],
       "Emi|CO2|CDR|+|Land-Use Change (Mt CO2/yr)"
     ),
     # total BECCS (pe2se + bio FE w CCS in industry and CDR demand sector + waste incineration BECCS)
@@ -2680,155 +2751,78 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   } else {
     mselect(vm_emiTeDetailMkt, all_enty2 = "n2o")
   }
-
   # CH4 and N2O Emissions by sector in native MtCH4 and kt N2O units
-  # Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
-  cm_APscen <- try(readGDX(gdx, "cm_APscen", react = "error"), silent = TRUE)
+  out <- mbind(
+    out,
 
-  ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if (inherits(cm_APscen, "try-error")) {
-    out <- mbind(
-      out,
+    # CH4 Emissions
+    # total CH4 emissions
+    setNames(
+      dimSums(mselect(EmiMAC, gas = "ch4"), dim = 3)
+      + dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3),
+      "Emi|CH4 (Mt CH4/yr)"
+    ),
+    # extraction CH4 emissions in MtCH4
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "extraction", gas = "ch4"), dim = 3),
+      "Emi|CH4|+|Extraction (Mt CH4/yr)"
+    ),
+    # Agriculture CH4 emissions in MtCH4
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "agriculture", gas = "ch4"), dim = 3),
+      "Emi|CH4|+|Agriculture (Mt CH4/yr)"
+    ),
+    # waste CH4 emissions in MtCH4
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "waste", gas = "ch4"), dim = 3),
+      "Emi|CH4|+|Waste (Mt CH4/yr)"
+    ),
+    # land-use change CH4 emissions in MtCH4
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "lulucf", gas = "ch4"), dim = 3),
+      "Emi|CH4|+|Land-Use Change (Mt CH4/yr)"
+    ),
+    # CH4 emissions from energy system transformations in MtCH4
+    setNames(
+      dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3),
+      "Emi|CH4|+|Energy Supply (Mt CH4/yr)"
+    ),
 
-      # CH4 Emissions
-      # total CH4 emissions
-      setNames(
-        dimSums(mselect(EmiMAC, gas = "ch4"), dim = 3)
-        + dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3),
-        "Emi|CH4 (Mt CH4/yr)"
-      ),
-      # extraction CH4 emissions in MtCH4
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "extraction", gas = "ch4"), dim = 3),
-        "Emi|CH4|+|Extraction (Mt CH4/yr)"
-      ),
-      # Agriculture CH4 emissions in MtCH4
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "Agriculture", gas = "ch4"), dim = 3),
-        "Emi|CH4|+|Agriculture (Mt CH4/yr)"
-      ),
-      # waste CH4 emissions in MtCH4
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "waste", gas = "ch4"), dim = 3),
-        "Emi|CH4|+|Waste (Mt CH4/yr)"
-      ),
-      # land-use change CH4 emissions in MtCH4
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "lulucf", gas = "ch4"), dim = 3),
-        "Emi|CH4|+|Land-Use Change (Mt CH4/yr)"
-      ),
-      # CH4 emissions from energy system transformations in MtCH4
-      setNames(
-        dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3),
-        "Emi|CH4|+|Energy Supply (Mt CH4/yr)"
-      ),
+    # CH4 Agriculture sub-categories
+    # Agriculture Rice CH4 emissions in MtCH4
+    setNames(
+      mselect(EmiMAC, macsector = "ch4rice"),
+      "Emi|CH4|Agriculture|+|Rice (Mt CH4/yr)"
+    ),
+    # Agriculture Enteric fermentation CH4 emissions in MtCH4
+    setNames(
+      mselect(EmiMAC, macsector = "ch4animals"),
+      "Emi|CH4|Agriculture|+|Enteric fermentation (Mt CH4/yr)"
+    ),
+    # Agriculture Animal waste management CH4 emissions in MtCH4
+    setNames(
+      mselect(EmiMAC, macsector = "ch4anmlwst"),
+      "Emi|CH4|Agriculture|+|Animal waste management (Mt CH4/yr)"
+    ),
+    # Agriculture Waste Burning CH4 emissions in MtCH4
+    setNames(
+      mselect(EmiMAC, macsector = "ch4agwaste"),
+      "Emi|CH4|Agriculture|+|Waste Burning (Mt CH4/yr)"
+    ),
 
-      # CH4 Agriculture sub-categories
-      # Agriculture Rice CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4rice"),
-        "Emi|CH4|Agriculture|+|Rice (Mt CH4/yr)"
-      ),
-      # Agriculture Enteric fermentation CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4animals"),
-        "Emi|CH4|Agriculture|+|Enteric fermentation (Mt CH4/yr)"
-      ),
-      # Agriculture Animal waste management CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4anmlwst"),
-        "Emi|CH4|Agriculture|+|Animal waste management (Mt CH4/yr)"
-      ),
-      # Agriculture Waste Burning CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4agwaste"),
-        "Emi|CH4|Agriculture|+|Waste Burning (Mt CH4/yr)"
-      ),
-
-      # CH4 land-use change sub-categories
-      # land-use change Forest Burning CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4forest"),
-        "Emi|CH4|Land-Use Change|+|Forest Burning (Mt CH4/yr)"
-      ),
-      # land-use change Savanna Burning CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4savan"),
-        "Emi|CH4|Land-Use Change|+|Savanna Burning (Mt CH4/yr)"
-      )
+    # CH4 land-use change sub-categories
+    # land-use change Forest Burning CH4 emissions in MtCH4
+    setNames(
+      mselect(EmiMAC, macsector = "ch4forest"),
+      "Emi|CH4|Land-Use Change|+|Forest Burning (Mt CH4/yr)"
+    ),
+    # land-use change Savanna Burning CH4 emissions in MtCH4
+    setNames(
+      mselect(EmiMAC, macsector = "ch4savan"),
+      "Emi|CH4|Land-Use Change|+|Savanna Burning (Mt CH4/yr)"
     )
-  } else {
-    out <- mbind(
-      out,
+  )
 
-      # CH4 Emissions
-      # total CH4 emissions
-      setNames(
-        dimSums(mselect(EmiMAC, gas = "ch4"), dim = 3)
-        + dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3),
-        "Emi|CH4 (Mt CH4/yr)"
-      ),
-      # extraction CH4 emissions in MtCH4
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "extraction", gas = "ch4"), dim = 3),
-        "Emi|CH4|+|Extraction (Mt CH4/yr)"
-      ),
-      # Agriculture CH4 emissions in MtCH4
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "agriculture", gas = "ch4"), dim = 3),
-        "Emi|CH4|+|Agriculture (Mt CH4/yr)"
-      ),
-      # waste CH4 emissions in MtCH4
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "waste", gas = "ch4"), dim = 3),
-        "Emi|CH4|+|Waste (Mt CH4/yr)"
-      ),
-      # land-use change CH4 emissions in MtCH4
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "lulucf", gas = "ch4"), dim = 3),
-        "Emi|CH4|+|Land-Use Change (Mt CH4/yr)"
-      ),
-      # CH4 emissions from energy system transformations in MtCH4
-      setNames(
-        dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3),
-        "Emi|CH4|+|Energy Supply (Mt CH4/yr)"
-      ),
-
-      # CH4 Agriculture sub-categories
-      # Agriculture Rice CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4rice"),
-        "Emi|CH4|Agriculture|+|Rice (Mt CH4/yr)"
-      ),
-      # Agriculture Enteric fermentation CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4animals"),
-        "Emi|CH4|Agriculture|+|Enteric fermentation (Mt CH4/yr)"
-      ),
-      # Agriculture Animal waste management CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4anmlwst"),
-        "Emi|CH4|Agriculture|+|Animal waste management (Mt CH4/yr)"
-      ),
-      # Agriculture Waste Burning CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4agwaste"),
-        "Emi|CH4|Agriculture|+|Waste Burning (Mt CH4/yr)"
-      ),
-
-      # CH4 land-use change sub-categories
-      # land-use change Forest Burning CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4forest"),
-        "Emi|CH4|Land-Use Change|+|Forest Burning (Mt CH4/yr)"
-      ),
-      # land-use change Savanna Burning CH4 emissions in MtCH4
-      setNames(
-        mselect(EmiMAC, macsector = "ch4savan"),
-        "Emi|CH4|Land-Use Change|+|Savanna Burning (Mt CH4/yr)"
-      )
-    )
-  }
 
   if ("ch4peatland" %in% mac.map$all_enty) {
     out <- mbind(
@@ -2841,185 +2835,93 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     )
   }
 
-  # Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
-  ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if (inherits(cm_APscen, "try-error")) {
-    out <- mbind(
-      out,
-      # N2O Emissions
-      # total N2O emissions
-      setNames(
-        (dimSums(mselect(EmiMAC, gas = "n2o"), dim = 3)
-        + dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3)) * MtN2_to_ktN2O,
-        "Emi|N2O (kt N2O/yr)"
-      ),
-      # agriculture N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "Agriculture", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Agriculture (kt N2O/yr)"
-      ),
-      # land-use change N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "lulucf", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Land-Use Change (kt N2O/yr)"
-      ),
-      # Waste N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "waste", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Waste (kt N2O/yr)"
-      ),
-      # Transport N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "trans", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Transport (kt N2O/yr)"
-      ),
-      # Industry N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "indst", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Industry (kt N2O/yr)"
-      ),
-      # N2O emissions from energy system transformations in kt N2O
-      setNames(
-        dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Energy Supply (kt N2O/yr)"
-      ),
-      # N2O agricultural sub-categories
-      # Agriculture Inorganic Fertilizer N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2ofertin") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Inorganic Fertilizers (kt N2O/yr)"
-      ),
-      # Agriculture Decay of Crop Residues N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2ofertcr") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Decay of Crop Residues (kt N2O/yr)"
-      ),
-      # Agriculture Soil Organic Matter Loss N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2ofertsom") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Soil Organic Matter Loss (kt N2O/yr)"
-      ),
-      # Agriculture Manure applied to Croplands N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oanwstc") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Manure applied to Croplands (kt N2O/yr)"
-      ),
-      # Agriculture Animal Waste Management N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oanwstm") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Animal Waste Management (kt N2O/yr)"
-      ),
-      # Agriculture Pasture N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oanwstp") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Pasture (kt N2O/yr)"
-      ),
-      # Agriculture Burning of Crop Residues N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oagwaste") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Waste Burning (kt N2O/yr)"
-      ),
-      # N2O land-use change sub-categories
-      # land-use change Forest Burning N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oforest") * MtN2_to_ktN2O,
-        "Emi|N2O|Land-Use Change|+|Forest Burning (kt N2O/yr)"
-      ),
-      # land-use change Savanna Burning N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2osavan") * MtN2_to_ktN2O,
-        "Emi|N2O|Land-Use Change|+|Savanna Burning (kt N2O/yr)"
-      )
+  out <- mbind(
+    out,
+    # N2O Emissions
+    # total N2O emissions
+    setNames(
+      (dimSums(mselect(EmiMAC, gas = "n2o"), dim = 3)
+      + dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3)) * MtN2_to_ktN2O,
+      "Emi|N2O (kt N2O/yr)"
+    ),
+    # agriculture N2O emissions in kt N2O
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "agriculture", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
+      "Emi|N2O|+|Agriculture (kt N2O/yr)"
+    ),
+    # land-use change N2O emissions in kt N2O
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "lulucf", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
+      "Emi|N2O|+|Land-Use Change (kt N2O/yr)"
+    ),
+    # Waste N2O emissions in kt N2O
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "waste", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
+      "Emi|N2O|+|Waste (kt N2O/yr)"
+    ),
+    # Transport N2O emissions in kt N2O
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "trans", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
+      "Emi|N2O|+|Transport (kt N2O/yr)"
+    ),
+    # Industry N2O emissions in kt N2O
+    setNames(
+      dimSums(mselect(EmiMAC, sector = "indst", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
+      "Emi|N2O|+|Industry (kt N2O/yr)"
+    ),
+    # N2O emissions from energy system transformations in kt N2O
+    setNames(
+      dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3) * MtN2_to_ktN2O,
+      "Emi|N2O|+|Energy Supply (kt N2O/yr)"
+    ),
+    # N2O agricultural sub-categories
+    # Agriculture Inorganic Fertilizer N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2ofertin") * MtN2_to_ktN2O,
+      "Emi|N2O|Agriculture|+|Inorganic Fertilizers (kt N2O/yr)"
+    ),
+    # Agriculture Decay of Crop Residues N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2ofertcr") * MtN2_to_ktN2O,
+      "Emi|N2O|Agriculture|+|Decay of Crop Residues (kt N2O/yr)"
+    ),
+    # Agriculture Soil Organic Matter Loss N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2ofertsom") * MtN2_to_ktN2O,
+      "Emi|N2O|Agriculture|+|Soil Organic Matter Loss (kt N2O/yr)"
+    ),
+    # Agriculture Manure applied to Croplands N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2oanwstc") * MtN2_to_ktN2O,
+      "Emi|N2O|Agriculture|+|Manure applied to Croplands (kt N2O/yr)"
+    ),
+    # Agriculture Animal Waste Management N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2oanwstm") * MtN2_to_ktN2O,
+      "Emi|N2O|Agriculture|+|Animal Waste Management (kt N2O/yr)"
+    ),
+    # Agriculture Pasture N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2oanwstp") * MtN2_to_ktN2O,
+      "Emi|N2O|Agriculture|+|Pasture (kt N2O/yr)"
+    ),
+    # Agriculture Burning of Crop Residues N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2oagwaste") * MtN2_to_ktN2O,
+      "Emi|N2O|Agriculture|+|Waste Burning (kt N2O/yr)"
+    ),
+    # N2O land-use change sub-categories
+    # land-use change Forest Burning N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2oforest") * MtN2_to_ktN2O,
+      "Emi|N2O|Land-Use Change|+|Forest Burning (kt N2O/yr)"
+    ),
+    # land-use change Savanna Burning N2O emissions in kt N2O
+    setNames(
+      mselect(EmiMAC, macsector = "n2osavan") * MtN2_to_ktN2O,
+      "Emi|N2O|Land-Use Change|+|Savanna Burning (kt N2O/yr)"
     )
-  } else {
-    out <- mbind(
-      out,
-      # N2O Emissions
-      # total N2O emissions
-      setNames(
-        (dimSums(mselect(EmiMAC, gas = "n2o"), dim = 3)
-        + dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3)) * MtN2_to_ktN2O,
-        "Emi|N2O (kt N2O/yr)"
-      ),
-      # agriculture N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "agriculture", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Agriculture (kt N2O/yr)"
-      ),
-      # land-use change N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "lulucf", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Land-Use Change (kt N2O/yr)"
-      ),
-      # Waste N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "waste", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Waste (kt N2O/yr)"
-      ),
-      # Transport N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "trans", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Transport (kt N2O/yr)"
-      ),
-      # Industry N2O emissions in kt N2O
-      setNames(
-        dimSums(mselect(EmiMAC, sector = "indst", gas = "n2o"), dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Industry (kt N2O/yr)"
-      ),
-      # N2O emissions from energy system transformations in kt N2O
-      setNames(
-        dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3) * MtN2_to_ktN2O,
-        "Emi|N2O|+|Energy Supply (kt N2O/yr)"
-      ),
-      # N2O agricultural sub-categories
-      # Agriculture Inorganic Fertilizer N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2ofertin") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Inorganic Fertilizers (kt N2O/yr)"
-      ),
-      # Agriculture Decay of Crop Residues N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2ofertcr") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Decay of Crop Residues (kt N2O/yr)"
-      ),
-      # Agriculture Soil Organic Matter Loss N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2ofertsom") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Soil Organic Matter Loss (kt N2O/yr)"
-      ),
-      # Agriculture Manure applied to Croplands N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oanwstc") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Manure applied to Croplands (kt N2O/yr)"
-      ),
-      # Agriculture Animal Waste Management N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oanwstm") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Animal Waste Management (kt N2O/yr)"
-      ),
-      # Agriculture Pasture N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oanwstp") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Pasture (kt N2O/yr)"
-      ),
-      # Agriculture Burning of Crop Residues N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oagwaste") * MtN2_to_ktN2O,
-        "Emi|N2O|Agriculture|+|Waste Burning (kt N2O/yr)"
-      ),
-      # N2O land-use change sub-categories
-      # land-use change Forest Burning N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2oforest") * MtN2_to_ktN2O,
-        "Emi|N2O|Land-Use Change|+|Forest Burning (kt N2O/yr)"
-      ),
-      # land-use change Savanna Burning N2O emissions in kt N2O
-      setNames(
-        mselect(EmiMAC, macsector = "n2osavan") * MtN2_to_ktN2O,
-        "Emi|N2O|Land-Use Change|+|Savanna Burning (kt N2O/yr)"
-      )
-    )
-  }
+  )
 
   if ("n2opeatland" %in% mac.map$all_enty) {
     out <- mbind(
@@ -3040,136 +2942,69 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   EmiMACEq[, , "ch4"] <- EmiMAC[, , "ch4"] * sm_tgch4_2_pgc * GtC_2_MtCO2
   EmiMACEq[, , "n2o"] <- EmiMAC[, , "n2o"] * sm_tgn_2_pgc * GtC_2_MtCO2
 
-  # Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
-  ## Needed due to different capitalization of agriculture (new) and Agriculture (old)
-  if (inherits(cm_APscen, "try-error")) {
-    out <- mbind(
-      out,
+  out <- mbind(
+    out,
 
-      # CH4 Emissions
-      # extraction CH4 emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "extraction", gas = "ch4"), dim = 3),
-        "Emi|GHG|CH4|+|Extraction (Mt CO2eq/yr)"
-      ),
-      # agriculture CH4 emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "Agriculture", gas = "ch4"), dim = 3),
-        "Emi|GHG|CH4|+|Agriculture (Mt CO2eq/yr)"
-      ),
-      # waste CH4 emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "waste", gas = "ch4"), dim = 3),
-        "Emi|GHG|CH4|+|Waste (Mt CO2eq/yr)"
-      ),
-      # land-use change CH4 emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "lulucf", gas = "ch4"), dim = 3),
-        "Emi|GHG|CH4|+|Land-Use Change (Mt CO2eq/yr)"
-      ),
-      # CH4 emissions from energy system transformations in Mt CO2eq
-      setNames(
-        dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3) * sm_tgch4_2_pgc * GtC_2_MtCO2,
-        "Emi|GHG|CH4|+|Energy Supply (Mt CO2eq/yr)"
-      ),
+    # CH4 Emissions
+    # extraction CH4 emissions in Mt CO2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "extraction", gas = "ch4"), dim = 3),
+      "Emi|GHG|CH4|+|Extraction (Mt CO2eq/yr)"
+    ),
+    # agriculture CH4 emissions in Mt CO2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "agriculture", gas = "ch4"), dim = 3),
+      "Emi|GHG|CH4|+|Agriculture (Mt CO2eq/yr)"
+    ),
+    # waste CH4 emissions in Mt CO2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "waste", gas = "ch4"), dim = 3),
+      "Emi|GHG|CH4|+|Waste (Mt CO2eq/yr)"
+    ),
+    # land-use change CH4 emissions in Mt CO2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "lulucf", gas = "ch4"), dim = 3),
+      "Emi|GHG|CH4|+|Land-Use Change (Mt CO2eq/yr)"
+    ),
+    # CH4 emissions from energy system transformations in Mt CO2eq
+    setNames(
+      dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3) * sm_tgch4_2_pgc * GtC_2_MtCO2,
+      "Emi|GHG|CH4|+|Energy Supply (Mt CO2eq/yr)"
+    ),
 
-      # N2O Emissions
-      # agriculture N2O emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "Agriculture", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Agriculture (Mt CO2eq/yr)"
-      ),
-      # Waste N2O emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "waste", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Waste (Mt CO2eq/yr)"
-      ),
-      # land-use change N2O emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "lulucf", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Land-Use Change (Mt CO2eq/yr)"
-      ),
-      # Transport N2O emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "trans", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Transport (Mt CO2eq/yr)"
-      ),
-      # Industry N2O emissions in Mt Co2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "indst", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Industry (Mt CO2eq/yr)"
-      ),
-      # N2O emissions from energy system transformations in Mt CO2eq/yr
-      setNames(
-        dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3) * sm_tgn_2_pgc * GtC_2_MtCO2,
-        "Emi|GHG|N2O|+|Energy Supply (Mt CO2eq/yr)"
-      )
+
+    # N2O Emissions
+    # agriculture N2O emissions in Mt CO2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "agriculture", gas = "n2o"), dim = 3),
+      "Emi|GHG|N2O|+|Agriculture (Mt CO2eq/yr)"
+    ),
+    # Waste N2O emissions in Mt CO2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "waste", gas = "n2o"), dim = 3),
+      "Emi|GHG|N2O|+|Waste (Mt CO2eq/yr)"
+    ),
+    # land-use change N2O emissions in Mt CO2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "lulucf", gas = "n2o"), dim = 3),
+      "Emi|GHG|N2O|+|Land-Use Change (Mt CO2eq/yr)"
+    ),
+    # Transport N2O emissions in Mt CO2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "trans", gas = "n2o"), dim = 3),
+      "Emi|GHG|N2O|+|Transport (Mt CO2eq/yr)"
+    ),
+    # Industry N2O emissions in Mt Co2eq
+    setNames(
+      dimSums(mselect(EmiMACEq, sector = "indst", gas = "n2o"), dim = 3),
+      "Emi|GHG|N2O|+|Industry (Mt CO2eq/yr)"
+    ),
+    # N2O emissions from energy system transformations in Mt CO2eq/yr
+    setNames(
+      dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3) * sm_tgn_2_pgc * GtC_2_MtCO2,
+      "Emi|GHG|N2O|+|Energy Supply (Mt CO2eq/yr)"
     )
-  } else {
-    out <- mbind(
-      out,
-
-      # CH4 Emissions
-      # extraction CH4 emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "extraction", gas = "ch4"), dim = 3),
-        "Emi|GHG|CH4|+|Extraction (Mt CO2eq/yr)"
-      ),
-      # agriculture CH4 emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "agriculture", gas = "ch4"), dim = 3),
-        "Emi|GHG|CH4|+|Agriculture (Mt CO2eq/yr)"
-      ),
-      # waste CH4 emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "waste", gas = "ch4"), dim = 3),
-        "Emi|GHG|CH4|+|Waste (Mt CO2eq/yr)"
-      ),
-      # land-use change CH4 emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "lulucf", gas = "ch4"), dim = 3),
-        "Emi|GHG|CH4|+|Land-Use Change (Mt CO2eq/yr)"
-      ),
-      # CH4 emissions from energy system transformations in Mt CO2eq
-      setNames(
-        dimSums(sel_vm_emiTeDetailMkt_ch4, dim = 3) * sm_tgch4_2_pgc * GtC_2_MtCO2,
-        "Emi|GHG|CH4|+|Energy Supply (Mt CO2eq/yr)"
-      ),
-
-
-      # N2O Emissions
-      # agriculture N2O emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "agriculture", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Agriculture (Mt CO2eq/yr)"
-      ),
-      # Waste N2O emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "waste", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Waste (Mt CO2eq/yr)"
-      ),
-      # land-use change N2O emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "lulucf", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Land-Use Change (Mt CO2eq/yr)"
-      ),
-      # Transport N2O emissions in Mt CO2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "trans", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Transport (Mt CO2eq/yr)"
-      ),
-      # Industry N2O emissions in Mt Co2eq
-      setNames(
-        dimSums(mselect(EmiMACEq, sector = "indst", gas = "n2o"), dim = 3),
-        "Emi|GHG|N2O|+|Industry (Mt CO2eq/yr)"
-      ),
-      # N2O emissions from energy system transformations in Mt CO2eq/yr
-      setNames(
-        dimSums(sel_vm_emiTeDetailMkt_n2o, dim = 3) * sm_tgn_2_pgc * GtC_2_MtCO2,
-        "Emi|GHG|N2O|+|Energy Supply (Mt CO2eq/yr)"
-      )
-    )
-  }
+  )
 
   ### 5.2 Total GHG across sectors ----
 
@@ -3776,9 +3611,9 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   # emissions national LULUCF accounting
   # (including carbon sink from existing forests calculated by difference between historic Magpie and UNFCCC data)
 
-  p47_LULUCFEmi_GrassiShift <- readGDX(gdx, "p47_LULUCFEmi_GrassiShift", restore_zeros = TRUE, react = "silent")[getRegions(out), getYears(out), ]
+  pm_emiLULUCF_GrassiShift <- readGDX(gdx, c("pm_emiLULUCF_GrassiShift", "p47_LULUCFEmi_GrassiShift"), restore_zeros = TRUE, react = "silent")[getRegions(out), getYears(out), ]
 
-  if (!is.null(p47_LULUCFEmi_GrassiShift)) {
+  if (!is.null(pm_emiLULUCF_GrassiShift)) {
     # variables of which version with national LULUCF accounting should be added
     vars.lulucf <- c(
       "Emi|GHG (Mt CO2eq/yr)",
@@ -3793,18 +3628,19 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     )
 
     # subtract shift of LULUCF emissions to be in line with national accounting
-    # (note: the parameter p47_LULUCFEmi_GrassiShift has the same value over all years but is zero before cm_startyear
+    # (note: the parameter pm_emiLULUCF_GrassiShift has the same value over all years but is zero before cm_startyear
     # as the regipol realization regiCarbonPrice is only used in policy runs therefore choose 2050 as some year after cm_startyear)
-    out.lulucf <- out[, , vars.lulucf] - collapseDim(p47_LULUCFEmi_GrassiShift[, "y2050", ]) * GtC_2_MtCO2
+    out.lulucf <- out[, , vars.lulucf] - collapseDim(pm_emiLULUCF_GrassiShift[, "y2050", ]) * GtC_2_MtCO2
     # insert "LULUCF national accouting" in variable names, keeping the same unit
-    getNames(out.lulucf) <- vars.lulucf %>% deletePlus %>%
+    getNames(out.lulucf) <- vars.lulucf %>%
+      deletePlus() %>%
       sub(" \\(Mt CO2", "|LULUCF national accounting (Mt CO2", .)
 
     out <- mbind(
       out,
       out.lulucf,
       setNames( # also report carbon sink from existing forests which is the difference between historic Magpie and UNFCCC land-use change emissions
-        p47_LULUCFEmi_GrassiShift * GtC_2_MtCO2,
+        pm_emiLULUCF_GrassiShift * GtC_2_MtCO2,
         "Emi|CO2|CDR|existing forest sink|LULUCF national accounting (Mt CO2/yr)"
       )
     )
@@ -3812,20 +3648,21 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   # report NDC target emissions to plot in compare scenario
   # to see whether NDC targets are met
-  if (module2realisation["carbonprice",]$realization == "NDC") {
+  if (module2realisation["carbonprice", ]$realization == "NDC") {
     p45_CO2eqwoLU_goal <- readGDX(gdx, "p45_CO2eqwoLU_goal",
-                                  restore_zeros = TRUE)[getRegions(out), getYears(out), ]
+      restore_zeros = TRUE
+    )[getRegions(out), getYears(out), ]
 
     p45_CO2eqwoLU_goal[p45_CO2eqwoLU_goal == 0] <- NA
 
-    out <- mbind(out,
-                 setNames(
-                  p45_CO2eqwoLU_goal,
-                  "Internal|Emi|GHG|w/o Bunkers|w/o Land-Use Change|NDC Target (Mt CO2eq/yr)"
+    out <- mbind(
+      out,
+      setNames(
+        p45_CO2eqwoLU_goal,
+        "Internal|Emi|GHG|w/o Bunkers|w/o Land-Use Change|NDC Target (Mt CO2eq/yr)"
       )
     )
-
-    }
+  }
 
   ## 8. Aggregate to global values ----
 
@@ -3842,24 +3679,50 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     list("GLO" = getItems(vm_co2CCS, dim = "all_regi")),
     regionSubsetList
   )
-  i <- seq_along(.regionSubsetList)
+
   for (i in seq_along(.regionSubsetList)) {
-    var1 <- "Carbon Management|Share of Stored CO2 from Captured CO2 (%)"
-    var2 <- "Carbon Management|Storage|Share of annual potential used (%)"
     target_region <- .regionSubsetList[i]
     source_regions <- .regionSubsetList[[i]]
-    out[names(target_region), , var1] <- (
-      dimSums(vm_co2CCS[source_regions, , ], dim = c(1, 3), na.rm = TRUE)
-      / dimSums(vm_co2capture[source_regions, , ], dim = c(1, 3))
-        * 100
-    ) %>%
-      ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
 
-    out[names(target_region), , var2] <- (
+    out[names(target_region), , "Carbon Management|Share of Stored CO2 from Captured CO2 (%)"] <- (
+      dimSums(vm_co2CCS[source_regions, , ], dim = c(1, 3), na.rm = TRUE)
+      / dimSums(vm_co2capture[source_regions, , ], dim = 1)
+        * 100
+    ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+
+    if ("ccsinjeon" %in% getItems(vm_co2CCS, dim = "all_te")) {
+      out[names(target_region), , "Carbon Management|Share of Stored CO2 from Captured CO2|Onshore (%)"] <- (
+        dimSums(vm_co2CCS[source_regions, , "ccsinjeon"], dim = c(1, 3), na.rm = TRUE)
+        / dimSums(vm_co2capture[source_regions, , ], dim = 1)
+          * 100
+      ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+
+      out[names(target_region), , "Carbon Management|Share of Stored CO2 from Captured CO2|Offshore (%)"] <- (
+        dimSums(vm_co2CCS[source_regions, , "ccsinjeoff"], dim = c(1, 3), na.rm = TRUE)
+        / dimSums(vm_co2capture[source_regions, , ], dim = 1)
+          * 100
+      ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+    }
+
+    out[names(target_region), , "Carbon Management|Storage|Share of annual potential used (%)"] <- (
       dimSums(vm_co2CCS[source_regions, , ], dim = c(1, 3), na.rm = TRUE)
       / dimSums(max_geolStorage[source_regions, , ], dim = c(1, 3), na.rm = TRUE)
-        * 100) %>%
-      ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+        * 100
+    ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+
+    if ("ccsinjeon" %in% getItems(vm_co2CCS, dim = "all_te")) {
+      out[names(target_region), , "Carbon Management|Storage|Share of annual potential used|Onshore (%)"] <- (
+        dimSums(vm_co2CCS[source_regions, , "ccsinjeon"], dim = c(1, 3), na.rm = TRUE)
+        / dimSums(max_geolStorage[source_regions, , "ccsinjeon"], dim = c(1, 3), na.rm = TRUE)
+          * 100
+      ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+
+      out[names(target_region), , "Carbon Management|Storage|Share of annual potential used|Offshore (%)"] <- (
+        dimSums(vm_co2CCS[source_regions, , "ccsinjeoff"], dim = c(1, 3), na.rm = TRUE)
+        / dimSums(max_geolStorage[source_regions, , "ccsinjeoff"], dim = c(1, 3), na.rm = TRUE)
+          * 100
+      ) %>% ifelse(is.finite(.), ., 0) # set NaN (division by 0) to 0
+    }
   }
 
   # 9. Bunker Correction ----
@@ -3906,7 +3769,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
 
   # add emissions variables with LULUCF national accounting
-  if (!is.null(p47_LULUCFEmi_GrassiShift)) {
+  if (!is.null(pm_emiLULUCF_GrassiShift)) {
     emi.vars.wBunkers <- c(
       emi.vars.wBunkers,
       "Emi|GHG|LULUCF national accounting (Mt CO2eq/yr)",
@@ -3915,7 +3778,8 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   }
 
   addEmiString <- function(vars, addedString) {
-    vars %>% deletePlus %>% # remove all + from extended variables: summation checks only make sense if all sub-variables are covered 
+    vars %>%
+      deletePlus() %>% # remove all + from extended variables: summation checks only make sense if all sub-variables are covered
       sub("^Emi\\|CO2", paste0("Emi|CO2|", addedString), .) %>%
       sub("^Emi\\|GHG", paste0("Emi|GHG|", addedString), .)
   }
@@ -3957,7 +3821,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   varsCumul <- c(
     varsCumulAlsoGross, # variables Emi|CO2|...
     sub("CO2", "CO2|Gross", varsCumulAlsoGross), # variables Emi|CO2|Gross|...
-  # other variables where gross and net are not both needed or possible
+    # other variables where gross and net are not both needed or possible
     "Emi|GHG (Mt CO2eq/yr)",
     "Emi|CO2 (Mt CO2/yr)",
     "Emi|CO2|+++|Gross (Mt CO2/yr)",
@@ -3976,28 +3840,12 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     "Emi|CO2|CDR|+|Land-Use Change (Mt CO2/yr)",
     "Emi|CO2|CDR|+|Materials (Mt CO2/yr)"
   ) %>%
-  intersect(getNames(out)) # keep only variables that are in out
-
-  # function to recursively calculate cumulated values
-  # for REMIND timesteps t = 2005, 2010, ... , 2055, 2060, ... , 2110, 2130, 2150,
-  # it calculates cumulated values from the middle of 2005 to the middle of the respective timesteps
-  cumulatedValue <- function(var) {
-    years <- getYears(var, as.integer = TRUE)
-    tmp <- new.magpie(getRegions(var), getYears(var), magclass::getNames(var), fill = 0)
-    # First element is 0
-    tmp[, 1, ] <- 0
-    # Recursive calculation: cumulatedValue(timestep i) =
-    # cumulatedValue(timestep i-1) + (time interval between timesteps i-1 and i)/2 * (value(timestep i-1) + value(timestep i))
-    for (ts in 2:length(years)) {
-      dt <- years[ts] - years[ts - 1] # length of time interval
-      tmp[, ts, ] <- tmp[, ts - 1, ] + dt / 2 * (var[, ts - 1, ] + var[, ts, ])
-    }
-    return(tmp)
-  }
+    intersect(getNames(out)) # keep only variables that are in out
 
   outCumul <- setNames(
-    cumulatedValue(out[, , varsCumul]), # calculate cumulated values
-    addEmiString(varsCumul, "Cumulated") %>% sub("\\/yr", "", .)) # create |Cumulated variables with relevant unit (eg Mt CO2 instead of Mt CO2/yr)
+    time_cumulate(out[, , varsCumul], includeEndYear = TRUE), # calculate cumulated values
+    addEmiString(varsCumul, "Cumulated") %>% sub("\\/yr", "", .)
+  ) # create |Cumulated variables with relevant unit (eg Mt CO2 instead of Mt CO2/yr)
 
   out <- mbind(out, outCumul)
 

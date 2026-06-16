@@ -16,7 +16,8 @@ indicators_general <- c(
 indicators_buildings <- c(
   "ES|Buildings|Floor Space pCap",
   "UE|Buildings|Heating pCap",
-  "UE|Buildings|non-Heating|Electricity|Conventional pCap")
+  "UE|Buildings|non-Heating|Electricity|Conventional pCap",
+  "UE|Buildings|non-Heating|Electricity|Appliances and Lighting pCap")
 indicators_transport <- c(
   "ES|Transport|Pass with bunkers pCap",
   "ES|Transport|Pass|Short-Medium distance pCap",
@@ -53,7 +54,7 @@ indicators <- c(indicators_general, indicators_buildings, indicators_transport, 
 
 ### Time domain
 ```{r, results = 'asis'}
-for (i in indicators) {
+for (i in indicators[indicators %in% data[["variable"]]]) {
   cat("\n\n####", sub("(\\|per-capita)|( pCap)", "", i), "\n")
   showLinePlots(data, i, scales = "free")
 }
@@ -89,7 +90,7 @@ xLab <- data %>%
     mutate(label = paste0(variable, " [", unit, "]")) %>%
     pull(label)
 
-for (i in indicators) {
+for (i in indicators[indicators %in% data[["variable"]]]) {
   cat("\n\n####", sub("(\\|per-capita)|( pCap)", "", i), "\n")
 
   yLab <- dPlot %>%
@@ -124,6 +125,9 @@ for (i in indicators) {
 tot <- "FE|Buildings"
 items <- c(
   "FE|Buildings|non-Heating|Electricity|Conventional",
+  "FE|Buildings|non-Heating|Electricity|Appliances and Lighting",
+  "FE|Buildings|non-Heating|Electricity|ICT",
+  "FE|Buildings|non-Heating|Electricity|Space Cooling",
   "FE|Buildings|Heating|Electricity|Heat pump",
   "FE|Buildings|Heating|District Heating",
   "FE|Buildings|Heating|Electricity|Resistance",
@@ -132,23 +136,27 @@ items <- c(
   "FE|Buildings|Heating|Liquids",
   "FE|Buildings|Heating|Solids",
   NULL)
+items <- items[items %in% data[["variable"]]]
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
 ### FE mix per Capita
 ```{r per Capita FE demand from buildings by carriers}
-if ("FE|Buildings|non-Heating|Electricity|Conventional pCap" %in% data[["variable"]]) {
-  tot <- "FE|Buildings pCap"
-  items <- c(
-    "FE|Buildings|non-Heating|Electricity|Conventional pCap",
-    "FE|Buildings|Heating|Electricity|Heat pump pCap",
-    "FE|Buildings|Heating|District Heating pCap",
-    "FE|Buildings|Heating|Electricity|Resistance pCap",
-    "FE|Buildings|Heating|Hydrogen pCap",
-    "FE|Buildings|Heating|Gases pCap",
-    "FE|Buildings|Heating|Liquids pCap",
-    "FE|Buildings|Heating|Solids pCap",
-    NULL)
+tot <- "FE|Buildings pCap"
+items <- c(
+  "FE|Buildings|non-Heating|Electricity|Conventional pCap",
+  "FE|Buildings|non-Heating|Electricity|Appliances and Lighting pCap",
+  "FE|Buildings|non-Heating|Electricity|ICT pCap",
+  "FE|Buildings|non-Heating|Electricity|Space Cooling pCap",
+  "FE|Buildings|Heating|Electricity|Heat pump pCap",
+  "FE|Buildings|Heating|District Heating pCap",
+  "FE|Buildings|Heating|Electricity|Resistance pCap",
+  "FE|Buildings|Heating|Hydrogen pCap",
+  "FE|Buildings|Heating|Gases pCap",
+  "FE|Buildings|Heating|Liquids pCap",
+  "FE|Buildings|Heating|Solids pCap",
+  NULL)
+if (any(items %in% data[["variable"]])) {
   showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 }
 ```
@@ -158,6 +166,9 @@ if ("FE|Buildings|non-Heating|Electricity|Conventional pCap" %in% data[["variabl
 tot <- "UE|Buildings"
 items <- c(
   "UE|Buildings|non-Heating|Electricity|Conventional",
+  "UE|Buildings|non-Heating|Electricity|Appliances and Lighting",
+  "UE|Buildings|non-Heating|Electricity|ICT",
+  "UE|Buildings|non-Heating|Electricity|Space Cooling",
   "UE|Buildings|Heating|Electricity|Heat pump",
   "UE|Buildings|Heating|District Heating",
   "UE|Buildings|Heating|Electricity|Resistance",
@@ -166,23 +177,27 @@ items <- c(
   "UE|Buildings|Heating|Liquids",
   "UE|Buildings|Heating|Solids",
   NULL)
+items <- items[items %in% data[["variable"]]]
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
 ### UE mix per Capita
 ```{r per Capita UE demand from buildings by carriers}
-if ("UE|Buildings|non-Heating|Electricity|Conventional pCap" %in% data[["variable"]]) {
-  tot <- "UE|Buildings pCap"
-  items <- c(
-    "UE|Buildings|non-Heating|Electricity|Conventional pCap",
-    "UE|Buildings|Heating|Electricity|Heat pump pCap",
-    "UE|Buildings|Heating|District Heating pCap",
-    "UE|Buildings|Heating|Electricity|Resistance pCap",
-    "UE|Buildings|Heating|Hydrogen pCap",
-    "UE|Buildings|Heating|Gases pCap",
-    "UE|Buildings|Heating|Liquids pCap",
-    "UE|Buildings|Heating|Solids pCap",
-    NULL)
+tot <- "UE|Buildings pCap"
+items <- c(
+  "UE|Buildings|non-Heating|Electricity|Conventional pCap",
+  "UE|Buildings|non-Heating|Electricity|Appliances and Lighting pCap",
+  "UE|Buildings|non-Heating|Electricity|ICT pCap",
+  "UE|Buildings|non-Heating|Electricity|Space Cooling pCap",
+  "UE|Buildings|Heating|Electricity|Heat pump pCap",
+  "UE|Buildings|Heating|District Heating pCap",
+  "UE|Buildings|Heating|Electricity|Resistance pCap",
+  "UE|Buildings|Heating|Hydrogen pCap",
+  "UE|Buildings|Heating|Gases pCap",
+  "UE|Buildings|Heating|Liquids pCap",
+  "UE|Buildings|Heating|Solids pCap",
+  NULL)
+if (any(items %in% data[["variable"]])) {
   showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 }
 ```
@@ -199,6 +214,7 @@ items <- c(
   "FE|Buildings|Heating|Liquids",
   "FE|Buildings|Heating|Solids",
   NULL)
+items <- items[items %in% data[["variable"]]]
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
@@ -231,6 +247,7 @@ items <- c(
   "UE|Buildings|Heating|Liquids",
   "UE|Buildings|Heating|Solids",
   NULL)
+items <- items[items %in% data[["variable"]]]
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
