@@ -132,6 +132,7 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_demPE(peBio, te = teCCS,                                     name = "PE|Biomass|++|w/ CC (EJ/yr)"),
     get_demPE(peBio, te = teNoCCS,                                   name = "PE|Biomass|++|w/o CC (EJ/yr)"),
     get_demPE(c("pebioil", "pebios"),                                name = "PE|Biomass|+++|1st Generation (EJ/yr)"),
+    get_demPE(c("pemanure"),                                        name = "PE|Biomass|+++|Manure (EJ/yr)"),
     get_demPE(peBio, te = "biotr",                                   name = "PE|Biomass|++++|Traditional (EJ/yr)"),
     get_demPE(peBio, "seel",                                         name = "PE|Biomass|+|Electricity (EJ/yr)"),
     get_demPE(peBio, "seel", teCCS,                                  name = "PE|Biomass|Electricity|+|w/ CC (EJ/yr)"),
