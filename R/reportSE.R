@@ -145,8 +145,8 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_prodSE(peBio, "seel", te = "bioigcc",    name = "SE|Electricity|Biomass|++|Gasification Combined Cycle w/o CC (EJ/yr)"),
     get_prodSE(peBio, "seel", te = "biochp",     name = "SE|Electricity|Biomass|++|Combined Heat and Power w/o CC (EJ/yr)"),
     get_prodSE(peBio, "seel", te = c("biopyrchp"),   name = "SE|Electricity|Biomass|++|Pyrolysis (EJ/yr)"),
-    get_prodSE(peBio, "seel", te = c("biodigest"),   name = "SE|Electricity|Biomass|++|Anaerobic Digestion (EJ/yr)"),
-    get_prodSE(peBio, "seel", te = setdiff(pe2se$all_te, c("bioigccc", "bioigcc", "biochp", "biopyrchp", "biodigest")),
+    get_prodSE(peBio, "seel", te = c("biodigestCHP"),   name = "SE|Electricity|Biomass|++|Anaerobic Digestion (EJ/yr)"),
+    get_prodSE(peBio, "seel", te = setdiff(pe2se$all_te, c("bioigccc", "bioigcc", "biochp", "biopyrchp", "biodigestCHP")),
                                                  name = "SE|Electricity|Biomass|++|Other (EJ/yr)"),
 
     get_prodSE("pecoal", "seel",                 name = "SE|Electricity|+|Coal (EJ/yr)"),
@@ -231,6 +231,7 @@ reportSE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   )
 
   ## Heat
+  # The heat coproduction has to be reassessed. 
   out <- mbind(out,
     get_prodSE(entyPe,    "sehe",                 name = "SE|Heat (EJ/yr)"),
     get_prodSE(peBio,     "sehe",                 name = "SE|Heat|+|Biomass (EJ/yr)"),
