@@ -383,6 +383,19 @@ showLinePlots(data, tot)
 showAreaAndBarPlots(data, items, tot = tot, orderVars = "user", scales = "fixed")
 ```
 
+### PE Manure
+```{r PE Manure}
+tot <- "PE|Biomass|Manure"
+items <- c(
+  "PE|Biomass|Manure|Electricity",
+  "PE|Biomass|Manure|Heat",
+  "PE|Biomass|Manure|Gases",
+  NULL)
+
+showLinePlots(data, tot)
+showAreaAndBarPlots(data, items, tot = tot, orderVars = "user", scales = "fixed")
+```
+
 ### PE Nuclear
 ```{r PE Nuclear}
 showLinePlots(data, "PE|Nuclear")
