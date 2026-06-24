@@ -161,6 +161,38 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_demPE(peBio, "sebiochar",                                    name = "PE|Biomass|+|Biochar (EJ/yr)"),
     get_demPE(peBio, "sehe",                                         name = "PE|Biomass|+|Heat (EJ/yr)"),
 
+    # biomass explicit technology pathways. 
+    get_demPE("pebiolc", "sesobio", "biotr",                         name = "biotr (EJ/yr)"),
+    get_demPE("pebiolc", "sesobio", "biotrmod",                      name = "biotrmod (EJ/yr)"),
+    get_demPE("pebiolc", "seliqbio", "bioftrec",                     name = "bioftrec (EJ/yr)"),
+    get_demPE("pebiolc", "seliqbio", "bioftcrec",                    name = "bioftcrec (EJ/yr)"),
+    get_demPE("pebiolc", "seliqbio", "bioethl",                      name = "bioethl (EJ/yr)"),
+    get_demPE("pebiolc", "segabio", "biogas",                        name = "biogas (EJ/yr)"),
+    get_demPE("pebiolc", "segabio", "biogasc",                       name = "biogasc (EJ/yr)"),
+    get_demPE("pebiolc", "seel", "bioigcc",                          name = "bioigcc (EJ/yr)"),
+    get_demPE("pebiolc", "seel", "bioigccc",                         name = "bioigccc (EJ/yr)"),
+    get_demPE("pebiolc", "seel", "biochp",                           name = "biochp (EJ/yr)"),
+    get_demPE("pebiolc", "seh2", "bioh2",                            name = "bioh2 (EJ/yr)"),
+    get_demPE("pebiolc", "seh2", "bioh2c",                           name = "bioh2c (EJ/yr)"),
+    get_demPE("pebiolc", "sehe", "biohp",                            name = "biohp (EJ/yr)"),
+    get_demPE("pebiolc", "sehe", "biochp",                           name = "biochp (EJ/yr)"),
+    get_demPE("pebiolc", "sebiochar", "biopyronly",                  name = "biopyronly (EJ/yr)"),
+    get_demPE("pebiolc", te = "biopyrhe",                            name = "biopyrhe (EJ/yr)"),
+    get_demPE("pebiolc", "sebiochar", "biopyrhe",                    name = "biopyrhe_char (EJ/yr)"),
+    get_demPE("pebiolc", "sehe", "biopyrhe",                         name = "biopyrhe_heat (EJ/yr)"),
+    get_demPE("pebiolc", te ="biopyrchp",                            name = "biopyrchp (EJ/yr)"),
+    get_demPE("pebiolc", "sebiochar", "biopyrchp",                   name = "biopyrchp_char (EJ/yr)"),
+    get_demPE("pebiolc", "sehe", "biopyrchp",                        name = "biopyrchp_heat (EJ/yr)"),
+    get_demPE("pebiolc", "seel", "biopyrchp",                        name = "biopyrchp_elec (EJ/yr)"),
+    get_demPE("pebios", "seliqbio", "bioeths",                       name = "bioeths (EJ/yr)"),
+    get_demPE("pebioil", "seliqbio", "biodiesel",                    name = "biodiesel (EJ/yr)"),
+    get_demPE("pemanure", te = "biodigestCHP",                       name = "biodigestCHP (EJ/yr)"),
+    get_demPE("pemanure", "seel", "biodigestCHP",                    name = "biodigestCHP_elec (EJ/yr)"),
+    get_demPE("pemanure", "sehe", "biodigestCHP",                    name = "biodigestCHP_heat (EJ/yr)"),  
+    get_demPE("pemanure", "segabio", "biodigestGAS",                 name = "biodigestGAS (EJ/yr)"),  
+        
+
+
     # renewables and nuclear
     # using prodSE rather than demPE to follow the "direct method" for primary energy:
     # https://ourworldindata.org/energy-substitution-method

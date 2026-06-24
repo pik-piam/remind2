@@ -262,7 +262,7 @@ items <- c(
   "PE|Production|Biomass|Lignocellulosic|Energy Crops",
   "PE|Production|Biomass|Lignocellulosic|Residues",
   "PE|Production|Biomass|1st Generation",
-  "PE|Production|Biomass|Manure (EJ/yr)",
+  "PE|Production|Biomass|Manure",
   NULL)
 showAreaAndBarPlots(data, items, tot = "PE|Production|Biomass", orderVars = "user", scales = "fixed")
 ```
