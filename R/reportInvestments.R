@@ -578,6 +578,36 @@ reportInvestments <- function(gdx,
   # Investments into DAC
   tmp <- mbind(tmp, setNames(dimSums(inv[, , "dac"]), "Investment|Energy Supply|+|DAC (billion US$2017/yr)"))
 
+  # Investments into Enhanced Weathering (EW). Guarded, as this CDR tech may be absent in some runs.
+  if ("weathering" %in% getItems(inv, dim = "all_te")) {
+    tmp <- mbind(tmp, setNames(
+      dimSums(inv[, , "weathering"]),
+      "Investment|Energy Supply|+|Enhanced Weathering (billion US$2017/yr)"
+    ))
+  }
+
+  # Investments into Ocean Alkalinity Enhancement (OAE), split by calciner technology.
+  # Guarded, as these CDR techs may be absent in some runs.
+  te_oae <- intersect(c("oae_ng", "oae_el"), getItems(inv, dim = "all_te"))
+  if (length(te_oae) > 0) {
+    tmp <- mbind(tmp, setNames(
+      dimSums(inv[, , te_oae]),
+      "Investment|Energy Supply|+|OAE (billion US$2017/yr)"
+    ))
+    if ("oae_ng" %in% te_oae) {
+      tmp <- mbind(tmp, setNames(
+        dimSums(inv[, , "oae_ng"]),
+        "Investment|Energy Supply|OAE|+|Traditional Calciner (billion US$2017/yr)"
+      ))
+    }
+    if ("oae_el" %in% te_oae) {
+      tmp <- mbind(tmp, setNames(
+        dimSums(inv[, , "oae_el"]),
+        "Investment|Energy Supply|OAE|+|Electric Calciner (billion US$2017/yr)"
+      ))
+    }
+  }
+
   if ("ccsinje" %in% getItems(inv, dim = "all_te")) {
     # Investments into CCS Trans and Stor (Onshore)
     tmp <- mbind(tmp, setNames(
