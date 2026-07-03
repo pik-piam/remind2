@@ -114,15 +114,11 @@ reportCosts <- function(gdx,
   v_costom <- readGDX(gdx, name = c("v_costOM", "v_costom"), field = "l", format = "first_found")
   v_costin <- readGDX(gdx, name = c("v_costInv", "v_costin"), field = "l", format = "first_found")
   vm_omcosts_cdr <- readGDX(gdx, name = c("vm_omcosts_cdr"), field = "l", format = "first_found")
-  # Additional budget cost terms that are part of the model's total energy-system cost (vm_costEnergySys)
-  # or are closely energy-related, but are not part of the reported "Energy System Cost|Supply" aggregate.
-  # Reported below as separate, alternative variables (react="silent" for compatibility with older gdx files).
   vm_IndCCSCost <- readGDX(gdx, name = "vm_IndCCSCost", field = "l", format = "first_found", react = "silent")
   vm_costMatPrc <- readGDX(gdx, name = "vm_costMatPrc", field = "l", format = "first_found", react = "silent")
   v01_invMacroAdj <- readGDX(gdx, name = "v01_invMacroAdj", field = "l", format = "first_found", react = "silent")
   vm_costEnergySys <- readGDX(gdx, name = "vm_costEnergySys", field = "l", format = "first_found", react = "silent")
   pm_macCostFull <- readGDX(gdx, name = c("pm_macCost", "p_macCost"), format = "first_found", react = "silent")
-  # Demand-side end-use service capital (EDGE-transport vehicle capital, by teEs); budget term sum(teEs, vm_esCapInv).
   vm_esCapInv <- readGDX(gdx, name = "vm_esCapInv", field = "l", format = "first_found", react = "silent")
   # Components of v_costInv (q_costInv), used to split "Energy System Cost|Supply|Investments".
   vm_costInvTeAdj <- readGDX(gdx, name = "vm_costInvTeAdj", field = "l", format = "first_found", react = "silent")
@@ -406,12 +402,8 @@ reportCosts <- function(gdx,
   cost <- (v_costin + v_costom) * 1000 + tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"] - costInvCES
   tmp <- mbind(tmp, setNames(cost, "Energy system costs (billion US$2017/yr)"))
 
-  # Split "Energy System Cost|Supply|Investments" (= v_costInv) into its q_costInv components (core/equations.gms
-  # q_costInv): deployment adjustment cost, H2 T&D phase-in cost, and the remaining direct
+  # Split "Energy System Cost|Supply|Investments" (= v_costInv) into its q_costInv components: deployment adjustment cost, H2 T&D phase-in cost, and the remaining direct
   # capacity investment (residual). CES Markup is removed from energy supply investments.
-  # The named sub-terms are computed from their GDX variables; "Direct Capacity" is
-  # taken as the residual so the "+" children reconstruct the parent exactly. (v_costInv here is the raw,
-  # non-time-shifted variable, matching the parent above.)
   if (!is.null(vm_costInvTeAdj)) {
     costInvAdj <- dimSums(vm_costInvTeAdj[, y, intersect(as.character(teAdj), getNames(vm_costInvTeAdj))], dim = 3, na.rm = TRUE) * 1000
     costInvAddTD <- 0 * v_costin
@@ -433,20 +425,9 @@ reportCosts <- function(gdx,
   ###############################################
   ##### Additional energy-system cost terms #####
   ###############################################
-  # The reported "Energy System Cost|Supply" aggregate above (Investments + O&M + Fuel Cost) intentionally
-  # keeps the terms currently used in remind2. The budget equation (qm_budget) and the model's own energy-
-  # system cost variable (vm_costEnergySys = v_costFu + v_costOM + v_costInv + sum(emiInd37, vm_IndCCSCost))
-  # contain further energy-related cost terms that are NOT captured there. They are reported here as separate
-  # "Additional" variables for completeness and are deliberately NOT summed into "Energy system costs" or
-  # "Energy System Cost|Supply". See the PR description / energySystemCosts_reporting_changes.md for the
-  # rationale and the pros/cons of eventually folding each into the headline aggregate.
-  # (Already reported elsewhere and therefore not duplicated here: CDR O&M -> "OandM costs CDR";
-  #  CES markup, H2 T&D phase-in and industry EE capital -> "Internal|Investment|Other|..." in reportInvestments.)
-
   esAdd <- NULL
-
   # Industry CO2 capture cost (MAC-curve integral, q37_IndCCSCost): capturing industry process emissions
-  # (cement, chemicals, steel, ...). Part of vm_costEnergySys but absent from the reported Supply aggregate.
+  # (cement, chemicals, steel, ...)
   if (!is.null(vm_IndCCSCost)) {
     indCCS <- dimSums(vm_IndCCSCost[, y, ], dim = 3, na.rm = TRUE) * 1000
     tmp <- mbind(tmp, setNames(indCCS, "Energy System Cost|Additional|Industry CO2 Capture (billion US$2017/yr)"))
@@ -467,22 +448,14 @@ reportCosts <- function(gdx,
     esAdd <- if (is.null(esAdd)) invAdj else esAdd + invAdj
   }
 
-  # Sum of the additional terms (kept separate from the headline "Energy system costs").
+  # Sum of the additional terms
   if (!is.null(esAdd)) {
     tmp <- mbind(tmp, setNames(esAdd, "Energy System Cost|Additional (billion US$2017/yr)"))
   }
 
-  # Internal reconciliation line: the model's own total energy-system cost variable.
-  if (!is.null(vm_costEnergySys)) {
-    tmp <- mbind(tmp, setNames(
-      dimSums(vm_costEnergySys[, y, ], dim = 3, na.rm = TRUE) * 1000,
-      "Internal|Energy System Cost|Model (vm_costEnergySys) (billion US$2017/yr)"
-    ))
-  }
-
   # Non-CO2 GHG abatement cost (energy & industry MAC-curve costs, pm_macCost), excluding the land-use (MAgPIE)
   # sectors already reported under "Costs|Land Use|MAC-costs" and the industry-CO2 sectors covered by
-  # vm_IndCCSCost (which is zero for those sectors, so no double counting). Reported as a general "Costs|" line.
+  # vm_IndCCSCost (which is zero for those sectors, so no double counting).
   if (!is.null(pm_macCostFull) && !is.null(emiMacSector)) {
     nonLuMac <- setdiff(as.character(emiMacSector), c(as.character(emiMacMagpie), as.character(emiInd37)))
     nonLuMac <- intersect(nonLuMac, getNames(pm_macCostFull))
