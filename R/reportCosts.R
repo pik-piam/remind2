@@ -470,15 +470,13 @@ reportCosts <- function(gdx,
   ###############################################
   ##### Demand-side energy-system cost ##########
   ###############################################
-  # End-use service capital (vm_esCapInv, budget term sum(teEs, vm_esCapInv)): the demand-side energy cost,
-  # i.e. capital for the energy-service techs (EDGE-transport vehicle capital). This is by far the largest
-  # single energy cost, but it is a DEMAND-side cost and is therefore reported in its own "Demand" branch,
-  # kept separate from "Energy System Cost|Supply" and from "Energy system costs".
   # CES Markup
   if (!is.null(vm_costCESMkup) && !is.null(ppfen_CESMkup)) {
     tmp <- mbind(tmp, setNames(costInvCES, "Energy System Cost|Demand|CES Markup (billion US$2017/yr)"))
   }
 
+  # End-use service capital (vm_esCapInv, budget term sum(teEs, vm_esCapInv)): the demand-side energy cost,
+  # i.e. capital for the energy-service techs (EDGE-transport vehicle capital).
   if (!is.null(vm_esCapInv)) {
     esCap <- vm_esCapInv[, y, ]
     teEs <- getNames(esCap)
