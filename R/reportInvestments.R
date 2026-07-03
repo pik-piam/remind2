@@ -59,26 +59,33 @@ reportInvestments <- function(gdx,
   }
 
   vm_invMacro <- modifyInvestmentVariables(vm_invMacro[, ttot, ],
-                                           ref = vm_invMacro_ref,
-                                           startYear = cm_startyear)
+    ref = vm_invMacro_ref,
+    startYear = cm_startyear
+  )
   v01_invMacroAdj <- modifyInvestmentVariables(v01_invMacroAdj[, ttot, ],
-                                               ref = v01_invMacroAdj_ref,
-                                               startYear = cm_startyear)
+    ref = v01_invMacroAdj_ref,
+    startYear = cm_startyear
+  )
   v_costInv <- modifyInvestmentVariables(v_costInv[, ttot, ],
-                                         ref = v_costInv_ref,
-                                         startYear = cm_startyear)
+    ref = v_costInv_ref,
+    startYear = cm_startyear
+  )
   vm_costInvTeDir <- modifyInvestmentVariables(vm_costInvTeDir[, ttot, ],
-                                               ref = vm_costInvTeDir_ref,
-                                               startYear = cm_startyear)
+    ref = vm_costInvTeDir_ref,
+    startYear = cm_startyear
+  )
   vm_costInvTeAdj <- modifyInvestmentVariables(vm_costInvTeAdj[, ttot, ],
-                                               ref = vm_costInvTeAdj_ref,
-                                               startYear = cm_startyear)
+    ref = vm_costInvTeAdj_ref,
+    startYear = cm_startyear
+  )
   vm_costAddTeInv <- modifyInvestmentVariables(vm_costAddTeInv[, ttot, ],
-                                               ref = vm_costAddTeInv_ref,
-                                               startYear = cm_startyear)
+    ref = vm_costAddTeInv_ref,
+    startYear = cm_startyear
+  )
   vm_costCESMkup <- modifyInvestmentVariables(vm_costCESMkup[, ttot, ],
-                                              ref = vm_costCESMkup_ref,
-                                              startYear = cm_startyear)
+    ref = vm_costCESMkup_ref,
+    startYear = cm_startyear
+  )
 
   # Load in sets used to filter the investment variables
   ppfKap <- gdx::readGDX(gdx, "ppfKap") |> as.character()
@@ -117,10 +124,7 @@ reportInvestments <- function(gdx,
   te_steel <- tePrc
   # Carbon-removal technologies (enhanced weathering, ocean alkalinity enhancement) are energy-consuming CDR
   # techs. They are reported on the demand side (Investment|Energy Demand|Carbon Management), not as energy
-  # supply. They are therefore excluded from te_energy_supply and collected separately in inv_cdr (so that the
-  # Investment|+|Energy Supply summation over its supply-carrier children balances). The overall Investment
-  # total is unchanged: the CDR investment is moved to a separate Investment|+|Energy Demand|Carbon Management
-  # branch, not dropped.
+  # supply.
   te_cdr_demand <- intersect(c("weathering", "oae_ng", "oae_el"), te_used)
   te_energy_supply <- te_used[!te_used %in% c(te_steel, te_cdr_demand)]
   inv_es <- inv_es_st[, , te_energy_supply]
@@ -151,8 +155,7 @@ reportInvestments <- function(gdx,
   tmp <- mbind(tmp, setNames(dimSums(inv_es), "Investment|+|Energy Supply (billion US$2017/yr)"))
   tmp <- mbind(tmp, setNames(dimSums(inv_st), "Investment|+|Industry|Steel (billion US$2017/yr)"))
 
-  # Demand-side carbon-removal investments (enhanced weathering, OAE), reported as a separate top-level
-  # Investment child so the energy-supply summation is not affected. Guarded: absent in gdx without these techs.
+  # Demand-side carbon-removal investments (enhanced weathering, OAE)
   if (length(te_cdr_demand) > 0) {
     tmp <- mbind(tmp, setNames(
       dimSums(inv_cdr),
@@ -626,7 +629,6 @@ reportInvestments <- function(gdx,
       dimSums(inv[, , "ccsinje"]),
       "Investment|Energy Supply|+|CO2 Trans&Stor (billion US$2017/yr)"
     ))
-
   } else {
     # Investments into CCS Trans and Stor (Onshore)
     tmp <- mbind(tmp, setNames(
@@ -643,7 +645,7 @@ reportInvestments <- function(gdx,
     # Investments into CCS Trans and Stor (Total)
     tmp <- mbind(tmp, setNames(
       tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Onshore (billion US$2017/yr)"] +
-      tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Offshore (billion US$2017/yr)"],
+        tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Offshore (billion US$2017/yr)"],
       "Investment|Energy Supply|+|CO2 Trans&Stor (billion US$2017/yr)"
     ))
   }
