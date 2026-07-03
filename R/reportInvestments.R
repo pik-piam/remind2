@@ -115,12 +115,20 @@ reportInvestments <- function(gdx,
   inv_es_st <- (vm_costInvTeDir[, t, ] + vm_costInvTeAdj[, t, ]) * 1e3
   te_used <- c(en2en$te, teNoTransform)
   te_steel <- tePrc
-  te_energy_supply <- te_used[!te_used %in% te_steel]
+  # Carbon-removal technologies (enhanced weathering, ocean alkalinity enhancement) are energy-consuming CDR
+  # techs. They are reported on the demand side (Investment|Energy Demand|Carbon Management), not as energy
+  # supply. They are therefore excluded from te_energy_supply and collected separately in inv_cdr (so that the
+  # Investment|+|Energy Supply summation over its supply-carrier children balances). The overall Investment
+  # total is unchanged: the CDR investment is moved to a separate Investment|+|Energy Demand|Carbon Management
+  # branch, not dropped.
+  te_cdr_demand <- intersect(c("weathering", "oae_ng", "oae_el"), te_used)
+  te_energy_supply <- te_used[!te_used %in% c(te_steel, te_cdr_demand)]
   inv_es <- inv_es_st[, , te_energy_supply]
   inv_st <- inv_es_st[, , te_steel]
+  inv_cdr <- inv_es_st[, , te_cdr_demand]
 
   # Get total investments.
-  inv_tot <- inv_m + dimSums(inv_es) + dimSums(inv_st)
+  inv_tot <- inv_m + dimSums(inv_es) + dimSums(inv_st) + dimSums(inv_cdr)
 
   # Get other quantities that appear in the GAMS investment variables v_costInv, and vm_invMacro, but that we do
   # not count as investments. These will only appear as INTERNAL variables. Should probably get cleaned up in the
@@ -142,6 +150,40 @@ reportInvestments <- function(gdx,
   tmp <- mbind(tmp, setNames(inv_m, "Investment|+|Macroeconomy (billion US$2017/yr)"))
   tmp <- mbind(tmp, setNames(dimSums(inv_es), "Investment|+|Energy Supply (billion US$2017/yr)"))
   tmp <- mbind(tmp, setNames(dimSums(inv_st), "Investment|+|Industry|Steel (billion US$2017/yr)"))
+
+  # Demand-side carbon-removal investments (enhanced weathering, OAE), reported as a separate top-level
+  # Investment child so the energy-supply summation is not affected. Guarded: absent in gdx without these techs.
+  if (length(te_cdr_demand) > 0) {
+    tmp <- mbind(tmp, setNames(
+      dimSums(inv_cdr),
+      "Investment|+|Energy Demand|Carbon Management (billion US$2017/yr)"
+    ))
+    if ("weathering" %in% te_cdr_demand) {
+      tmp <- mbind(tmp, setNames(
+        dimSums(inv_cdr[, , "weathering"]),
+        "Investment|Energy Demand|Carbon Management|+|Enhanced Weathering (billion US$2017/yr)"
+      ))
+    }
+    te_oae <- intersect(c("oae_ng", "oae_el"), te_cdr_demand)
+    if (length(te_oae) > 0) {
+      tmp <- mbind(tmp, setNames(
+        dimSums(inv_cdr[, , te_oae]),
+        "Investment|Energy Demand|Carbon Management|+|OAE (billion US$2017/yr)"
+      ))
+      if ("oae_ng" %in% te_oae) {
+        tmp <- mbind(tmp, setNames(
+          dimSums(inv_cdr[, , "oae_ng"]),
+          "Investment|Energy Demand|Carbon Management|OAE|+|Traditional Calciner (billion US$2017/yr)"
+        ))
+      }
+      if ("oae_el" %in% te_oae) {
+        tmp <- mbind(tmp, setNames(
+          dimSums(inv_cdr[, , "oae_el"]),
+          "Investment|Energy Demand|Carbon Management|OAE|+|Electric Calciner (billion US$2017/yr)"
+        ))
+      }
+    }
+  }
 
   # Report other "investments" for internal checks. Should probably be improved in the future!
   # (Ideally we would have no unattributed quantities in the GAMS investment variables.)
@@ -577,36 +619,6 @@ reportInvestments <- function(gdx,
 
   # Investments into DAC
   tmp <- mbind(tmp, setNames(dimSums(inv[, , "dac"]), "Investment|Energy Supply|+|DAC (billion US$2017/yr)"))
-
-  # Investments into Enhanced Weathering (EW). Guarded, as this CDR tech may be absent in some runs.
-  if ("weathering" %in% getItems(inv, dim = "all_te")) {
-    tmp <- mbind(tmp, setNames(
-      dimSums(inv[, , "weathering"]),
-      "Investment|Energy Supply|+|Enhanced Weathering (billion US$2017/yr)"
-    ))
-  }
-
-  # Investments into Ocean Alkalinity Enhancement (OAE), split by calciner technology.
-  # Guarded, as these CDR techs may be absent in some runs.
-  te_oae <- intersect(c("oae_ng", "oae_el"), getItems(inv, dim = "all_te"))
-  if (length(te_oae) > 0) {
-    tmp <- mbind(tmp, setNames(
-      dimSums(inv[, , te_oae]),
-      "Investment|Energy Supply|+|OAE (billion US$2017/yr)"
-    ))
-    if ("oae_ng" %in% te_oae) {
-      tmp <- mbind(tmp, setNames(
-        dimSums(inv[, , "oae_ng"]),
-        "Investment|Energy Supply|OAE|+|Traditional Calciner (billion US$2017/yr)"
-      ))
-    }
-    if ("oae_el" %in% te_oae) {
-      tmp <- mbind(tmp, setNames(
-        dimSums(inv[, , "oae_el"]),
-        "Investment|Energy Supply|OAE|+|Electric Calciner (billion US$2017/yr)"
-      ))
-    }
-  }
 
   if ("ccsinje" %in% getItems(inv, dim = "all_te")) {
     # Investments into CCS Trans and Stor (Onshore)
