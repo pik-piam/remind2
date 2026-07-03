@@ -59,33 +59,26 @@ reportInvestments <- function(gdx,
   }
 
   vm_invMacro <- modifyInvestmentVariables(vm_invMacro[, ttot, ],
-    ref = vm_invMacro_ref,
-    startYear = cm_startyear
-  )
+                                           ref = vm_invMacro_ref,
+                                           startYear = cm_startyear)
   v01_invMacroAdj <- modifyInvestmentVariables(v01_invMacroAdj[, ttot, ],
-    ref = v01_invMacroAdj_ref,
-    startYear = cm_startyear
-  )
+                                               ref = v01_invMacroAdj_ref,
+                                               startYear = cm_startyear)
   v_costInv <- modifyInvestmentVariables(v_costInv[, ttot, ],
-    ref = v_costInv_ref,
-    startYear = cm_startyear
-  )
+                                         ref = v_costInv_ref,
+                                         startYear = cm_startyear)
   vm_costInvTeDir <- modifyInvestmentVariables(vm_costInvTeDir[, ttot, ],
-    ref = vm_costInvTeDir_ref,
-    startYear = cm_startyear
-  )
+                                               ref = vm_costInvTeDir_ref,
+                                               startYear = cm_startyear)
   vm_costInvTeAdj <- modifyInvestmentVariables(vm_costInvTeAdj[, ttot, ],
-    ref = vm_costInvTeAdj_ref,
-    startYear = cm_startyear
-  )
+                                               ref = vm_costInvTeAdj_ref,
+                                               startYear = cm_startyear)
   vm_costAddTeInv <- modifyInvestmentVariables(vm_costAddTeInv[, ttot, ],
-    ref = vm_costAddTeInv_ref,
-    startYear = cm_startyear
-  )
+                                               ref = vm_costAddTeInv_ref,
+                                               startYear = cm_startyear)
   vm_costCESMkup <- modifyInvestmentVariables(vm_costCESMkup[, ttot, ],
-    ref = vm_costCESMkup_ref,
-    startYear = cm_startyear
-  )
+                                              ref = vm_costCESMkup_ref,
+                                              startYear = cm_startyear)
 
   # Load in sets used to filter the investment variables
   ppfKap <- gdx::readGDX(gdx, "ppfKap") |> as.character()
@@ -629,6 +622,7 @@ reportInvestments <- function(gdx,
       dimSums(inv[, , "ccsinje"]),
       "Investment|Energy Supply|+|CO2 Trans&Stor (billion US$2017/yr)"
     ))
+
   } else {
     # Investments into CCS Trans and Stor (Onshore)
     tmp <- mbind(tmp, setNames(
@@ -645,7 +639,7 @@ reportInvestments <- function(gdx,
     # Investments into CCS Trans and Stor (Total)
     tmp <- mbind(tmp, setNames(
       tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Onshore (billion US$2017/yr)"] +
-        tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Offshore (billion US$2017/yr)"],
+      tmp[, , "Investment|Energy Supply|CO2 Trans&Stor|+|Offshore (billion US$2017/yr)"],
       "Investment|Energy Supply|+|CO2 Trans&Stor (billion US$2017/yr)"
     ))
   }
