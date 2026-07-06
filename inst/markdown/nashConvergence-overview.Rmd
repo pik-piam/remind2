@@ -60,3 +60,47 @@ htmltools::tagList(diag$tradeDetailPlot)
 
 ```
 
+## Non-convergence reasons per iteration
+
+```{r results = "asis"}
+
+# Per-iteration diagnostics come from the GAMS listing file full.lst, assumed to
+# sit next to the gdx. toolParseLSTReasons() reads it only at render time, using
+# grep/sed when available and falling back to pure R otherwise.
+lstFile <- file.path(dirname(params$gdx), "full.lst")
+reasons <- toolParseLSTReasons(lstFile)
+
+if (is.null(reasons)) {
+  cat(paste0("*No `full.lst` found next to the gdx (expected at `", lstFile,
+             "`) - per-iteration diagnostics unavailable.*"))
+} else if (nrow(reasons) == 0) {
+  cat("*No per-iteration non-convergence sections found in `full.lst`.*")
+} else {
+  iters <- reasons$iteration
+  texts <- reasons$text
+  {
+    n <- length(iters)
+    divs <- paste0(
+      "<div class='iterReasons' style='display:", ifelse(seq_len(n) == 1, "block", "none"),
+      "'><pre style='white-space:pre-wrap'>", htmltools::htmlEscape(texts), "</pre></div>",
+      collapse = "\n"
+    )
+    cat(paste0(
+      "<input type='range' min='1' max='", n, "' value='1' id='iterReasonsSlider' style='width:100%'>\n",
+      "<div id='iterReasonsLabel' style='font-weight:bold;margin:6px 0'></div>\n",
+      "<div id='iterReasonsBox'>\n", divs, "\n</div>\n",
+      "<script>\n(function(){\n",
+      "var nums=[", paste(iters, collapse = ","), "];\n",
+      "var slider=document.getElementById('iterReasonsSlider');\n",
+      "var divs=document.getElementById('iterReasonsBox').getElementsByClassName('iterReasons');\n",
+      "var label=document.getElementById('iterReasonsLabel');\n",
+      "function show(i){for(var k=0;k<divs.length;k++){divs[k].style.display=(k==i-1)?'block':'none';}",
+      "label.innerText='Iteration '+nums[i-1];}\n",
+      "slider.addEventListener('input',function(e){show(+e.target.value);});\n",
+      "show(1);\n})();\n</script>"
+    ))
+  }
+}
+
+```
+
