@@ -320,8 +320,8 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
   ## conversion efficiency in p_eta_conv is in TWa_elec/Mt_Ur
   s_twa2mwh <- readGDX(gdx, "sm_TWa_2_MWh", format = "first_found", react = "silent")
   tmp <- mbind(tmp, setNames(p_eta_conv[, , "tnrs"] * s_twa2mwh * 3.6 / 1e9,
-                             report_str(techmap[["tnrs"]], "Efficiency|Conversion factor", "GJ/kg_Ur")))
-  int2ext[[report_str(techmap[["tnrs"]], "Efficiency|Conversion factor", "GJ/kg_Ur")]] <-
+                             report_str(techmap[["tnrs"]], "Efficiency|Conversion factor", "GJ_el/kg_Ur")))
+  int2ext[[report_str(techmap[["tnrs"]], "Efficiency|Conversion factor", "GJ_el/kg_Ur")]] <-
     report_str(techmap[["tnrs"]], unit = "EJ/yr", predicate = "SE")
 
   ## lifetime ----
@@ -371,7 +371,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
   tmp <- bind_category(tmp, omv, category, unit, 1000. / 31.7098)
   int2ext <- c(int2ext, get_global_mapping(category, unit, techmap))
 
-  ## CO2 emission factors for electricity (required for PyPSA) ----
+  ## CO2 emission factors per electricity generation technology ----
   sm_c_2_co2 <- as.numeric(readGDX(gdx, "sm_c_2_co2"))
   pm_emifac_co2 <- readGDX(gdx, "pm_emifac", restore_zeros = FALSE)[, y, "co2"]
   factor_emifac <- sm_c_2_co2 * 1e12 / s_twa2mwh  # GtC/TWa -> gCO2/kWh
