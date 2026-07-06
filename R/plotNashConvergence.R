@@ -14,9 +14,8 @@
 #' @importFrom quitte as.quitte
 #' @importFrom data.table :=
 #' @importFrom mip plotstyle
-#' @importFrom ggplot2 scale_y_continuous scale_x_continuous scale_y_discrete
-#'              scale_fill_manual scale_color_manual coord_cartesian aes_ geom_rect
-#'              theme geom_point geom_hline
+#' @importFrom ggplot2 scale_y_continuous scale_x_continuous scale_y_discrete scale_fill_manual scale_color_manual
+#' @importFrom ggplot2 coord_cartesian aes_ geom_rect theme geom_point geom_hline
 #' @importFrom plotly ggplotly config hide_legend subplot layout
 #' @importFrom reshape2 dcast
 #'
