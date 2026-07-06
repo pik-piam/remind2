@@ -13,24 +13,49 @@
 #'   portable to systems without these tools (e.g. Windows).
 #'
 #' @param lstFile \code{character(1)}. Path to the GAMS listing file.
+#' @param timeLimit \code{numeric(1)}. Maximum time in seconds allowed for
+#'   parsing. If exceeded, the function stops and fails gracefully by returning
+#'   \code{NULL}. Default 90.
 #' @return A \code{data.frame} with integer column \code{iteration} and character
 #'   column \code{text}, one row per iteration ordered by iteration, or
-#'   \code{NULL} if \code{lstFile} does not exist.
+#'   \code{NULL} if \code{lstFile} does not exist, the time limit is exceeded, or
+#'   parsing otherwise fails.
 #'
 #' @author Gabriel Abrahão
 #'
 #' @export
-toolParseLSTReasons <- function(lstFile) {
+toolParseLSTReasons <- function(lstFile, timeLimit = 90) {
   if (!file.exists(lstFile)) {
     return(NULL)
   }
-  # try the fast external-tool path; it returns NULL if the tools are missing or
-  # anything unexpected happens, in which case we fall back to the pure-R path.
-  fast <- .parseLSTReasonsFast(lstFile)
-  if (!is.null(fast)) {
-    return(fast)
+
+  start <- Sys.time()
+  remaining <- function() {
+    as.numeric(timeLimit) - as.numeric(difftime(Sys.time(), start, units = "secs"))
   }
-  .parseLSTReasonsSlow(lstFile)
+
+  # Overall time budget: fail gracefully (return NULL) if parsing exceeds it.
+  # setTimeLimit guards R-side work; the external tools are bounded via
+  # system2(timeout=) with the time still remaining in the budget.
+  setTimeLimit(elapsed = timeLimit, transient = TRUE)
+  on.exit(setTimeLimit())
+
+  tryCatch({
+    # the fast external-tool path returns NULL if the tools are missing or
+    # anything unexpected happens, in which case we fall back to the pure-R path.
+    fast <- .parseLSTReasonsFast(lstFile, timeout = max(remaining(), 0))
+    if (!is.null(fast)) {
+      fast
+    } else if (remaining() <= 0) {
+      stop("time limit reached before completing")
+    } else {
+      .parseLSTReasonsSlow(lstFile)
+    }
+  }, error = function(e) {
+    warning("toolParseLSTReasons: parsing failed or exceeded timeLimit (",
+            timeLimit, "s): ", conditionMessage(e))
+    NULL
+  })
 }
 
 # markers delimiting the blocks of interest in the listing file
@@ -74,20 +99,33 @@ toolParseLSTReasons <- function(lstFile) {
   rows[order(rows$iteration), , drop = FALSE]
 }
 
+# TRUE if a system2 call reported an error or timeout. grep uses status 1 to
+# signal "no match", which is not a failure here, so only status > 1 counts.
+.system2Failed <- function(x) {
+  st <- attr(x, "status")
+  !is.null(st) && st > 1
+}
+
 # fast path: use grep to locate the markers (one scan) and sed to extract the
-# block lines (one scan), bringing only the small result into R.
-.parseLSTReasonsFast <- function(lstFile) {
+# block lines (one scan), bringing only the small result into R. The external
+# calls are bounded by `timeout` seconds so they cannot hang past the budget.
+.parseLSTReasonsFast <- function(lstFile, timeout = 90) {
   grepBin <- Sys.which("grep")
   sedBin <- Sys.which("sed")
   if (!nzchar(grepBin) || !nzchar(sedBin)) {
     return(NULL)
   }
+  to <- if (is.finite(timeout) && timeout > 0) timeout else 0
 
   tryCatch({
     pattern <- paste(.lstIterMarker, .lstStartMarker, .lstEndMarker, sep = "|")
     matched <- suppressWarnings(
-      system2(grepBin, c("-nE", shQuote(pattern), shQuote(lstFile)), stdout = TRUE, stderr = FALSE)
+      system2(grepBin, c("-nE", shQuote(pattern), shQuote(lstFile)),
+              stdout = TRUE, stderr = FALSE, timeout = to)
     )
+    if (.system2Failed(matched)) {
+      return(NULL)
+    }
     if (length(matched) == 0) {
       return(.emptyReasons())
     }
@@ -113,8 +151,11 @@ toolParseLSTReasons <- function(lstFile) {
       ranges <- paste0(blocks$first[hasLines], ",", blocks$last[hasLines], "p")
       out <- suppressWarnings(
         system2(sedBin, c("-n", shQuote(paste(ranges, collapse = ";")), shQuote(lstFile)),
-                stdout = TRUE, stderr = FALSE)
+                stdout = TRUE, stderr = FALSE, timeout = to)
       )
+      if (.system2Failed(out)) {
+        return(NULL)
+      }
       lens <- blocks$last[hasLines] - blocks$first[hasLines] + 1L
       if (length(out) != sum(lens)) {
         return(NULL) # unexpected extraction size -> fall back to the pure-R path

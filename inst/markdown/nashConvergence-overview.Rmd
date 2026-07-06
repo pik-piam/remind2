@@ -68,11 +68,15 @@ htmltools::tagList(diag$tradeDetailPlot)
 # sit next to the gdx. toolParseLSTReasons() reads it only at render time, using
 # grep/sed when available and falling back to pure R otherwise.
 lstFile <- file.path(dirname(params$gdx), "full.lst")
-reasons <- toolParseLSTReasons(lstFile)
+reasons <- toolParseLSTReasons(lstFile, timeLimit = 90)
 
 if (is.null(reasons)) {
-  cat(paste0("*No `full.lst` found next to the gdx (expected at `", lstFile,
-             "`) - per-iteration diagnostics unavailable.*"))
+  if (file.exists(lstFile)) {
+    cat("*Parsing `full.lst` exceeded the 90s time limit or failed; per-iteration diagnostics unavailable.*")
+  } else {
+    cat(paste0("*No `full.lst` found next to the gdx (expected at `", lstFile,
+               "`) - per-iteration diagnostics unavailable.*"))
+  }
 } else if (nrow(reasons) == 0) {
   cat("*No per-iteration non-convergence sections found in `full.lst`.*")
 } else {
