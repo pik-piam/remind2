@@ -384,12 +384,12 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
     emifac_thermal <- pm_emifac_co2[, , seel_map[[key]]] * factor_emifac
     tmp <- mbind(tmp,
       setNames(emifac_thermal,
-               report_str(techmap[[key]], "CO2 emission factor thermal input", "gCO2/kWh")),
+               report_str(techmap[[key]], "CO2 emission factor thermal input", "gCO2/kWh_th")),
       setNames(emifac_thermal / (if (key %in% in_dataeta) p_dataeta[, , key] else p_eta_conv[, , key]),
-               report_str(techmap[[key]], "CO2 emission factor electricity output", "gCO2/kWh"))
+               report_str(techmap[[key]], "CO2 emission factor electricity output", "gCO2/kWh_el"))
     )
-    int2ext[[report_str(techmap[[key]], "CO2 emission factor thermal input", "gCO2/kWh")]] <- report_str(techmap[[key]], unit = "EJ/yr", predicate = "SE")
-    int2ext[[report_str(techmap[[key]], "CO2 emission factor electricity output", "gCO2/kWh")]] <- report_str(techmap[[key]], unit = "EJ/yr", predicate = "SE")
+    int2ext[[report_str(techmap[[key]], "CO2 emission factor thermal input", "gCO2/kWh_th")]] <- report_str(techmap[[key]], unit = "EJ/yr", predicate = "SE")
+    int2ext[[report_str(techmap[[key]], "CO2 emission factor electricity output", "gCO2/kWh_el")]] <- report_str(techmap[[key]], unit = "EJ/yr", predicate = "SE")
   }
 
   # write to output ----
