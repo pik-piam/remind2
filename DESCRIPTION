@@ -69,7 +69,6 @@ Imports:
     plotly (>= 4.10.4),
     quitte (>= 0.3132.0),
     readr,
-    remulator,
     reshape2,
     rlang,
     rmarkdown,
@@ -84,6 +83,7 @@ Suggests:
     htmltools,
     kableExtra,
     knitr,
+    remulator,
     scales,
     testthat,
     tidyverse
@@ -93,4 +93,3 @@ Encoding: UTF-8
 Config/testthat/parallel: true
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
-RoxygenNote: 7.3.3
