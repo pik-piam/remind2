@@ -25,6 +25,7 @@ Authors@R: c(
     person("Anne", "Merfort", role = "aut"),
     person("Leon", "Merfort", role = "aut"),
     person("Simón", "Morena-Leiva", role = "aut"),
+    person("Adrian", "Odenweller", role = "aut"),
     person("Michaja", "Pehl", role = "aut"),
     person("Robert", "Pietzcker", role = "aut"),
     person("Sebastian", "Rauner", role = "aut"),
