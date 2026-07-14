@@ -400,7 +400,7 @@ prices_and_surplus <-
             price_not_discounted_itr,
             by = c("tall" = "ttot", "all_enty", "iteration")) %>%
   filter(!is.na(p80_pvp_itr_no_discount)) %>%
-  reshape2::melt(id.vars = c(1, 2, 3))
+  tidyr::pivot_longer(c("p80_surplus", "p80_pvp_itr_no_discount"), names_to = "variable")
 
 # calculate iteration +1 and +2
 
