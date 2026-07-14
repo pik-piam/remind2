@@ -28,8 +28,9 @@ Read in tax information from GDX file, information used in convGDX2MIF.R for
 the reporting
 }
 \examples{
-
-\dontrun{reportTax(gdx)}
+\dontrun{
+reportTax(gdx)
+}
 
 }
 \author{

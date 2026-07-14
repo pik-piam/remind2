@@ -51,6 +51,7 @@ showAreaAndBarPlots(data, items, orderVars = "user", scales = "fixed")
 ```{r Final Energy Detail}
 tot <- "FE"
 items <- c(
+  "FE|CDR",
   "FE|Transport|Electricity",
   "FE|Buildings|Electricity",
   "FE|Industry|Electricity",
@@ -76,7 +77,7 @@ items <- c(
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 ```
 
-### FE Demand Detail - Carrier and Sector - carrier share - Bar 
+### FE Demand Detail - Carrier and Sector share - Bar 
 ```{r FE all sectors - carrier share - Bar  }
 showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 ```

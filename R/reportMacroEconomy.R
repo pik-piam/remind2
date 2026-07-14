@@ -212,6 +212,7 @@ reportMacroEconomy <- function(gdx,
       "feelhpb.fesob",
       "feelhpb.feheb",
       "feelhpb.feelrhb",
+      "feelhpb.feelrhcob",
       "feh2b.fegab",
       "feelhth_otherInd.fega_otherInd",
       "feelhth_otherInd.feli_otherInd",
@@ -235,6 +236,9 @@ reportMacroEconomy <- function(gdx,
       )
     }
 
+    # Filter to only variables that exist (to ensure backwards compatibility for new buildings CES tree)
+    availableMrs <- getItems(o01_CESmrs, 3)
+    mrs.report <- mrs.report[mrs.report %in% availableMrs]
 
     CES.mrs <- collapseDim(setNames(
       o01_CESmrs[, , mrs.report],

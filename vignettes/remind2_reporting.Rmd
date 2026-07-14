@@ -51,6 +51,16 @@ checkIntegrity(testReport)
 
 If your change involves reading in a parameter, variable or set from the GDX-file that is not yet merged to the [main REMIND repository](https://github.com/remindmodel/remind) or that is not declared in the default runs of REMIND, please use conditional statements that check whether these parameters exist. Otherwise, the reporting will break for other users with other GDX files. 
 
+### Automated testing through buildLibrary and backwards compatibility
+
+We have an internal agreement that remind2 must be always work with the latest release version so that projects using this release can update to the latest remind2 version without worrying about compatibility.
+
+When running `buildLibrary` as part of creating a pull request, the tests check for compatibility with two gdxes: one gdx file from the latest REMIND release and one gdx file from the most recent weekly automated model tests. Your changes must work with both, otherwise the test will fail.
+
+If necessary, you will have to introduce sections which are just needed to ensure backwards compatibility. In order to mark such sections, please use comments such as ` ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)` so that anyone can easily see when a code portion has become obsolete because the release version is no longer supported. For details, see `tests/testthat/test-convGDX2mif.R`.
+
+In order to write code for a specific release, you can use `c_model_version` (yields sth. like `3-4-0-dev551`) from the gdx in your conditions. 
+
 
 ## REMIND Variable Naming
 

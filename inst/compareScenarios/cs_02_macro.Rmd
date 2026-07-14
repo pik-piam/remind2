@@ -123,7 +123,10 @@ showAreaAndBarPlots(data, items, tot, scales = "fixed")
 tot <- "Internal|CES Function|Value|enb"
 items <- c(
   "Internal|CES Function|Value|enhb",
-  "Internal|CES Function|Value|feelcb")
+  "Internal|CES Function|Value|feelcb",
+  "Internal|CES Function|Value|feelalb",
+  "Internal|CES Function|Value|feelictb",
+  "Internal|CES Function|Value|feelscb")
 
 showAreaAndBarPlots(data, items, tot, scales = "fixed")
 ```

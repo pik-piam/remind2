@@ -20,6 +20,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Renato Rodrigues \email{renato.rodrigues@pik-potsdam.de}
   \item Lavinia Baumstark
   \item Falk Benke
   \item David Bantje
@@ -40,6 +41,7 @@ Authors:
   \item Anne Merfort
   \item Leon Merfort
   \item Simón Morena-Leiva
+  \item Adrian Odenweller
   \item Michaja Pehl
   \item Robert Pietzcker
   \item Sebastian Rauner

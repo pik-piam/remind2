@@ -24,8 +24,9 @@ MAgPIE object - contains the SDP
 Add SDP variables to mif, used in convGDX2MIF.R for the reporting
 }
 \examples{
-
-\dontrun{reportSDPVariables(gdx, output, t)}
+\dontrun{
+reportSDPVariables(gdx, output, t)
+}
 
 }
 \seealso{

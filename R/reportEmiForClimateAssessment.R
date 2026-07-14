@@ -150,21 +150,14 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
   if (!is.null(regionSubsetList)) {
     out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
   }
-  
-  # Run air pollution report
-  ## Ensure backwards compatibility for release version 3.5.2 (will be removed with 3.6.0)
-  cm_APscen <- try(readGDX(gdx, "cm_APscen", react = "error"), silent = TRUE)
 
-  if (inherits(cm_APscen, "try-error")) {
-    message("reportEmiForClimateAssessment executes reportEmiAirPol")
-    pollutants <- reportEmiAirPol(gdx, regionSubsetList = regionSubsetList, t = t)
-  } else {
-    message("reportEmiForClimateAssessment executes reportAirPollutantEmissions...")
-    pollutants <- reportAirPollutantEmissions(gdx = gdx, output = output, 
-                                              regionSubsetList = regionSubsetList, t = t, 
-                                              extraData = extraData, addTmpTotal = TRUE)
-  }
-  
+  # Run air pollution report
+  message("reportEmiForClimateAssessment executes reportAirPollutantEmissions...")
+  pollutants <- reportAirPollutantEmissions(
+    gdx = gdx, output = output,
+    regionSubsetList = regionSubsetList, t = t,
+    extraData = extraData, addTmpTotal = TRUE
+  )
   getItems(pollutants, "variable") <- sub("Emi\\|", "Emi\\|CA\\|", getItems(pollutants, "variable"))
   # Combine both reports
   out <- mbind(out, pollutants[getItems(out, dim = "all_regi"), getItems(out, dim = "tall"), ])
