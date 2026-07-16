@@ -171,16 +171,17 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_demPE("pebiolc", "segabio", "biogasc",                       name = "biogasc (EJ/yr)"),
     get_demPE("pebiolc", "seel", "bioigcc",                          name = "bioigcc (EJ/yr)"),
     get_demPE("pebiolc", "seel", "bioigccc",                         name = "bioigccc (EJ/yr)"),
-    get_demPE("pebiolc", "seel", "biochp",                           name = "biochp (EJ/yr)"),
+    get_demPE("pebiolc",  te = "biochp",                             name = "biochp (EJ/yr)"),
+    get_demPE("pebiolc", "seel", "biochp",                           name = "biochp_elec (EJ/yr)"),
     get_demPE("pebiolc", "seh2", "bioh2",                            name = "bioh2 (EJ/yr)"),
     get_demPE("pebiolc", "seh2", "bioh2c",                           name = "bioh2c (EJ/yr)"),
     get_demPE("pebiolc", "sehe", "biohp",                            name = "biohp (EJ/yr)"),
-    get_demPE("pebiolc", "sehe", "biochp",                           name = "biochp (EJ/yr)"),
+    get_demPE("pebiolc", "sehe", "biochp",                           name = "biochp_heat (EJ/yr)"),
     get_demPE("pebiolc", "sebiochar", "biopyronly",                  name = "biopyronly (EJ/yr)"),
     get_demPE("pebiolc", te = "biopyrhe",                            name = "biopyrhe (EJ/yr)"),
     get_demPE("pebiolc", "sebiochar", "biopyrhe",                    name = "biopyrhe_char (EJ/yr)"),
     get_demPE("pebiolc", "sehe", "biopyrhe",                         name = "biopyrhe_heat (EJ/yr)"),
-    get_demPE("pebiolc", te ="biopyrchp",                            name = "biopyrchp (EJ/yr)"),
+    get_demPE("pebiolc", te = "biopyrchp",                           name = "biopyrchp (EJ/yr)"),
     get_demPE("pebiolc", "sebiochar", "biopyrchp",                   name = "biopyrchp_char (EJ/yr)"),
     get_demPE("pebiolc", "sehe", "biopyrchp",                        name = "biopyrchp_heat (EJ/yr)"),
     get_demPE("pebiolc", "seel", "biopyrchp",                        name = "biopyrchp_elec (EJ/yr)"),
@@ -190,8 +191,7 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
     get_demPE("pemanure", "seel", "biodigestCHP",                    name = "biodigestCHP_elec (EJ/yr)"),
     get_demPE("pemanure", "sehe", "biodigestCHP",                    name = "biodigestCHP_heat (EJ/yr)"),  
     get_demPE("pemanure", "segabio", "biodigestGAS",                 name = "biodigestGAS (EJ/yr)"),  
-        
-
+      
 
     # renewables and nuclear
     # using prodSE rather than demPE to follow the "direct method" for primary energy:
