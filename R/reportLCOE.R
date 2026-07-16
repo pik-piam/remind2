@@ -1185,8 +1185,7 @@ reportLCOE <- function(gdx, output.type = "both") {
       # electricity cost (convert DAC FE demand to GJ/tCO2 and fuel price to USD/GJ)
       LCOD[, , "Electricity Cost"] <-  p33_fedem[, , "dac.feels"] / 3.66 * Fuel.Price[, , "seel"] / 3.66
       # Choose cheaper fuel price between sehe and seel (next ton would be removed utilising the cheaper energy carrier)
-      min_fuel_price <- pmin(Fuel.Price[, , "sehe"],
-                             Fuel.Price[, , "seel"])
+      min_fuel_price <- asS4(pmin(Fuel.Price[, , "sehe"], Fuel.Price[, , "seel"]))
       # calculate heat cost using the cheaper option
       LCOD[, , "Heat Cost"] <- p33_fedem[, , "dac.fehes"] / 3.66 * min_fuel_price / 3.66
       
@@ -1196,7 +1195,7 @@ reportLCOE <- function(gdx, output.type = "both") {
       ttot_from2010 <- paste0("y",ttot[which(ttot >= 2010)])
       
       vm_deltaCap <- readGDX(gdx,name=c("vm_deltaCap"),field="l",format="first_found")[,ttot_from2005,]
-      vm_capFac <- readGDX(gdx, "vm_capFac", field = "l", restore_zeros = F)
+      vm_capFac <- readGDX(gdx, "vm_capFac", field = "l", restore_zeros = FALSE)
       p_adj_seed_reg <- readGDX(gdx, "p_adj_seed_reg", restore_zeros = TRUE)[,ttot_from2005,]
       p_adj_seed_te <- readGDX(gdx, "p_adj_seed_te", restore_zeros = FALSE)
       p_adj_coeff <- readGDX(gdx,"p_adj_coeff", restore_zeros = FALSE)
@@ -1216,9 +1215,7 @@ reportLCOE <- function(gdx, output.type = "both") {
       )
       adjFac_eps <- mbind(new.magpie(getRegions(adjFac_eps), c("y2005"), getNames(adjFac_eps), fill = 0), adjFac_eps)
       marginal_adj_cost <- vm_costTeCapital[,,"dac"] * p_adj_coeff[,,"dac"] * (adjFac_eps - v_adjFactor[,,"dac"])* 1e12 * 1.2 * p_teAnnuity[,,"dac"]
-      LCOD[,,"Adjustment Cost"] <- marginal_adj_cost
-      
-      LCOD[, , "Total LCOE"] <- LCOD[, , "Investment Cost"] + LCOD[, , "OMF Cost"] + LCOD[, , "Electricity Cost"] + LCOD[, , "Heat Cost"]
+      LCOD[, , "Total LCOE"] <- LCOD[, , "Investment Cost"] + LCOD[, , "OMF Cost"] + LCOD[, , "Electricity Cost"] + LCOD[, , "Heat Cost"] + LCOD[, , "Adjustment Cost"]
     }
 
     getSets(LCOD)[3] <- "cost"
