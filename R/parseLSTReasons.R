@@ -24,7 +24,7 @@
 #' @author Gabriel Abrahão
 #'
 #' @export
-toolParseLSTReasons <- function(lstFile, timeLimit = 90) {
+parseLSTReasons <- function(lstFile, timeLimit = 90) {
   if (!file.exists(lstFile)) {
     return(NULL)
   }
@@ -52,7 +52,7 @@ toolParseLSTReasons <- function(lstFile, timeLimit = 90) {
       .parseLSTReasonsSlow(lstFile)
     }
   }, error = function(e) {
-    warning("toolParseLSTReasons: parsing failed or exceeded timeLimit (",
+    warning("parseLSTReasons: parsing failed or exceeded timeLimit (",
             timeLimit, "s): ", conditionMessage(e))
     NULL
   })
