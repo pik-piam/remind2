@@ -1191,8 +1191,6 @@ reportLCOE <- function(gdx, output.type = "both") {
       LCOD[, , "Heat Cost"] <- p33_fedem[, , "dac.fehes"] / 3.66 * min_fuel_price / 3.66
       
       # DAC marginal adjustment costs
-      ttot <- as.numeric(readGDX(gdx,"ttot"))
-      ttot_from2005 <- paste0("y",ttot[which(ttot >= 2005)])
       ttot_from2010 <- paste0("y",ttot[which(ttot >= 2010)])
       
       vm_deltaCap <- readGDX(gdx,name=c("vm_deltaCap"),field="l",format="first_found")[,ttot_from2005,]
@@ -1202,7 +1200,6 @@ reportLCOE <- function(gdx, output.type = "both") {
       p_adj_coeff <- readGDX(gdx,"p_adj_coeff", restore_zeros = FALSE)
       v_adjFactor <- readGDX(gdx, "v_adjFactor", restore_zeros = FALSE, field = "l")
       vm_costTeCapital <- readGDX(gdx,"vm_costTeCapital", restore_zeros = FALSE, field = "l")[,ttot_from2005,]
-      vm_costInvTeAdj_dac <- readGDX(gdx,"vm_costInvTeAdj",restore_zeros = FALSE, field = "l")[,ttot_from2005,"dac"]
 
       vm_deltaCap_dac <- dimSums(mselect(vm_deltaCap, all_te = "dac"), dim=3.2)
       y <- getYears(vm_deltaCap, as.integer = TRUE)
