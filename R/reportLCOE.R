@@ -1215,7 +1215,7 @@ reportLCOE <- function(gdx, output.type = "both") {
       )
       adjFac_eps <- mbind(new.magpie(getRegions(adjFac_eps), c("y2005"), getNames(adjFac_eps), fill = 0), adjFac_eps)
       marginal_adj_cost <- vm_costTeCapital[,,"dac"] * p_adj_coeff[,,"dac"] * (adjFac_eps - v_adjFactor[,,"dac"])* 1e12 * 1.2 * p_teAnnuity[,,"dac"]
-      LCOD[, , "Total LCOE"] <- LCOD[, , "Investment Cost"] + LCOD[, , "OMF Cost"] + LCOD[, , "Electricity Cost"] + LCOD[, , "Heat Cost"] + LCOD[, , "Adjustment Cost"]
+      LCOD[, , "Total LCOE"] <- LCOD[, , "Investment Cost"] + LCOD[, , "OMF Cost"] + LCOD[, , "Electricity Cost"] + LCOD[, , "Heat Cost"] 
     }
 
     getSets(LCOD)[3] <- "cost"
