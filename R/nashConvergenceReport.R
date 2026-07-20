@@ -46,7 +46,8 @@ nashConvergenceReport <- function(gdx = "fulldata.gdx", outputDir = getwd()) {
   # all reports
   reports <- c(
     "infes" = "overview", "surplus" = "trade", "DevPriceAnticip" = "priceAnticipation", "taxconv" = "taxConv", "target" = "emiTarget",
-    "regiTarget" = "regiTarget", "implicitEnergyTarget" = "qttyTarget", "cm_implicitPriceTarget" = "priceTarget", "cm_implicitPePriceTarget" = "pePriceTarget", "damage" = "damage"
+    "regiTarget" = "regiTarget", "implicitEnergyTarget" = "qttyTarget", "cm_implicitPriceTarget" = "priceTarget", "cm_implicitPePriceTarget" = "pePriceTarget", "damage" = "damage",
+    "peakbudget" = "co2price"
   )
 
   # active convergence criteria
@@ -62,7 +63,8 @@ nashConvergenceReport <- function(gdx = "fulldata.gdx", outputDir = getwd()) {
 .createIndexHTML <- function(active_reports, output_dir) {
   titles <- c(
     "overview" = "Overview", "trade" = "Trade Surplus", "priceAnticipation" = "Price Anticipation", "taxConv" = "Tax Convergence", "emiTarget" = "Emission target",
-    "regiTarget" = "Regional target", "qttyTarget" = "Quantity target", "priceTarget" = "Price target", "pePriceTarget" = "PE Price target", "damage" = "Damage"
+    "regiTarget" = "Regional target", "qttyTarget" = "Quantity target", "priceTarget" = "Price target", "pePriceTarget" = "PE Price target", "damage" = "Damage",
+    "co2price" = "CO2 price convergence"
   )
 
   indexHTML <- '<!DOCTYPE html>\n<html>\n<head>\n<meta name="viewport" content="width=device-width, initial-scale=1">'

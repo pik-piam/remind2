@@ -14,11 +14,9 @@
 #' @importFrom quitte as.quitte
 #' @importFrom data.table :=
 #' @importFrom mip plotstyle
-#' @importFrom ggplot2 scale_y_continuous scale_x_continuous scale_y_discrete
-#'              scale_fill_manual scale_color_manual coord_cartesian aes_ geom_rect
-#'              theme geom_point geom_hline
+#' @importFrom ggplot2 scale_y_continuous scale_x_continuous scale_y_discrete scale_fill_manual scale_color_manual
+#' @importFrom ggplot2 coord_cartesian aes_ geom_rect theme geom_point geom_hline
 #' @importFrom plotly ggplotly config hide_legend subplot layout
-#' @importFrom reshape2 dcast
 #'
 #' @export
 plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
@@ -45,7 +43,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
     p80RepyIteration <- readGDX(gdx, name = "p80_repy_iteration", restore_zeros = FALSE, react = "error") %>%
       as.quitte() %>%
       select(c("solveinfo80", "region", "iteration", "value")) %>%
-      dcast(region + iteration ~ solveinfo80, value.var = "value") %>%
+      tidyr::pivot_wider(names_from = "solveinfo80") %>%
       mutate(
         "iteration" := as.numeric(as.character(.data$iteration)),
         "convergence" := case_when(
@@ -102,7 +100,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       as.quitte() %>%
       select(c("solveinfo80", "region", "iteration", "value")) %>%
       mutate("iteration" := as.numeric(as.character(.data$iteration))) %>%
-      dcast(region + iteration ~ solveinfo80, value.var = "value")
+      tidyr::pivot_wider(names_from = "solveinfo80")
 
     p80RepyIteration <- p80RepyIteration %>%
       left_join(p80ConvNashObjValIter, by = c("region", "iteration")) %>%
