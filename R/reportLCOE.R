@@ -515,8 +515,8 @@ reportLCOE <- function(gdx, output.type = "both") {
     if (EW_name %in% teCDR) {
       # The calculation of cost is associated with the spreading of rocks in a time step. However, the removal induced thereby is spread across time steps.
       # Thus, we need to calculate the total removal induced through spreading a given amount of rock as reference value for the cost incurred in that time step.
-      s33_co2_rem_pot <- readGDX(gdx, "s33_co2_rem_pot")
-      EW_induced_in_tCO2 <- dimSums(v33_EW_onfield * s33_co2_rem_pot * s_GtC2tCO2, dim = 3) # here grades do not matter because the overall removal depends on the type of stone and not grade
+      s33_rockRemPot <- readGDX(gdx, c("s33_rockRemPot","s33_co2_rem_pot"), format = "first_found")
+      EW_induced_in_tCO2 <- dimSums(v33_EW_onfield * s33_rockRemPot * s_GtC2tCO2, dim = 3) # here grades do not matter because the overall removal depends on the type of stone and not grade
       # [Gt stone] * [GtC/GtStone] * [tCO2/GtC]
       EW_induced_in_tCO2[EW_induced_in_tCO2 == 0] <- NA # set NA to avoid infinite investment cost for the standing system when regions do not spread EW in time steps after initial investment was taken
       cdrco2_byTech_tCO2[, , EW_name] <- EW_induced_in_tCO2[, ttot_from2005, ]
