@@ -86,6 +86,7 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   pm_taxCO2eq    <- readGDX(gdx, name = c("pm_taxCO2eq", "pm_tau_CO2_tax"), format = "first_found")[, t, ]
   pm_taxCO2eqSum <- readGDX(gdx, name = "pm_taxCO2eqSum", format = "first_found")[, t, ]
   pm_taxCO2eqSCC <- readGDX(gdx, name = "pm_taxCO2eqSCC", format = "first_found")[, t, ]
+  p51_scc_perRegion <- readGDX(gdx, name = "p51_scc_perRegion", format = "first_found")[, t, ]
   p21_CO2TaxSectorMarkup <- readGDX(gdx, name = c("p21_CO2TaxSectorMarkup", "p21_CO2_tax_sector_markup"), format = "first_found", react = "silent")
   if (dimExists("ttot", p21_CO2TaxSectorMarkup)) p21_CO2TaxSectorMarkup <- p21_CO2TaxSectorMarkup[, t, ]
   pm_taxemiMkt   <- readGDX(gdx, name = "pm_taxemiMkt", format = "first_found", react = "silent")[, t, ]
@@ -880,6 +881,10 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
     out <- mbind(out, setNames(out[, , "Price|Carbon (US$2017/t CO2)"] - out[, , "Price|Carbon|SCC (US$2017/t CO2)"], "Price|Carbon|Guardrail (US$2017/t CO2)"))
   } else {
     out <- mbind(out, setNames(out[, , "Price|Carbon (US$2017/t CO2)"], "Price|Carbon|Guardrail (US$2017/t CO2)"))
+  }
+
+  if (!is.null(p51_scc_perRegion)) {
+    out <- mbind(out, setNames(abs(p51_scc_perRegion) * 1000 * 12 / 44, "Price|Carbon|SCC|Marginal damage per region (US$2017/t CO2)"))
   }
 
   out <- mbind(out, setNames(out[, , "Price|Carbon (US$2017/t CO2)"] * s_GWP_N2O, "Price|N2O (US$2017/t N2O)"))
