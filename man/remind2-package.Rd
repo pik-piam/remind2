@@ -20,7 +20,6 @@ Useful links:
 
 Authors:
 \itemize{
-  \item Renato Rodrigues \email{renato.rodrigues@pik-potsdam.de}
   \item Lavinia Baumstark
   \item Falk Benke
   \item David Bantje
