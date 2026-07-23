@@ -5,6 +5,17 @@ editor_options:
 ---
 # Energy Demand
 
+## Final Energy by sector
+
+```{r FE by sector}
+items <- c(
+  "FE|CDR",
+  "FE|Transport",
+  "FE|Buildings",
+  "FE|Industry")
+showAreaAndBarPlots(data, items, tot = "FE", scales = "fixed")
+```
+
 ## Final Energy all sectors
 
 ```{r Final Energy total}
@@ -90,14 +101,18 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", fill = TRUE)
 
 ```{r FE Demand Non-Electric - Carrier and Sector - Bar}
 items <- c(
+  "FE|CDR|Hydrogen",
   "FE|Transport|Hydrogen",
   "FE|Buildings|Hydrogen",
   "FE|Industry|Hydrogen", 
+  "FE|CDR|Heat",
   "FE|Buildings|Heat",
   "FE|Industry|Heat", 
+  "FE|CDR|Gases",
   "FE|Transport|Gases",
   "FE|Buildings|Gases",
-  "FE|Industry|Gases", 
+  "FE|Industry|Gases",
+  "FE|CDR|Liquids", 
   "FE|Transport|Liquids",
   "FE|Buildings|Liquids",
   "FE|Industry|Liquids", 
@@ -921,7 +936,7 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 
 #### FE OAE, electric calciner
 
-```{r FE OAE, electric calciner - Bar}
+```{r FE OAE electric calciner - Bar}
 tot <- "FE|CDR|OAE, electric calciner"
 items <- c(
   "FE|CDR|OAE, electric calciner|Electricity",
@@ -935,7 +950,7 @@ showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
 
 
 #### FE OAE, traditional calciner
-```{r FE OAE, traditional calciner - Bar}
+```{r FE OAE traditional calciner - Bar}
 tot <- "FE|CDR|OAE, traditional calciner"
 items <- c(
   "FE|CDR|OAE, traditional calciner|Electricity",
