@@ -412,22 +412,22 @@ reportCosts <- function(gdx,
     if (length(cesItems) > 0) costInvCES <- dimSums(vm_costCESMkup[, y, cesItems], dim = 3, na.rm = TRUE) * 1000
   }
 
-  tmp <- mbind(tmp, setNames(v_costin * 1000 - costInvCES, "Energy System Cost|Supply|Investments (billion US$2017/yr)"))
-  tmp <- mbind(tmp, setNames(v_costom * 1000, "Energy System Cost|Supply|Operation and Maintenance Cost (billion US$2017/yr)"))
+  tmp <- mbind(tmp, setNames(v_costin * 1000 - costInvCES, "Energy System Cost|Supply|+|Investments (billion US$2017/yr)"))
+  tmp <- mbind(tmp, setNames(v_costom * 1000, "Energy System Cost|Supply|+|Operation and Maintenance Cost (billion US$2017/yr)"))
   # Split O&M into CDR (vm_omcosts_cdr, part of q_costOM) and the remaining conversion/grid/storage O&M.
   if (!is.null(vm_omcosts_cdr)) {
-    omParent <- tmp[, , "Energy System Cost|Supply|Operation and Maintenance Cost (billion US$2017/yr)"]
+    omParent <- tmp[, , "Energy System Cost|Supply|+|Operation and Maintenance Cost (billion US$2017/yr)"]
     cdrOM <- dimSums(vm_omcosts_cdr[, getYears(omParent), ], dim = 3, na.rm = TRUE) * 1000
     tmp <- mbind(tmp,
       setNames(cdrOM, "Energy System Cost|Supply|Operation and Maintenance Cost|+|CDR (billion US$2017/yr)"),
       setNames(omParent - cdrOM, "Energy System Cost|Supply|Operation and Maintenance Cost|+|Conversion, Grid and Storage (billion US$2017/yr)")
     )
   }
-  tmp <- mbind(tmp, setNames(tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"], "Energy System Cost|Supply|Fuel Cost (billion US$2017/yr)"))
+  tmp <- mbind(tmp, setNames(tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"], "Energy System Cost|Supply|+|Fuel Cost (billion US$2017/yr)"))
 
   # Split "Energy System Cost|Supply|Fuel Cost" (= "Fuel costs for own ESM") by carrier and into Domestic Extraction and Net Trade
   if (!is.null(vm_costfu_ex)) {
-    fuelParent <- tmp[, , "Energy System Cost|Supply|Fuel Cost (billion US$2017/yr)"]
+    fuelParent <- tmp[, , "Energy System Cost|Supply|+|Fuel Cost (billion US$2017/yr)"]
     conv <- pm_conv_TWa_EJ
     z <- fuelParent * 0
     N <- function(x) setNames(x, NULL)
@@ -586,27 +586,27 @@ reportCosts <- function(gdx,
   # (cement, chemicals, steel, ...)
   if (!is.null(vm_IndCCSCost)) {
     indCCS <- dimSums(vm_IndCCSCost[, y, ], dim = 3, na.rm = TRUE) * 1000
-    tmp <- mbind(tmp, setNames(indCCS, "Energy System Cost|Additional|Industry CO2 Capture (billion US$2017/yr)"))
+    tmp <- mbind(tmp, setNames(indCCS, "Energy System Cost|Additional|+|Industry CO2 Capture (billion US$2017/yr)"))
     esAdd <- if (is.null(esAdd)) indCCS else esAdd + indCCS
   }
 
   # Materials processing cost (vm_costMatPrc): energy/process cost of primary materials (steel, cement) in industry.
   if (!is.null(vm_costMatPrc)) {
     matPrc <- dimSums(vm_costMatPrc[, y, ], dim = 3, na.rm = TRUE) * 1000
-    tmp <- mbind(tmp, setNames(matPrc, "Energy System Cost|Additional|Materials Processing (billion US$2017/yr)"))
+    tmp <- mbind(tmp, setNames(matPrc, "Energy System Cost|Additional|+|Materials Processing (billion US$2017/yr)"))
     esAdd <- if (is.null(esAdd)) matPrc else esAdd + matPrc
   }
 
   # Macroeconomic investment adjustment cost (v01_invMacroAdj): intertemporal capital-adjustment cost.
   if (!is.null(v01_invMacroAdj)) {
     invAdj <- dimSums(v01_invMacroAdj[, y, ], dim = 3, na.rm = TRUE) * 1000
-    tmp <- mbind(tmp, setNames(invAdj, "Energy System Cost|Additional|Investment Adjustment (billion US$2017/yr)"))
+    tmp <- mbind(tmp, setNames(invAdj, "Energy System Cost|Additional|+|Investment Adjustment (billion US$2017/yr)"))
     esAdd <- if (is.null(esAdd)) invAdj else esAdd + invAdj
   }
 
   # Sum of the additional terms
   if (!is.null(esAdd)) {
-    tmp <- mbind(tmp, setNames(esAdd, "Energy System Cost|Additional (billion US$2017/yr)"))
+    tmp <- mbind(tmp, setNames(esAdd, "Energy System Cost|+|Additional (billion US$2017/yr)"))
   }
 
   # Non-CO2 GHG abatement cost (energy & industry MAC-curve costs, pm_macCost), excluding the land-use (MAgPIE)
@@ -628,7 +628,7 @@ reportCosts <- function(gdx,
   ###############################################
   # CES Markup
   if (!is.null(vm_costCESMkup) && !is.null(ppfen_CESMkup)) {
-    tmp <- mbind(tmp, setNames(costInvCES, "Energy System Cost|Demand|CES Markup (billion US$2017/yr)"))
+    tmp <- mbind(tmp, setNames(costInvCES, "Energy System Cost|Demand|+|CES Markup (billion US$2017/yr)"))
   }
 
   # End-use service capital (vm_esCapInv, budget term sum(teEs, vm_esCapInv)): the demand-side energy cost,
@@ -638,7 +638,7 @@ reportCosts <- function(gdx,
     teEs <- getNames(esCap)
     tmp <- mbind(tmp, setNames(
       dimSums(esCap, dim = 3, na.rm = TRUE) * 1000,
-      "Energy System Cost|Demand|End-Use Capital (billion US$2017/yr)"
+      "Energy System Cost|Demand|+|End-Use Capital (billion US$2017/yr)"
     ))
 
     # Sector split
@@ -650,7 +650,7 @@ reportCosts <- function(gdx,
     if (length(teEs_trans) > 0) {
       tmp <- mbind(tmp, setNames(
         dimSums(esCap[, , teEs_trans], dim = 3, na.rm = TRUE) * 1000,
-        "Energy System Cost|Demand|End-Use Capital|Transport (billion US$2017/yr)"
+        "Energy System Cost|Demand|End-Use Capital|+|Transport (billion US$2017/yr)"
       ))
 
       # Passenger/Freight split
@@ -691,7 +691,7 @@ reportCosts <- function(gdx,
     if (length(teEs_build) > 0) {
       tmp <- mbind(tmp, setNames(
         dimSums(esCap[, , teEs_build], dim = 3, na.rm = TRUE) * 1000,
-        "Energy System Cost|Demand|End-Use Capital|Buildings (billion US$2017/yr)"
+        "Energy System Cost|Demand|End-Use Capital|+|Buildings (billion US$2017/yr)"
       ))
 
       # Space/Water/Cooking heating split
@@ -738,9 +738,34 @@ reportCosts <- function(gdx,
     if (length(teEs_other) > 0) {
       tmp <- mbind(tmp, setNames(
         dimSums(esCap[, , teEs_other], dim = 3, na.rm = TRUE) * 1000,
-        "Energy System Cost|Demand|End-Use Capital|Other (billion US$2017/yr)"
+        "Energy System Cost|Demand|End-Use Capital|+|Other (billion US$2017/yr)"
       ))
     }
+  }
+
+  ###############################################
+  ##### Energy System Cost totals (from model) ##
+  ###############################################
+  # vm_costEnergySys (= v_costFu + v_costOM + v_costInv + sum(emiInd37, vm_IndCCSCost)
+  #   Supply = vm_costEnergySys - items reallocated out of supply (CES markup -> demand, industry CO2 capture ->
+  #            additional) + the net-fuel adjustment (own-ESM net fuel - gross v_costFu)
+  #   Demand = end-use capital + CES markup
+  #   Additional = industry CO2 capture + materials + inv. adj.
+  #   Energy System Cost = vm_costEnergySys + net-fuel adjustment + the demand/additional terms it omits.
+  if (!is.null(vm_costEnergySys)) {
+    modelTot <- setNames(vm_costEnergySys[, y, ], NULL) * 1000
+    dm3 <- function(x) if (!is.null(x)) setNames(dimSums(x[, y, ], dim = 3, na.rm = TRUE), NULL) * 1000 else modelTot * 0
+    indT <- dm3(vm_IndCCSCost)
+    cesT <- setNames(costInvCES[, y, ], NULL)
+    eucT <- dm3(vm_esCapInv)
+    matT <- dm3(vm_costMatPrc)
+    iadT <- dm3(v01_invMacroAdj)
+    netFuelAdj <- setNames(tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"], NULL) - setNames(v_costfu[, y, ], NULL) * 1000
+    tmp <- mbind(tmp,
+      setNames(modelTot - indT - cesT + netFuelAdj, "Energy System Cost|+|Supply (billion US$2017/yr)"),
+      setNames(eucT + cesT, "Energy System Cost|+|Demand (billion US$2017/yr)"),
+      setNames(modelTot + netFuelAdj + eucT + matT + iadT, "Energy System Cost (billion US$2017/yr)")
+    )
   }
 
   #######################################
