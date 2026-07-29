@@ -364,44 +364,67 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       pm_emiMktTarget_tolerance <- mip::getPlotData("pm_emiMktTarget_tolerance", gdx)
       emiMktTarget_tolerance <- setNames(pm_emiMktTarget_tolerance$pm_emiMktTarget_tolerance,pm_emiMktTarget_tolerance$ext_regi)
 
+      # best-achievable (noise-floor) stops: the target is converged by the algorithm but its residual is
+      # OUTSIDE tolerance. Surface it as its own state (yellow) rather than a failure (red).
+      bestAchTargets <- tryCatch({
+        ct <- gdx::readGDX(gdx, name = "regiEmiMktconvergenceType", react = "silent")
+        if (!is.null(ct) && nrow(ct) > 0 && "convergenceType" %in% names(ct)) {
+          ct %>% filter(.data$convergenceType == "bestAchievable") %>%
+            transmute(iteration = as.integer(as.character(.data$iteration)),
+                      ext_regi = as.character(.data$ext_regi),
+                      emiMktExt = as.character(.data$emiMktExt), is_bestAch = TRUE) %>%
+            distinct()
+        } else NULL
+      }, error = function(e) NULL)
+      if (is.null(bestAchTargets)) {
+        bestAchTargets <- data.frame(iteration = integer(), ext_regi = character(),
+                                     emiMktExt = character(), is_bestAch = logical())
+      }
+
       pmEmiMktTargetDevIter <- pmEmiMktTargetDevIter %>%
         as.quitte() %>%
         {
-          if ("region" %in% colnames(.)) rename(., "ext_regi" = "region") else .
+          if ("region" %in% colnames(.) && !("ext_regi" %in% colnames(.))) rename(., "ext_regi" = "region") else .
         } %>%
         filter(!is.na(.data$value)) %>% # remove unwanted combinations introduced by readGDX
         select("period", "iteration", "ext_regi", "emiMktExt", "value") %>%
-        mutate("converged" = .data$value <= emiMktTarget_tolerance[.data$ext_regi])
+        mutate("iteration" = as.integer(as.character(.data$iteration)),
+               "ext_regi"  = as.character(.data$ext_regi),
+               "emiMktExt" = as.character(.data$emiMktExt),
+               "converged" = .data$value <= emiMktTarget_tolerance[.data$ext_regi]) %>%
+        left_join(bestAchTargets, by = c("iteration", "ext_regi", "emiMktExt")) %>%
+        mutate("is_bestAch" = !is.na(.data$is_bestAch),
+               "target_ok"  = .data$converged | .data$is_bestAch)
 
       data <- pmEmiMktTargetDevIter %>%
         group_by(.data$iteration) %>%
-        summarise(converged = ifelse(any(.data$converged == FALSE), "no", "yes")) %>%
-        mutate("tooltip" = paste0("Iteration: ", .data$iteration, "<br>","Converged"))
+        summarise(converged = ifelse(!all(.data$target_ok), "no",
+                                     ifelse(any(.data$is_bestAch & !.data$converged), "bestAchievable", "yes")),
+                  .groups = "drop") %>%
+        mutate("tooltip" = paste0("Iteration: ", .data$iteration, "<br>", "Converged"))
 
       for (i in unique(pmEmiMktTargetDevIter$iteration)) {
-        if (data[data$iteration == i, "converged"] == "no") {
-          tmp <- filter(pmEmiMktTargetDevIter, .data$iteration == i, .data$converged == FALSE) %>%
+        st <- data$converged[data$iteration == i]
+        if (length(st) == 0) next
+        if (st == "no") {
+          tmp <- filter(pmEmiMktTargetDevIter, .data$iteration == i, .data$target_ok == FALSE) %>%
             mutate("item" = paste0(.data$ext_regi, " ", .data$period, " ", .data$emiMktExt)) %>%
-            select("ext_regi", "period", "emiMktExt", "item") %>%
-            distinct()
-
-          if (nrow(tmp) > 10) {
-            data[data$iteration == i, "tooltip"] <- paste0(
-              "Iteration ", i, "<br>",
-              "Not converged:<br>",
-              paste0(unique(tmp$ext_regi), collapse = ", "),
-              "<br>",
-              paste0(unique(tmp$period), collapse = ", "),
-              "<br>",
-              paste0(unique(tmp$emiMktExt), collapse = ", ")
-            )
-          } else {
-            data[data$iteration == i, "tooltip"] <- paste0(
-              "Iteration ", i, "<br>",
-              "Not converged:<br>",
-              paste0(unique(tmp$item), collapse = ", ")
-            )
-          }
+            select("item") %>% distinct()
+          data[data$iteration == i, "tooltip"] <- paste0(
+            "Iteration ", i, "<br>", "Not converged:<br>",
+            paste0(unique(tmp$item), collapse = ", ")
+          )
+        } else if (st == "bestAchievable") {
+          tmp <- filter(pmEmiMktTargetDevIter, .data$iteration == i, .data$is_bestAch & !.data$converged) %>%
+            mutate("item" = paste0(.data$ext_regi, " ", .data$period, " ", .data$emiMktExt,
+                                   " (residual ", round(100 * .data$value, 2), "%)")) %>%
+            select("item") %>% distinct()
+          data[data$iteration == i, "tooltip"] <- paste0(
+            "Iteration ", i, "<br>",
+            "Converged — best-achievable (noise-floor) stop.<br>",
+            "Residual outside tolerance for:<br>",
+            paste0(unique(tmp$item), collapse = ", ")
+          )
         }
       }
 
@@ -412,7 +435,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
         geom_hline(yintercept = 0) +
         theme_minimal() +
         geom_point(size = 2, alpha = aestethics$alpha) +
-        scale_fill_manual(values = booleanColor) +
+        scale_fill_manual(values = c(booleanColor, "bestAchievable" = "#f4c430")) +
         scale_y_discrete(breaks = c("Emission Market\nTarget"), drop = FALSE) +
         labs(x = NULL, y = NULL) +
         theme(axis.text.y = element_text(colour = ifelse(("regiTarget" %in% activeCriteria), activeCriteriaColor["true"], activeCriteriaColor["false"])))
@@ -435,7 +458,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       pmImplicitQttyTarget <- readGDX(gdx, name = "pm_implicitQttyTarget", restore_zeros = FALSE, react = "error") %>%
         as.quitte() %>%
         {
-          if ("region" %in% colnames(.)) rename(., "ext_regi" = "region") else .
+          if ("region" %in% colnames(.) && !("ext_regi" %in% colnames(.))) rename(., "ext_regi" = "region") else .
         } %>%
         select("period", "ext_regi", "taxType", "qttyTarget", "qttyTargetGroup")
 
@@ -445,7 +468,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
                                               restore_zeros = FALSE, react = "error") %>%
         as.quitte() %>%
         {
-          if ("region" %in% colnames(.)) rename(., "ext_regi" = "region") else .
+          if ("region" %in% colnames(.) && !("ext_regi" %in% colnames(.))) rename(., "ext_regi" = "region") else .
         } %>%
         select("period", "value", "iteration", "ext_regi", "qttyTarget", "qttyTargetGroup")
 
