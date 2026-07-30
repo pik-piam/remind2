@@ -86,7 +86,7 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   pm_taxCO2eq    <- readGDX(gdx, name = c("pm_taxCO2eq", "pm_tau_CO2_tax"), format = "first_found")[, t, ]
   pm_taxCO2eqSum <- readGDX(gdx, name = "pm_taxCO2eqSum", format = "first_found")[, t, ]
   pm_taxCO2eqSCC <- readGDX(gdx, name = "pm_taxCO2eqSCC", format = "first_found")[, t, ]
-  p51_scc_perRegion <- readGDX(gdx, name = "p51_scc_perRegion", format = "first_found")[, t, ]
+  p51_scc_perRegion <- readGDX(gdx, name = "p51_scc_perRegion", format = "first_found", react = "silent")[, t, ]
   p21_CO2TaxSectorMarkup <- readGDX(gdx, name = c("p21_CO2TaxSectorMarkup", "p21_CO2_tax_sector_markup"), format = "first_found", react = "silent")
   if (dimExists("ttot", p21_CO2TaxSectorMarkup)) p21_CO2TaxSectorMarkup <- p21_CO2TaxSectorMarkup[, t, ]
   pm_taxemiMkt   <- readGDX(gdx, name = "pm_taxemiMkt", format = "first_found", react = "silent")[, t, ]
