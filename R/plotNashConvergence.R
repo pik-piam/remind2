@@ -362,12 +362,13 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
 
     if (!is.null(pmEmiMktTarget)) {
 
-      pmEmiMktTargetDevIter <- suppressWarnings(
-        readGDX(gdx, name = "pm_emiMktTarget_dev_iter", react = "silent", restore_zeros = FALSE)
+      pmEmiMktTargetDevIter_orig <- suppressWarnings(
+        readGDX(gdx, name = "pm_emiMktTarget_dev_iter", react = "silent", restore_zeros = FALSE,
+                spatial = "ext_regi", temporal = "ttot2")
       )
 
       pm_emiMktTarget_tolerance <- mip::getPlotData("pm_emiMktTarget_tolerance", gdx)
-      emiMktTarget_tolerance <- setNames(pm_emiMktTarget_tolerance$pm_emiMktTarget_tolerance,pm_emiMktTarget_tolerance$ext_regi)
+      emiMktTarget_tolerance <- setNames(pm_emiMktTarget_tolerance[[3]], pm_emiMktTarget_tolerance[[1]])
 
       # best-achievable (noise-floor) stops: the target is converged by the algorithm but its residual is
       # OUTSIDE tolerance. Surface it as its own state (yellow) rather than a failure (red).
@@ -375,9 +376,9 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
         ct <- gdx::readGDX(gdx, name = "regiEmiMktconvergenceType", react = "silent")
         if (!is.null(ct) && nrow(ct) > 0 && "convergenceType" %in% names(ct)) {
           ct %>% filter(.data$convergenceType == "bestAchievable") %>%
-            transmute(iteration = as.integer(as.character(.data$iteration)),
-                      ext_regi = as.character(.data$ext_regi),
-                      emiMktExt = as.character(.data$emiMktExt), is_bestAch = TRUE) %>%
+            transmute(iteration = as.integer(as.character(iteration)),
+                      ext_regi = as.character(ext_regi),
+                      emiMktExt = as.character(emiMktExt), is_bestAch = TRUE) %>%
             distinct()
         } else NULL
       }, error = function(e) NULL)
@@ -386,17 +387,17 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
                                      emiMktExt = character(), is_bestAch = logical())
       }
 
-      pmEmiMktTargetDevIter <- pmEmiMktTargetDevIter %>%
+      pmEmiMktTargetDevIter <- pmEmiMktTargetDevIter_orig %>%
         as.quitte() %>%
         {
           if ("region" %in% colnames(.) && !("ext_regi" %in% colnames(.))) rename(., "ext_regi" = "region") else .
         } %>%
         filter(!is.na(.data$value)) %>% # remove unwanted combinations introduced by readGDX
-        select("period", "iteration", "ext_regi", "emiMktExt", "value") %>%
+        select("period", "iteration", "ext_regi", "emiMktExt", "value", any_of("ttot")) %>%
         mutate("iteration" = as.integer(as.character(.data$iteration)),
                "ext_regi"  = as.character(.data$ext_regi),
                "emiMktExt" = as.character(.data$emiMktExt),
-               "converged" = .data$value <= emiMktTarget_tolerance[.data$ext_regi]) %>%
+               "converged" = .data$value <= emiMktTarget_tolerance[ext_regi]) %>%
         left_join(bestAchTargets, by = c("iteration", "ext_regi", "emiMktExt")) %>%
         mutate("is_bestAch" = !is.na(.data$is_bestAch),
                "target_ok"  = .data$converged | .data$is_bestAch)
