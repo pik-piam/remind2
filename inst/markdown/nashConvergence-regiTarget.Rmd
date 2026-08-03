@@ -157,9 +157,16 @@ p47_factorRescaleemiMktCO2Tax_iter <-
 regiEmiMktRescaleType <-
   gdx::readGDX(params$gdx, "regiEmiMktRescaleType")
 
-# how each target converged (lowerThanTolerance / smallPrice / bestAchievable). bestAchievable means the
-# noise-floor stop accepted the best price could achieve, so the target is "converged" but its residual
-# deviation is OUTSIDE the tolerance band and must be flagged, not shown as a clean tolerance hit.
+# How each target converged. The algorithm guarantees EXACTLY ONE label per target-iteration, in the
+# precedence order  unmetAtCap > unmetFrozen > bestAchievable > lowerThanTolerance  (smallPrice is exclusive),
+# so the last recorded label is the verdict and nothing here needs to tie-break.
+#   lowerThanTolerance  inside the raw user tolerance                      - no residual
+#   smallPrice          price at the floor, emissions BELOW target         - no residual (over-achieved)
+#   bestAchievable      frozen/held outside the tolerance but inside the exit band - CARRIES A RESIDUAL
+#   unmetFrozen         frozen outside the tolerance                       - CARRIES A RESIDUAL
+#   unmetAtCap          still outside the tolerance at the iteration cap   - CARRIES A RESIDUAL
+# The label describes the DEVIATION, not the machinery that produced it; whether a target was deliberately
+# abandoned is p47_giveUp, surfaced separately in the summary table.
 regiEmiMktconvergenceType <- suppressWarnings(gdx::readGDX(params$gdx, "regiEmiMktconvergenceType"))
 convTypeByIter <- if (!is.null(regiEmiMktconvergenceType) && nrow(regiEmiMktconvergenceType) > 0) {
   .ct <- regiEmiMktconvergenceType
@@ -178,7 +185,7 @@ convTypeByIter <- if (!is.null(regiEmiMktconvergenceType) && nrow(regiEmiMktconv
 bestAchByTarget <- if (nrow(convTypeByIter) > 0) {
   convTypeByIter %>%
     group_by(ext_regi, ttot2, emiMktExt) %>%
-    summarise(is_bestAch = any(grepl("bestAchievable", conv_type)), .groups = "drop") %>%
+    summarise(is_bestAch = any(grepl("bestAchievable|unmetFrozen", conv_type)), .groups = "drop") %>%
     mutate(ttot2 = as.numeric(as.character(ttot2)))
 } else {
   data.frame(ext_regi = character(), ttot2 = numeric(), emiMktExt = character(),
@@ -190,7 +197,7 @@ bestAchByTarget <- if (nrow(convTypeByIter) > 0) {
 unmetAtCapByTarget <- if (nrow(convTypeByIter) > 0) {
   convTypeByIter %>%
     group_by(ext_regi, ttot2, emiMktExt) %>%
-    summarise(is_unmet = grepl("unmetAtCap", conv_type[which.max(iteration)]), .groups = "drop") %>%
+    summarise(is_unmet = grepl("unmetAtCap|unmetFrozen", conv_type[which.max(iteration)]), .groups = "drop") %>%
     mutate(ttot2 = as.numeric(as.character(ttot2)))
 } else {
   data.frame(ext_regi = character(), ttot2 = numeric(), emiMktExt = character(),
@@ -220,9 +227,46 @@ tryGetPlotData <- function(name, gdx) {
 }
 p47_slopeReferenceIteration_iter     <- tryGetPlotData("p47_slopeReferenceIteration_iter",     params$gdx)
 
+# ── algorithm state added after data8; all read defensively so older gdx files still render ────────────
+# THE ZERO-RECORD TRAP: GAMS drops zero records, so p47_marketMet_iter only ever stores 1s. A missing
+# (iteration, target) row means NOT met, not "unknown" - joining it and leaving NA would make every target
+# look met on every iteration it happened not to be. zeroFill() below is what makes that explicit.
+p47_marketMet_iter  <- tryGetPlotData("p47_marketMet_iter",  params$gdx)   # inside the RAW tolerance
+p47_giveUp          <- tryGetPlotData("p47_giveUp",          params$gdx)   # deliberately abandoned
+p47_reopenCount     <- tryGetPlotData("p47_reopenCount",     params$gdx)   # corrections spent
+p47_releaseCount    <- tryGetPlotData("p47_releaseCount",    params$gdx)   # uncharged un-freezes
+p47_refreshCount    <- tryGetPlotData("p47_refreshCount",    params$gdx)   # re-open budget earned back
+p47_aimTries        <- tryGetPlotData("p47_aimTries",        params$gdx)   # attempts at the AIM band
+p47_divArmed        <- tryGetPlotData("p47_divArmed",        params$gdx)   # divergence test live
+p47_divBrakeCount   <- tryGetPlotData("p47_divBrakeCount",   params$gdx)   # divergence brakes applied
+p47_rolledBack      <- tryGetPlotData("p47_rolledBack",      params$gdx)   # 0 none / 1 rolled / 2 undone
+
+# collapse a target-indexed parameter to a named lookup keyed "ext_regi|ttot2|emiMktExt"
+targetKeyed <- function(df, valcol) {
+  if (is.null(df) || nrow(df) == 0) return(setNames(numeric(0), character(0)))
+  d <- df
+  if ("ttot1" %in% names(d)) d <- d %>% select(-any_of("ttot")) %>% rename(ttot2 = ttot1)
+  if (!"ttot2" %in% names(d) && "ttot" %in% names(d)) d <- d %>% rename(ttot2 = ttot)
+  vc <- if (valcol %in% names(d)) valcol else tail(setdiff(names(d), c("ttot2","ext_regi","emiMktExt","ttot")), 1)
+  setNames(as.numeric(d[[vc]]),
+           paste(d$ext_regi, as.character(d$ttot2), d$emiMktExt, sep = "|"))
+}
+giveUpByTarget  <- targetKeyed(p47_giveUp,        "p47_giveUp")
+reopenByTarget  <- targetKeyed(p47_reopenCount,   "p47_reopenCount")
+releaseByTarget <- targetKeyed(p47_releaseCount,  "p47_releaseCount")
+refreshByTarget <- targetKeyed(p47_refreshCount,  "p47_refreshCount")
+aimByTarget     <- targetKeyed(p47_aimTries,      "p47_aimTries")
+armedByTarget   <- targetKeyed(p47_divArmed,      "p47_divArmed")
+brakeByTarget   <- targetKeyed(p47_divBrakeCount, "p47_divBrakeCount")
+rolledByTarget  <- targetKeyed(p47_rolledBack,    "p47_rolledBack")
+lookup0 <- function(tbl, key) { v <- tbl[key]; ifelse(is.na(v), 0, v) }
+
 # consolidated algorithm: per-iteration diagnostics live in one set-indexed container
-# p47_slopeTrace_iter(slopeTrace, ...) with slopeTrace in {rawSlope, fitR2, preDamp}.
-# Split it back into the individual frames the rest of the report expects.
+# p47_slopeTrace_iter(slopeTrace, ...) with slopeTrace in
+# {rawSlope, fitR2, preDamp, rollIter, rollUndo, divBrake, parked}.
+# The last four are EVENTS rather than measurements - the iteration a price was rolled back, a rollback was
+# undone, a divergence brake fired, or the parked-target stop gave up - and they are the only record of those
+# decisions anywhere in the gdx. Split the container back into the individual frames the rest expects.
 p47_slopeTrace_iter <- tryGetPlotData("p47_slopeTrace_iter", params$gdx)
 extractTrace <- function(tp, valname) {
   if (is.null(p47_slopeTrace_iter) || nrow(p47_slopeTrace_iter) == 0) return(data.frame())
@@ -732,6 +776,10 @@ tableData <- pm_emiMktTarget_dev_iter %>%
     if (nrow(convTypeByIter) > 0) convTypeByIter else data.frame(),
     by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
   ) %>%
+  safeJoin(
+    if (nrow(p47_marketMet_iter) > 0) p47_marketMet_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
   arrange(ext_regi, ttot2, emiMktExt, iteration) %>%
   group_by(ext_regi, ttot2, emiMktExt) %>%
   mutate(delta_dev_raw = pm_emiMktTarget_dev_iter - lag(pm_emiMktTarget_dev_iter)) %>%
@@ -748,6 +796,16 @@ tableData <- pm_emiMktTarget_dev_iter %>%
     delta_dev  = round(abs(100 * delta_dev_raw), 2)
   )
 
+# MET answers "is the target actually achieved", measured against the RAW tolerance with no hysteresis.
+# CONVERGED answers "should this target keep steering its carbon price". They differ exactly where a target is
+# frozen while unmet - which several give-up branches do deliberately - so showing only the second is how a run
+# reports success while sitting far outside its tolerance.
+# A missing value is the zero record GAMS dropped, i.e. NOT met - never "unknown".
+tableData$met <- if ("p47_marketMet_iter" %in% names(tableData)) {
+  ifelse(!is.na(tableData$p47_marketMet_iter) & tableData$p47_marketMet_iter == 1, "✓", "✗")
+} else {
+  NA_character_
+}
 tableData$slope_ref  <- if ("p47_slopeReferenceIteration_iter" %in% names(tableData)) tableData$p47_slopeReferenceIteration_iter else NA_real_
 tableData$raw_slope  <- if ("p47_clampedRescaleSlope_iter" %in% names(tableData)) round(tableData$p47_clampedRescaleSlope_iter, 3) else NA_real_
 tableData$fit_r2     <- if ("p47_slopeFitR2_iter" %in% names(tableData)) round(tableData$p47_slopeFitR2_iter, 3) else NA_real_
@@ -768,16 +826,20 @@ tableData$damped     <- if ("p47_dampedFactorRescaleemiMktCO2Tax_iter" %in% name
 
 # flag best-achievable (noise-floor) convergence distinctly from a clean tolerance hit
 tableData$conv_type <- if ("conv_type" %in% names(tableData)) ifelse(is.na(tableData$conv_type), "", tableData$conv_type) else ""
+# ✗ = outside the tolerance and not steering any more; ≈ = accepted short of the tolerance but inside the
+# exit band. Both carry a residual and neither may be shown as a clean ✓.
 tableData$converged <- ifelse(grepl("unmetAtCap", tableData$conv_type), "✗",
-                       ifelse(grepl("bestAchievable", tableData$conv_type), "≈", tableData$converged))
+                       ifelse(grepl("unmetFrozen", tableData$conv_type), "✗",
+                       ifelse(grepl("bestAchievable", tableData$conv_type), "≈", tableData$converged)))
 tableData$conv_type <- ifelse(grepl("unmetAtCap", tableData$conv_type), "unmet@cap",
+                       ifelse(grepl("unmetFrozen", tableData$conv_type), "unmet-frozen",
                        ifelse(grepl("bestAchievable", tableData$conv_type), "best-ach",
                        ifelse(grepl("smallPrice", tableData$conv_type), "small-price",
-                       ifelse(grepl("lowerThanTolerance", tableData$conv_type), "in-tol", ""))))
+                       ifelse(grepl("lowerThanTolerance", tableData$conv_type), "in-tol", "")))))
 
 tableData <- tableData %>%
   select(iteration, ttot2, ext_regi, emiMktExt,
-         method, rescaleType, dev_pct, delta_dev, converged, conv_type,
+         method, rescaleType, dev_pct, delta_dev, converged, met, conv_type,
          slope_ref, raw_slope, fit_r2, clamp_bnd, clamp_act, used_slope,
          pre_damp, final_rsc, damped)
 
@@ -809,7 +871,7 @@ makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
   )
 
   # ── parameter metadata ────────────────────────────────────────────────────
-  param_order  <- c("method","dev_pct","delta_dev","converged","conv_type",
+  param_order  <- c("method","dev_pct","delta_dev","converged","met","conv_type",
                     "slope_ref","raw_slope","fit_r2","used_slope",
                     "pre_damp","final_rsc","damped")
   param_labels <- c(
@@ -817,6 +879,7 @@ makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
     dev_pct    = "Deviation (%)",
     delta_dev  = "|Δdev| (%)",
     converged  = "Converged",
+    met        = "Met (raw tol.)",
     conv_type  = "Conv. type",
     slope_ref  = "Ref. iter.",
     raw_slope  = "Raw slope",
@@ -827,7 +890,7 @@ makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
     damped     = "Damped"
   )
   param_groups <- c(
-    method="Convergence", dev_pct="Convergence", delta_dev="Convergence", converged="Convergence", conv_type="Convergence",
+    method="Convergence", dev_pct="Convergence", delta_dev="Convergence", converged="Convergence", met="Convergence", conv_type="Convergence",
     slope_ref="Slope", raw_slope="Slope", fit_r2="Slope", used_slope="Slope",
     pre_damp="Rescale Factor", final_rsc="Rescale Factor", damped="Rescale Factor"
   )
@@ -1407,7 +1470,30 @@ target_summary_df <- tableData %>%
     target_label    = paste(ext_regi, ttot2, emiMktExt, sep = " · "),
     in_tol          = !is.na(final_dev_pct) & abs(final_dev_pct) <= tol_pct,
     first_conv_disp = ifelse(is.na(first_conv_iter), "—", as.character(first_conv_iter)),
-    last_conv_disp  = ifelse(is.na(last_conv_iter),  "—", as.character(last_conv_iter))
+    last_conv_disp  = ifelse(is.na(last_conv_iter),  "—", as.character(last_conv_iter)),
+    # ── what the algorithm actually DID to this target ─────────────────────────────────────────────────
+    # A residual on its own does not say whether the algorithm ran out of road, deliberately stopped, or
+    # never engaged. These are the counters that answer that, and none of them was visible in this report
+    # before. `gave_up` is the important one: it is the difference between "still trying and failing" and
+    # "stopped trying on purpose", and the run-end signal depends on it.
+    tkey            = paste(ext_regi, as.character(ttot2), emiMktExt, sep = "|"),
+    gave_up         = lookup0(giveUpByTarget,  tkey) > 0,
+    n_reopen        = lookup0(reopenByTarget,  tkey),
+    n_release       = lookup0(releaseByTarget, tkey),
+    n_refresh       = lookup0(refreshByTarget, tkey),
+    n_aim           = lookup0(aimByTarget,     tkey),
+    div_armed       = lookup0(armedByTarget,   tkey) > 0,
+    n_brake         = lookup0(brakeByTarget,   tkey),
+    rolled          = lookup0(rolledByTarget,  tkey),
+    outcome         = ifelse(gave_up, "gave up", ifelse(in_tol, "met", "unmet")),
+    state_disp      = paste0(
+      ifelse(n_reopen  > 0, paste0("reopen ", n_reopen, " "), ""),
+      ifelse(n_refresh > 0, paste0("refresh ", n_refresh, " "), ""),
+      ifelse(n_release > 0, paste0("release ", n_release, " "), ""),
+      ifelse(n_brake   > 0, paste0("brake ", n_brake, " "), ""),
+      ifelse(rolled    > 0, ifelse(rolled >= 2, "rollback undone ", "rollback "), "")
+    ),
+    state_disp      = ifelse(nchar(trimws(state_disp)) == 0, "—", trimws(state_disp))
   )
 
 ```
@@ -1495,6 +1581,13 @@ convCell <- function(v) if (identical(v, "✓"))
   htmltools::span(style = "color:#00BFC4;font-weight:bold;", v) else
   htmltools::span(style = "color:#F8766D;font-weight:bold;", v)
 
+# "met" / "unmet" / "gave up" - the last is NOT a failure of the algorithm but a deliberate decision, and it
+# is what allows the run to terminate at all, so it is coloured as its own state rather than as a miss.
+outcomeCell <- function(v) {
+  col <- switch(v, "met" = "#00BFC4", "gave up" = "#e0a030", "#F8766D")
+  htmltools::span(style = paste0("color:", col, ";font-weight:bold;"), v)
+}
+
 devCell <- function(v, row) {
   tol <- target_summary_df$tol_pct[row]
   col <- if (!is.na(v) && abs(v) <= tol) "#00BFC4" else "#F8766D"
@@ -1503,17 +1596,22 @@ devCell <- function(v, row) {
 
 summary_react <- reactable::reactable(
   target_summary_df %>%
-    select(target_label, final_conv, first_conv_disp, final_dev_pct,
-           tol_pct, n_damped, n_conv_iters, methods_used),
+    select(target_label, final_conv, outcome, first_conv_disp, final_dev_pct,
+           tol_pct, n_aim, state_disp, n_damped, n_conv_iters, methods_used),
   columns = list(
     target_label    = reactable::colDef(name = "Target",         minWidth = 140),
     final_conv      = reactable::colDef(name = "Conv.",          align = "center", width = 56,
                                         html = TRUE, cell = convCell),
+    outcome         = reactable::colDef(name = "Outcome",        align = "center", width = 82,
+                                        html = TRUE, cell = outcomeCell),
     first_conv_disp = reactable::colDef(name = "First conv.",    align = "center", width = 80),
     final_dev_pct   = reactable::colDef(name = "Final dev (%)",  align = "right",  width = 95,
                                         cell = devCell),
     tol_pct         = reactable::colDef(name = "Tolerance",      align = "right",  width = 80,
                                         cell = function(v) paste0("±", v, "%")),
+    n_aim           = reactable::colDef(name = "Aim tries",      align = "center", width = 76),
+    state_disp      = reactable::colDef(name = "Interventions",  minWidth = 150,
+                                        style = list(fontSize = "0.82em", color = "#555")),
     n_damped        = reactable::colDef(name = "Damped",         align = "center", width = 70),
     n_conv_iters    = reactable::colDef(name = "Iters conv.",    align = "center", width = 80),
     methods_used    = reactable::colDef(name = "Methods used",
@@ -1568,7 +1666,7 @@ for (reg in tgtRegions) {
 out <- paste0(out, "</div></div>\n\n")
 
 out <- paste0(out, "##### Summary Table\n\n")
-out <- paste0(out, note("One row per target: final converged status and type (in-tolerance / small-price = non-binding / best-achievable at the noise floor), iterations to converge, final deviation and carbon price."))
+out <- paste0(out, note("One row per target. <b>Conv.</b> is whether the target still steers its price; <b>Outcome</b> is what actually happened to it &mdash; <span style='color:#00BFC4'>met</span> (inside the raw tolerance), <span style='color:#F8766D'>unmet</span>, or <span style='color:#e0a030'>gave up</span> (a give-up branch deliberately abandoned it, which is what lets the run end). <b>Aim tries</b> is attempts spent closing the last stretch to the aim band; a target at the budget converged through the accept fallback rather than by aiming. <b>Interventions</b> lists what the algorithm had to do: re-opens charged, re-open budget refreshed after a long settled stretch, uncharged releases, divergence brakes, and price rollbacks."))
 out <- paste0(out, collapsibleChunk("summary_react"))
 
 for(reg in tgtRegions){
