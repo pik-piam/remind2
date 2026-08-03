@@ -80,6 +80,9 @@ reportCosts <- function(gdx,
   emiMacMagpieN2O <- readGDX(gdx, c("emiMacMagpieN2O"), format = "first_found")
   emiMacMagpieCH4 <- readGDX(gdx, c("emiMacMagpieCH4"), format = "first_found")
   emiMacMagpieCO2 <- readGDX(gdx, c("emiMacMagpieCO2"), format = "first_found")
+  # Sets used for the additional (not-in-headline) energy-system cost terms below.
+  emiMacSector <- readGDX(gdx, "emiMacSector", format = "first_found", react = "silent")
+  emiInd37 <- readGDX(gdx, "emiInd37", format = "first_found", react = "silent")
 
   # Parameters
   pm_conv_TWa_EJ <- 31.536
@@ -108,10 +111,40 @@ reportCosts <- function(gdx,
   vm_fuelex <- readGDX(gdx, name = c("vm_fuExtr", "vm_fuelex"), field = "l", restore_zeros = FALSE, format = "first_found")[enty2rlf]
   vm_costfu_ex <- readGDX(gdx, name = c("vm_costFuEx", "vm_costfu_ex"), field = "l", restore_zeros = FALSE, format = "first_found")
   v_costfu <- readGDX(gdx, name = c("v_costFu", "v_costfu"), field = "l", restore_zeros = FALSE, format = "first_found")
+  # Biomass fuel cost (q_costFu: v_costFu = vm_costFuBio + sum(peEx, vm_costFuEx)); used to split fuel cost by carrier.
+  vm_costFuBio <- readGDX(gdx, name = c("vm_costFuBio", "v_costFuBio"), field = "l", format = "first_found", react = "silent")
   v_costom <- readGDX(gdx, name = c("v_costOM", "v_costom"), field = "l", format = "first_found")
   v_costin <- readGDX(gdx, name = c("v_costInv", "v_costin"), field = "l", format = "first_found")
   vm_omcosts_cdr <- readGDX(gdx, name = c("vm_omcosts_cdr"), field = "l", format = "first_found")
+  vm_IndCCSCost <- readGDX(gdx, name = "vm_IndCCSCost", field = "l", format = "first_found", react = "silent")
+  vm_costMatPrc <- readGDX(gdx, name = "vm_costMatPrc", field = "l", format = "first_found", react = "silent")
+  v01_invMacroAdj <- readGDX(gdx, name = "v01_invMacroAdj", field = "l", format = "first_found", react = "silent")
+  vm_costEnergySys <- readGDX(gdx, name = "vm_costEnergySys", field = "l", format = "first_found", react = "silent")
+  pm_macCostFull <- readGDX(gdx, name = c("pm_macCost", "p_macCost"), format = "first_found", react = "silent")
+  vm_esCapInv <- readGDX(gdx, name = "vm_esCapInv", field = "l", format = "first_found", react = "silent")
+  # Components of v_costInv (q_costInv), used to split "Energy System Cost|Supply|Investments".
+  vm_costInvTeAdj <- readGDX(gdx, name = "vm_costInvTeAdj", field = "l", format = "first_found", react = "silent")
+  vm_costAddTeInv <- readGDX(gdx, name = "vm_costAddTeInv", field = "l", format = "first_found", react = "silent")
+  vm_costCESMkup <- readGDX(gdx, name = "vm_costCESMkup", field = "l", format = "first_found", react = "silent")
+  teAdj <- readGDX(gdx, "teAdj", format = "first_found", react = "silent")
+  ppfen_CESMkup <- readGDX(gdx, "ppfen_CESMkup", format = "first_found", react = "silent")
+  sector2te_addTDCost <- readGDX(gdx, "sector2te_addTDCost", react = "silent")
   v_investcost <- readGDX(gdx, name = c("vm_costTeCapital", "v_costTeCapital", "v_investcost"), field = "l", format = "first_found")
+  # Per-technology direct capacity investment (q_costInvTeDir), used to split "Direct Capacity" by supply branch.
+  vm_costInvTeDir <- readGDX(gdx, name = "vm_costInvTeDir", field = "l", format = "first_found", react = "silent")
+  # en2en mapping (input enty, output enty, te) and process/primary sets used for the branch splits below.
+  en2enDF <- readGDX(gdx, "en2en", format = "first_found", react = "silent")
+  if (!is.null(en2enDF)) {
+    en2enDF <- as.data.frame(en2enDF)[, 1:3]
+    names(en2enDF) <- c("en_in", "en_out", "te")
+    en2enDF[] <- lapply(en2enDF, as.character)
+  }
+  entyPe <- readGDX(gdx, c("entyPe", "petype"), format = "first_found", react = "silent")
+  tePrc <- readGDX(gdx, "tePrc", format = "first_found", react = "silent")
+  # Discount/anticipation-factor inputs: q_costInv multiplies capex by (1 + 0.02/ies + prtp)^(ts/2).
+  pm_ies <- readGDX(gdx, "pm_ies", format = "first_found", react = "silent")
+  pm_prtp <- readGDX(gdx, "pm_prtp", format = "first_found", react = "silent")
+  pm_ts <- readGDX(gdx, "pm_ts", format = "first_found", react = "silent")
   vm_cap <- readGDX(gdx, name = c("vm_cap"), field = "l", format = "first_found")
   vm_cap[is.na(vm_cap)] <- 0
   vm_prodSe <- readGDX(gdx, name = c("vm_prodSe"), field = "l", restore_zeros = FALSE, format = "first_found")
@@ -373,12 +406,367 @@ reportCosts <- function(gdx,
   ########## Energy System costs ########
   #######################################
 
-  tmp <- mbind(tmp, setNames(v_costin * 1000, "Energy System Cost|Supply|Investments (billion US$2017/yr)"))
-  tmp <- mbind(tmp, setNames(v_costom * 1000, "Energy System Cost|Supply|Operation and Maintenance Cost (billion US$2017/yr)"))
-  tmp <- mbind(tmp, setNames(tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"], "Energy System Cost|Supply|Fuel Cost (billion US$2017/yr)"))
+  costInvCES <- 0 * v_costin
+  if (!is.null(vm_costCESMkup) && !is.null(ppfen_CESMkup)) {
+    cesItems <- intersect(as.character(ppfen_CESMkup), getNames(vm_costCESMkup))
+    if (length(cesItems) > 0) costInvCES <- dimSums(vm_costCESMkup[, y, cesItems], dim = 3, na.rm = TRUE) * 1000
+  }
 
-  cost <- (v_costin + v_costom) * 1000 + tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"]
+  tmp <- mbind(tmp, setNames(v_costin * 1000 - costInvCES, "Energy System Cost|Supply|+|Investments (billion US$2017/yr)"))
+  tmp <- mbind(tmp, setNames(v_costom * 1000, "Energy System Cost|Supply|+|Operation and Maintenance Cost (billion US$2017/yr)"))
+  # Split O&M into CDR (vm_omcosts_cdr, part of q_costOM) and the remaining conversion/grid/storage O&M.
+  if (!is.null(vm_omcosts_cdr)) {
+    omParent <- tmp[, , "Energy System Cost|Supply|+|Operation and Maintenance Cost (billion US$2017/yr)"]
+    cdrOM <- dimSums(vm_omcosts_cdr[, getYears(omParent), ], dim = 3, na.rm = TRUE) * 1000
+    tmp <- mbind(tmp,
+      setNames(cdrOM, "Energy System Cost|Supply|Operation and Maintenance Cost|+|CDR (billion US$2017/yr)"),
+      setNames(omParent - cdrOM, "Energy System Cost|Supply|Operation and Maintenance Cost|+|Conversion, Grid and Storage (billion US$2017/yr)")
+    )
+  }
+  tmp <- mbind(tmp, setNames(tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"], "Energy System Cost|Supply|+|Fuel Cost (billion US$2017/yr)"))
+
+  # Split "Energy System Cost|Supply|Fuel Cost" (= "Fuel costs for own ESM") by carrier and into Domestic Extraction and Net Trade
+  if (!is.null(vm_costfu_ex)) {
+    fuelParent <- tmp[, , "Energy System Cost|Supply|+|Fuel Cost (billion US$2017/yr)"]
+    conv <- pm_conv_TWa_EJ
+    z <- fuelParent * 0
+    N <- function(x) setNames(x, NULL)
+
+    ## ---- Domestic extraction by carrier (sums to v_costFu*1000) ----
+    ex <- function(pe) if (pe %in% getNames(vm_costfu_ex)) N(vm_costfu_ex[, y, pe]) * 1000 else z
+    exByCarrier <- list(Coal = ex("pecoal"), Gas = ex("pegas"), Petroleum = ex("peoil"),
+                        Uranium = ex("peur"),
+                        Biomass = if (!is.null(vm_costFuBio)) N(vm_costFuBio[, y, ]) * 1000 else z)
+    domExtr <- N(v_costfu[, y, ]) * 1000
+
+    ## ---- Net trade by carrier ----
+    # PE export deduction (supply-cost valued) and PE import addition (domestic-price valued).
+    pxd <- function(pricevar, pe, fac = 1) if (pe %in% getNames(Xport) && pricevar %in% getNames(output)) {
+      N(output[regi_on_gdx, y, pricevar] * Xport[, y, pe] * conv * fac)
+    } else z
+    pid <- function(pe) if (pe %in% getNames(Mport) && pe %in% getNames(pebal.m)) {
+      N(Mport[, y, pe] * pebal.m[, y, pe] / (N(budget.m[, y, ]) + 1e-10)) * 1000
+    } else z
+    xd <- list(Coal = pxd("Res|Average Supply Costs|Coal ($/GJ)", "pecoal"),
+               Gas = pxd("Res|Average Supply Costs|Gas ($/GJ)", "pegas"),
+               Petroleum = pxd("Res|Average Supply Costs|Oil ($/GJ)", "peoil"),
+               Uranium = pxd("Res|Average Supply Costs|Uranium ($/GJ)", "peur", 4.43),
+               Biomass = pxd("Price|Primary Energy|Biomass|Modern|Rawdata (US$2017/GJ)", "pebiolc"))
+    id <- list(Coal = pid("pecoal"), Gas = pid("pegas"), Petroleum = pid("peoil"),
+               Uranium = pid("peur"), Biomass = pid("pebiolc"))
+    # SE trade (import added at import price, export subtracted at export price), per tradeSe carrier.
+    seNames <- c(seh2 = "Hydrogen", seliqsyn = "Synthetic Liquids", seliqbio = "Biofuels",
+                 segasyn = "Synthetic Gases", segabio = "Biogas")
+    seNet <- function(se) {
+      if (is.null(trade_se) || !(se %in% as.character(trade_se))) return(z)
+      imp <- if (se %in% getNames(Mport) && se %in% getNames(pm_MPortsPrice)) N(pm_MPortsPrice[, y, se] * Mport[, y, se]) * 1000 else z
+      exp <- if (se %in% getNames(Xport) && se %in% getNames(pm_XPortsPrice)) N(pm_XPortsPrice[, y, se] * Xport[, y, se]) * 1000 else z
+      imp - exp
+    }
+    ntByCarrier <- list(Coal = id$Coal - xd$Coal, Gas = id$Gas - xd$Gas,
+                        Petroleum = id$Petroleum - xd$Petroleum, Uranium = id$Uranium - xd$Uranium,
+                        Biomass = id$Biomass - xd$Biomass)
+    for (se in names(seNames)) ntByCarrier[[seNames[[se]]]] <- seNet(se)
+    netTrade <- fuelParent - domExtr
+
+    ## ---- Assemble the reporting variables (each sub-tree gets an exact-summing "Other" residual) ----
+    fuelOut <- mbind(
+      setNames(domExtr, "Energy System Cost|Supply|Fuel Cost|+|Domestic Extraction (billion US$2017/yr)"),
+      setNames(netTrade, "Energy System Cost|Supply|Fuel Cost|+|Net Trade (billion US$2017/yr)"))
+    accEx <- z
+    for (cn in names(exByCarrier)) {
+      accEx <- accEx + exByCarrier[[cn]]
+      fuelOut <- mbind(fuelOut, setNames(exByCarrier[[cn]],
+        paste0("Energy System Cost|Supply|Fuel Cost|Domestic Extraction|+|", cn, " (billion US$2017/yr)")))
+    }
+    fuelOut <- mbind(fuelOut, setNames(domExtr - accEx,
+      "Energy System Cost|Supply|Fuel Cost|Domestic Extraction|+|Other (billion US$2017/yr)"))
+    accNt <- z
+    for (cn in names(ntByCarrier)) {
+      accNt <- accNt + ntByCarrier[[cn]]
+      fuelOut <- mbind(fuelOut, setNames(ntByCarrier[[cn]],
+        paste0("Energy System Cost|Supply|Fuel Cost|Net Trade|+|", cn, " (billion US$2017/yr)")))
+    }
+    fuelOut <- mbind(fuelOut, setNames(netTrade - accNt,
+      "Energy System Cost|Supply|Fuel Cost|Net Trade|+|Other (billion US$2017/yr)"))
+    tmp <- mbind(tmp, fuelOut)
+  }
+
+  cost <- (v_costin + v_costom) * 1000 + tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"] - costInvCES
   tmp <- mbind(tmp, setNames(cost, "Energy system costs (billion US$2017/yr)"))
+
+  # Split "Energy System Cost|Supply|Investments" (= v_costInv) into its q_costInv components: deployment adjustment cost, H2 T&D phase-in cost, and the remaining direct
+  # capacity investment (residual). CES Markup is removed from energy supply investments.
+  if (!is.null(vm_costInvTeAdj)) {
+    costInvAdj <- dimSums(vm_costInvTeAdj[, y, intersect(as.character(teAdj), getNames(vm_costInvTeAdj))], dim = 3, na.rm = TRUE) * 1000
+    costInvAddTD <- 0 * v_costin
+    if (!is.null(vm_costAddTeInv) && !is.null(sector2te_addTDCost)) {
+      addTDpairs <- intersect(
+        paste(sector2te_addTDCost$all_te, sector2te_addTDCost$emi_sectors, sep = "."),
+        getNames(vm_costAddTeInv)
+      )
+      if (length(addTDpairs) > 0) costInvAddTD <- dimSums(vm_costAddTeInv[, y, addTDpairs], dim = 3, na.rm = TRUE) * 1000
+    }
+    costInvDirect <- v_costin * 1000 - costInvAdj - costInvAddTD - costInvCES
+    tmp <- mbind(tmp,
+      setNames(costInvDirect, "Energy System Cost|Supply|Investments|+|Direct Capacity (billion US$2017/yr)"),
+      setNames(costInvAdj, "Energy System Cost|Supply|Investments|+|Deployment Adjustment (billion US$2017/yr)"),
+      setNames(costInvAddTD, "Energy System Cost|Supply|Investments|+|H2 T&D Phase-In (billion US$2017/yr)")
+    )
+
+    # Split the "Direct Capacity" and "Deployment Adjustment" components by supply branch, mirroring the
+    # technology grouping of reportInvestments
+    if (!is.null(vm_costInvTeDir) && !is.null(en2enDF)) {
+      seGas <- c("segafos", "segabio", "segasyn")
+      seLiqB <- c("seliqfos", "seliqbio", "seliqsyn")
+      seSol <- c("sesofos", "sesobio")
+      teTD <- c(as.character(grid), "tdels", "tdelt", "tdhes")
+      branches <- c("Electricity|Generation", "Electricity|Grid and Storage", "Hydrogen", "Liquids",
+        "Gases", "Heat", "Solids", "Biochar", "CO2 Transport and Storage", "CDR", "Industry Steel")
+      teBranch <- function(allTe) {
+        b <- setNames(rep("Other", length(allTe)), allTe)
+        put <- function(sel, name) {
+          sel <- intersect(as.character(sel), allTe)
+          if (length(sel)) b[sel] <<- name
+        }
+        put(with(en2enDF, te[en_in %in% seLiqB | en_out %in% seLiqB]), "Liquids")
+        put(with(en2enDF, te[en_in %in% seGas | en_out %in% seGas]), "Gases")
+        put(with(en2enDF, te[en_in %in% seSol | en_out %in% seSol]), "Solids")
+        put(with(en2enDF, te[en_in == "sehe" | en_out == "sehe"]), "Heat")
+        put(with(en2enDF, te[en_out == "sebiochar"]), "Biochar")
+        put(with(en2enDF, te[(en_in == "seh2" & en_out %in% as.character(fety)) | en_out == "seh2"]), "Hydrogen")
+        put(with(en2enDF, te[en_out == "seel"]), "Electricity|Generation")
+        put(c(as.character(stor), teTD), "Electricity|Grid and Storage")
+        put("dac", "CDR")
+        put(c("ccsinje", "ccsinjeon", "ccsinjeoff", "weathering"), "CO2 Transport and Storage")
+        if (!is.null(tePrc)) put(as.character(tePrc), "Industry Steel")
+        b
+      }
+      splitByBranch <- function(perTe, parent, prefix) {
+        b <- teBranch(getNames(perTe))
+        acc <- NULL
+        out <- NULL
+        for (br in branches) {
+          sel <- names(b)[b == br]
+          val <- if (length(sel)) dimSums(perTe[, y, sel], dim = 3, na.rm = TRUE) * 1000 else 0 * parent
+          acc <- if (is.null(acc)) val else acc + val
+          out <- mbind(out, setNames(val, paste0(prefix, "|+|", br, " (billion US$2017/yr)")))
+        }
+        mbind(out, setNames(parent - acc, paste0(prefix, "|+|Other (billion US$2017/yr)")))
+      }
+      tmp <- mbind(tmp, splitByBranch(vm_costInvTeDir, costInvDirect,
+        "Energy System Cost|Supply|Investments|Direct Capacity"))
+      tmp <- mbind(tmp, splitByBranch(vm_costInvTeAdj, costInvAdj,
+        "Energy System Cost|Supply|Investments|Deployment Adjustment"))
+    }
+
+    # Anticipation / borrowing uplift embedded in the investment terms: q_costInv values capex as if it
+    # were borrowed half a time step early, multiplying vm_costInvTeDir and vm_costInvTeAdj by
+    # (1 + 0.02/pm_ies + pm_prtp)^(pm_ts/2). Reported as a second (|++|) decomposition of Supply|Investments
+    # into the underlying overnight capex and the anticipation uplift; the two sum to Supply|Investments
+    # (the uplift applies to the capacity terms; H2 T&D is folded into overnight capex).
+    if (!is.null(pm_ies) && !is.null(pm_prtp) && !is.null(pm_ts)) {
+      rate <- collapseNames(1 + 0.02 / pm_ies + pm_prtp)
+      fac <- costInvDirect * 0
+      for (yy in getYears(fac)) fac[, yy, ] <- rate ** as.numeric(pm_ts[, yy, ])
+      uplift <- (costInvDirect + costInvAdj) * (1 - 1 / fac)
+      overnight <- (costInvDirect + costInvAdj + costInvAddTD) - uplift
+      tmp <- mbind(tmp,
+        setNames(overnight, "Energy System Cost|Supply|Investments|++|Overnight Capex (billion US$2017/yr)"),
+        setNames(uplift, "Energy System Cost|Supply|Investments|++|Anticipation Uplift (billion US$2017/yr)")
+      )
+    }
+  }
+
+  ###############################################
+  ##### Additional energy-system cost terms #####
+  ###############################################
+  esAdd <- NULL
+  # Industry CO2 capture cost (MAC-curve integral, q37_IndCCSCost): capturing industry process emissions
+  # (cement, chemicals, steel, ...)
+  if (!is.null(vm_IndCCSCost)) {
+    indCCS <- dimSums(vm_IndCCSCost[, y, ], dim = 3, na.rm = TRUE) * 1000
+    tmp <- mbind(tmp, setNames(indCCS, "Energy System Cost|Additional|+|Industry CO2 Capture (billion US$2017/yr)"))
+    esAdd <- if (is.null(esAdd)) indCCS else esAdd + indCCS
+  }
+
+  # Materials processing cost (vm_costMatPrc): energy/process cost of primary materials (steel, cement) in industry.
+  if (!is.null(vm_costMatPrc)) {
+    matPrc <- dimSums(vm_costMatPrc[, y, ], dim = 3, na.rm = TRUE) * 1000
+    tmp <- mbind(tmp, setNames(matPrc, "Energy System Cost|Additional|+|Materials Processing (billion US$2017/yr)"))
+    esAdd <- if (is.null(esAdd)) matPrc else esAdd + matPrc
+  }
+
+  # Macroeconomic investment adjustment cost (v01_invMacroAdj): intertemporal capital-adjustment cost.
+  if (!is.null(v01_invMacroAdj)) {
+    invAdj <- dimSums(v01_invMacroAdj[, y, ], dim = 3, na.rm = TRUE) * 1000
+    tmp <- mbind(tmp, setNames(invAdj, "Energy System Cost|Additional|+|Investment Adjustment (billion US$2017/yr)"))
+    esAdd <- if (is.null(esAdd)) invAdj else esAdd + invAdj
+  }
+
+  # Sum of the additional terms
+  if (!is.null(esAdd)) {
+    tmp <- mbind(tmp, setNames(esAdd, "Energy System Cost|+|Additional (billion US$2017/yr)"))
+  }
+
+  # Non-CO2 GHG abatement cost (energy & industry MAC-curve costs, pm_macCost), excluding the land-use (MAgPIE)
+  # sectors already reported under "Costs|Land Use|MAC-costs" and the industry-CO2 sectors covered by
+  # vm_IndCCSCost (which is zero for those sectors, so no double counting).
+  if (!is.null(pm_macCostFull) && !is.null(emiMacSector)) {
+    nonLuMac <- setdiff(as.character(emiMacSector), c(as.character(emiMacMagpie), as.character(emiInd37)))
+    nonLuMac <- intersect(nonLuMac, getNames(pm_macCostFull))
+    if (length(nonLuMac) > 0) {
+      tmp <- mbind(tmp, setNames(
+        dimSums(pm_macCostFull[, y, nonLuMac], dim = 3, na.rm = TRUE) * 1000,
+        "Costs|Non-CO2 GHG Abatement|Energy and Industry (billion US$2017/yr)"
+      ))
+    }
+  }
+
+  ###############################################
+  ##### Demand-side energy-system cost ##########
+  ###############################################
+  # CES Markup
+  if (!is.null(vm_costCESMkup) && !is.null(ppfen_CESMkup)) {
+    tmp <- mbind(tmp, setNames(costInvCES, "Energy System Cost|Demand|+|CES Markup (billion US$2017/yr)"))
+  }
+
+  # End-use service capital (vm_esCapInv, budget term sum(teEs, vm_esCapInv)): the demand-side energy cost,
+  # i.e. capital for the energy-service techs (EDGE-transport vehicle capital).
+  if (!is.null(vm_esCapInv)) {
+    esCap <- vm_esCapInv[, y, ]
+    teEs <- getNames(esCap)
+    tmp <- mbind(tmp, setNames(
+      dimSums(esCap, dim = 3, na.rm = TRUE) * 1000,
+      "Energy System Cost|Demand|+|End-Use Capital (billion US$2017/yr)"
+    ))
+
+    # Sector split
+    teEs_trans <- grep("^te_es", teEs, value = TRUE)
+    teEs_build <- grep("^te_ue", teEs, value = TRUE)
+    teEs_other <- setdiff(teEs, c(teEs_trans, teEs_build))
+
+    # Transport sector
+    if (length(teEs_trans) > 0) {
+      tmp <- mbind(tmp, setNames(
+        dimSums(esCap[, , teEs_trans], dim = 3, na.rm = TRUE) * 1000,
+        "Energy System Cost|Demand|End-Use Capital|+|Transport (billion US$2017/yr)"
+      ))
+
+      # Passenger/Freight split
+      selPass <- grep("pass", teEs_trans, value = TRUE)
+      if (length(selPass) > 0) {
+        tmp <- mbind(tmp, setNames(
+          dimSums(esCap[, , selPass], dim = 3, na.rm = TRUE) * 1000,
+          "Energy System Cost|Demand|End-Use Capital|Transport|+|Passenger (billion US$2017/yr)"
+        ))
+      }
+      selFrgt <- grep("frgt", teEs_trans, value = TRUE)
+      if (length(selFrgt) > 0) {
+        tmp <- mbind(tmp, setNames(
+          dimSums(esCap[, , selFrgt], dim = 3, na.rm = TRUE) * 1000,
+          "Energy System Cost|Demand|End-Use Capital|Transport|+|Freight (billion US$2017/yr)"
+        ))
+      }
+
+      # Carrier split within Transport (using |++| since it is a second decomposition of the same parent)
+      esCapTransCarrier <- list(
+        Electricity = grep("eselt", teEs_trans, value = TRUE),
+        Liquids     = grep("espet|esdie", teEs_trans, value = TRUE),
+        Gases       = grep("esgat", teEs_trans, value = TRUE),
+        Hydrogen    = grep("esh2t", teEs_trans, value = TRUE)
+      )
+      for (carrier in names(esCapTransCarrier)) {
+        sel <- esCapTransCarrier[[carrier]]
+        if (length(sel) > 0) {
+          tmp <- mbind(tmp, setNames(
+            dimSums(esCap[, , sel], dim = 3, na.rm = TRUE) * 1000,
+            paste0("Energy System Cost|Demand|End-Use Capital|Transport|++|", carrier, " (billion US$2017/yr)")
+          ))
+        }
+      }
+    }
+
+    # Buildings sector
+    if (length(teEs_build) > 0) {
+      tmp <- mbind(tmp, setNames(
+        dimSums(esCap[, , teEs_build], dim = 3, na.rm = TRUE) * 1000,
+        "Energy System Cost|Demand|End-Use Capital|+|Buildings (billion US$2017/yr)"
+      ))
+
+      # Space/Water/Cooking heating split
+      selSh <- grep("sh", teEs_build, value = TRUE)
+      if (length(selSh) > 0) {
+        tmp <- mbind(tmp, setNames(
+          dimSums(esCap[, , selSh], dim = 3, na.rm = TRUE) * 1000,
+          "Energy System Cost|Demand|End-Use Capital|Buildings|+|Space Heating (billion US$2017/yr)"
+        ))
+      }
+      selCw <- grep("cw", teEs_build, value = TRUE)
+      if (length(selCw) > 0) {
+        tmp <- mbind(tmp, setNames(
+          dimSums(esCap[, , selCw], dim = 3, na.rm = TRUE) * 1000,
+          "Energy System Cost|Demand|End-Use Capital|Buildings|+|Cooking and Water Heating (billion US$2017/yr)"
+        ))
+      }
+
+      # Carrier/Heating type split within Buildings (using |++| since it is a second decomposition of the same parent)
+      esCapBuildCarrier <- list(
+        Electricity = grep("hp|el", teEs_build, value = TRUE),
+        Gases       = grep("ga", teEs_build, value = TRUE),
+        Liquids     = grep("ob|ho", teEs_build, value = TRUE),
+        Hydrogen    = grep("h2", teEs_build, value = TRUE),
+        DistrictHeat = grep("he", teEs_build, value = TRUE),
+        Solids      = grep("so|st", teEs_build, value = TRUE)
+      )
+      for (carrier in names(esCapBuildCarrier)) {
+        sel <- esCapBuildCarrier[[carrier]]
+        if (length(sel) > 0) {
+          carrierName <- switch(carrier,
+            DistrictHeat = "District Heat",
+            carrier
+          )
+          tmp <- mbind(tmp, setNames(
+            dimSums(esCap[, , sel], dim = 3, na.rm = TRUE) * 1000,
+            paste0("Energy System Cost|Demand|End-Use Capital|Buildings|++|", carrierName, " (billion US$2017/yr)")
+          ))
+        }
+      }
+    }
+
+    # Other sector (any residual unmatched technologies)
+    if (length(teEs_other) > 0) {
+      tmp <- mbind(tmp, setNames(
+        dimSums(esCap[, , teEs_other], dim = 3, na.rm = TRUE) * 1000,
+        "Energy System Cost|Demand|End-Use Capital|+|Other (billion US$2017/yr)"
+      ))
+    }
+  }
+
+  ###############################################
+  ##### Energy System Cost totals (from model) ##
+  ###############################################
+  # vm_costEnergySys (= v_costFu + v_costOM + v_costInv + sum(emiInd37, vm_IndCCSCost)
+  #   Supply = vm_costEnergySys - items reallocated out of supply (CES markup -> demand, industry CO2 capture ->
+  #            additional) + the net-fuel adjustment (own-ESM net fuel - gross v_costFu)
+  #   Demand = end-use capital + CES markup
+  #   Additional = industry CO2 capture + materials + inv. adj.
+  #   Energy System Cost = vm_costEnergySys + net-fuel adjustment + the demand/additional terms it omits.
+  if (!is.null(vm_costEnergySys)) {
+    modelTot <- setNames(vm_costEnergySys[, y, ], NULL) * 1000
+    dm3 <- function(x) if (!is.null(x)) setNames(dimSums(x[, y, ], dim = 3, na.rm = TRUE), NULL) * 1000 else modelTot * 0
+    indT <- dm3(vm_IndCCSCost)
+    cesT <- setNames(costInvCES[, y, ], NULL)
+    eucT <- dm3(vm_esCapInv)
+    matT <- dm3(vm_costMatPrc)
+    iadT <- dm3(v01_invMacroAdj)
+    netFuelAdj <- setNames(tmp[, , "Fuel costs for own ESM (billion US$2017/yr)"], NULL) - setNames(v_costfu[, y, ], NULL) * 1000
+    tmp <- mbind(tmp,
+      setNames(modelTot - indT - cesT + netFuelAdj, "Energy System Cost|+|Supply (billion US$2017/yr)"),
+      setNames(eucT + cesT, "Energy System Cost|+|Demand (billion US$2017/yr)"),
+      setNames(modelTot + netFuelAdj + eucT + matT + iadT, "Energy System Cost (billion US$2017/yr)")
+    )
+  }
 
   #######################################
   ########## Energy costs ###############
