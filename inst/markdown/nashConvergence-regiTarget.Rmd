@@ -232,14 +232,39 @@ p47_slopeReferenceIteration_iter     <- tryGetPlotData("p47_slopeReferenceIterat
 # (iteration, target) row means NOT met, not "unknown" - joining it and leaving NA would make every target
 # look met on every iteration it happened not to be. zeroFill() below is what makes that explicit.
 p47_marketMet_iter  <- tryGetPlotData("p47_marketMet_iter",  params$gdx)   # inside the RAW tolerance
-p47_giveUp          <- tryGetPlotData("p47_giveUp",          params$gdx)   # deliberately abandoned
-p47_reopenCount     <- tryGetPlotData("p47_reopenCount",     params$gdx)   # corrections spent
-p47_releaseCount    <- tryGetPlotData("p47_releaseCount",    params$gdx)   # uncharged un-freezes
-p47_refreshCount    <- tryGetPlotData("p47_refreshCount",    params$gdx)   # re-open budget earned back
-p47_aimTries        <- tryGetPlotData("p47_aimTries",        params$gdx)   # attempts at the AIM band
-p47_divArmed        <- tryGetPlotData("p47_divArmed",        params$gdx)   # divergence test live
-p47_divBrakeCount   <- tryGetPlotData("p47_divBrakeCount",   params$gdx)   # divergence brakes applied
-p47_rolledBack      <- tryGetPlotData("p47_rolledBack",      params$gdx)   # 0 none / 1 rolled / 2 undone
+
+# consolidated algorithm: the PERSISTENT per-target state lives in one set-indexed container
+# p47_targetState(targetState, ...) with targetState in
+# {reopenCount, settledCount, refreshCount, releaseCount, divBrakeCount, aimTries, giveUp, divArmed,
+#  rolledBack, reopenIter, bestDevIter, rollFromIter, bestDevAbs, rollFromDev}.
+# These were 14 standalone p47_* parameters before 2026-08-04, and every gdx older than that still carries
+# them that way, so extractState() falls back to the legacy name - same pattern as extractTrace() below.
+p47_targetState <- tryGetPlotData("p47_targetState", params$gdx)
+extractState <- function(el, legacyName) {
+  if (!is.null(p47_targetState) && nrow(p47_targetState) > 0) {
+    typeCol <- names(p47_targetState)[
+      sapply(p47_targetState, function(col) any(as.character(col) %in%
+        c("reopenCount", "giveUp", "aimTries", "divArmed", "rolledBack")))
+    ][1]
+    if (!is.na(typeCol)) {
+      out <- p47_targetState[as.character(p47_targetState[[typeCol]]) == el, , drop = FALSE]
+      if (nrow(out) > 0) {
+        out[[typeCol]] <- NULL
+        names(out)[names(out) == "p47_targetState"] <- legacyName
+        return(out)
+      }
+    }
+  }
+  tryGetPlotData(legacyName, params$gdx)   # gdx predates the consolidation
+}
+p47_giveUp          <- extractState("giveUp",        "p47_giveUp")          # deliberately abandoned
+p47_reopenCount     <- extractState("reopenCount",   "p47_reopenCount")     # corrections spent
+p47_releaseCount    <- extractState("releaseCount",  "p47_releaseCount")    # uncharged un-freezes
+p47_refreshCount    <- extractState("refreshCount",  "p47_refreshCount")    # re-open budget earned back
+p47_aimTries        <- extractState("aimTries",      "p47_aimTries")        # attempts at the AIM band
+p47_divArmed        <- extractState("divArmed",      "p47_divArmed")        # divergence test live
+p47_divBrakeCount   <- extractState("divBrakeCount", "p47_divBrakeCount")   # divergence brakes applied
+p47_rolledBack      <- extractState("rolledBack",    "p47_rolledBack")      # 0 none / 1 rolled / 2 undone
 
 # collapse a target-indexed parameter to a named lookup keyed "ext_regi|ttot2|emiMktExt"
 targetKeyed <- function(df, valcol) {
