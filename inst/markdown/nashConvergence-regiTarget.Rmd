@@ -288,10 +288,11 @@ lookup0 <- function(tbl, key) { v <- tbl[key]; ifelse(is.na(v), 0, v) }
 
 # consolidated algorithm: per-iteration diagnostics live in one set-indexed container
 # p47_slopeTrace_iter(slopeTrace, ...) with slopeTrace in
-# {rawSlope, fitR2, preDamp, rollIter, rollUndo, divBrake, parked}.
-# The last four are EVENTS rather than measurements - the iteration a price was rolled back, a rollback was
-# undone, a divergence brake fired, or the parked-target stop gave up - and they are the only record of those
-# decisions anywhere in the gdx. Split the container back into the individual frames the rest expects.
+# {rawSlope, fitR2, preDamp, rollIter, rollUndo, divBrake, parked, giveUpBy}.
+# The last five are EVENTS rather than measurements - the iteration a price was rolled back, a rollback was
+# undone, a divergence brake fired, the parked-target stop gave up, and WHICH give-up branch abandoned a
+# target - and they are the only record of those decisions anywhere in the gdx. Split the container back into
+# the individual frames the rest expects.
 p47_slopeTrace_iter <- tryGetPlotData("p47_slopeTrace_iter", params$gdx)
 extractTrace <- function(tp, valname) {
   if (is.null(p47_slopeTrace_iter) || nrow(p47_slopeTrace_iter) == 0) return(data.frame())
@@ -307,6 +308,28 @@ extractTrace <- function(tp, valname) {
 p47_clampedRescaleSlope_iter             <- extractTrace("rawSlope", "p47_clampedRescaleSlope_iter")
 p47_slopeFitR2_iter                      <- extractTrace("fitR2",    "p47_slopeFitR2_iter")
 p47_dampedFactorRescaleemiMktCO2Tax_iter <- extractTrace("preDamp",  "p47_dampedFactorRescaleemiMktCO2Tax_iter")
+
+# WHICH give-up branch abandoned each target. `Outcome = gave up` says a branch fired; without this it is not
+# recoverable from the gdx which one, and reopenCount/divBrakeCount only narrow it down (three analysis rounds
+# guessed wrong). Absent in gdx files written before 2026-08-05, which degrade to no annotation.
+p47_giveUpBy_iter <- extractTrace("giveUpBy", "p47_giveUpBy")
+giveUpBranchName <- c("1" = "noise floor", "2" = "infeasible", "3" = "divergence",
+                     "4" = "re-open budget", "5" = "parked")
+giveUpBranchByTarget <- local({
+  d <- p47_giveUpBy_iter
+  if (is.null(d) || nrow(d) == 0) return(setNames(character(0), character(0)))
+  vc <- if ("p47_giveUpBy" %in% names(d)) "p47_giveUpBy" else
+        tail(setdiff(names(d), c("iteration", "ttot", "ttot1", "ttot2", "ext_regi", "emiMktExt")), 1)
+  d <- d[as.numeric(d[[vc]]) > 0, , drop = FALSE]
+  if (nrow(d) == 0) return(setNames(character(0), character(0)))
+  tt <- if ("ttot1" %in% names(d)) "ttot1" else "ttot2"
+  key <- paste(d$ext_regi, as.character(d[[tt]]), d$emiMktExt, sep = "|")
+  it  <- suppressWarnings(as.numeric(as.character(d$iteration)))
+  ord <- order(key, it)                       # last firing per target wins
+  d <- d[ord, , drop = FALSE]; key <- key[ord]
+  last <- !duplicated(key, fromLast = TRUE)
+  setNames(unname(giveUpBranchName[as.character(as.numeric(d[[vc]][last]))]), key[last])
+})
 # backward compatibility: fall back to the legacy separate parameters for older gdx files
 if (nrow(p47_clampedRescaleSlope_iter) == 0)
   p47_clampedRescaleSlope_iter <- tryGetPlotData("p47_clampedRescaleSlope_iter", params$gdx)
@@ -1516,7 +1539,9 @@ target_summary_df <- tableData %>%
       ifelse(n_refresh > 0, paste0("refresh ", n_refresh, " "), ""),
       ifelse(n_release > 0, paste0("release ", n_release, " "), ""),
       ifelse(n_brake   > 0, paste0("brake ", n_brake, " "), ""),
-      ifelse(rolled    > 0, ifelse(rolled >= 2, "rollback undone ", "rollback "), "")
+      ifelse(rolled    > 0, ifelse(rolled >= 2, "rollback undone ", "rollback "), ""),
+      ifelse(gave_up & !is.na(giveUpBranchByTarget[tkey]),
+             paste0("gave up: ", giveUpBranchByTarget[tkey], " "), "")
     ),
     state_disp      = ifelse(nchar(trimws(state_disp)) == 0, "—", trimws(state_disp))
   )
@@ -1691,7 +1716,7 @@ for (reg in tgtRegions) {
 out <- paste0(out, "</div></div>\n\n")
 
 out <- paste0(out, "##### Summary Table\n\n")
-out <- paste0(out, note("One row per target. <b>Conv.</b> is whether the target still steers its price; <b>Outcome</b> is what actually happened to it &mdash; <span style='color:#00BFC4'>met</span> (inside the raw tolerance), <span style='color:#F8766D'>unmet</span>, or <span style='color:#e0a030'>gave up</span> (a give-up branch deliberately abandoned it, which is what lets the run end). <b>Aim tries</b> is attempts spent closing the last stretch to the aim band; a target at the budget converged through the accept fallback rather than by aiming. <b>Interventions</b> lists what the algorithm had to do: re-opens charged, re-open budget refreshed after a long settled stretch, uncharged releases, divergence brakes, and price rollbacks."))
+out <- paste0(out, note("One row per target. <b>Conv.</b> is whether the target still steers its price; <b>Outcome</b> is what actually happened to it &mdash; <span style='color:#00BFC4'>met</span> (inside the raw tolerance), <span style='color:#F8766D'>unmet</span>, or <span style='color:#e0a030'>gave up</span> (a give-up branch deliberately abandoned it, which is what lets the run end). <b>Aim tries</b> is attempts spent closing the last stretch to the aim band; a target at the budget converged through the accept fallback rather than by aiming. <b>Interventions</b> lists what the algorithm had to do: re-opens charged, re-open budget refreshed after a long settled stretch, uncharged releases, divergence brakes, and price rollbacks, and &mdash; for an abandoned target &mdash; <b>which give-up branch</b> let it go (noise floor, infeasible, divergence, re-open budget, or parked). The parked stop is the only branch that can fire from the converged state, so it is the one to look for when a run ends with a target held unmet inside its exit band."))
 out <- paste0(out, collapsibleChunk("summary_react"))
 
 for(reg in tgtRegions){
