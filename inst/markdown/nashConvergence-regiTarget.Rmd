@@ -309,7 +309,7 @@ p47_clampedRescaleSlope_iter             <- extractTrace("rawSlope", "p47_clampe
 p47_slopeFitR2_iter                      <- extractTrace("fitR2",    "p47_slopeFitR2_iter")
 p47_dampedFactorRescaleemiMktCO2Tax_iter <- extractTrace("preDamp",  "p47_dampedFactorRescaleemiMktCO2Tax_iter")
 
-# WHICH give-up branch abandoned each target. `Outcome = gave up` says a branch fired; without this it is not
+# Which give-up branch abandoned each target. `Outcome = gave up` says a branch fired; without this it is not
 # recoverable from the gdx which one, and reopenCount/divBrakeCount only narrow it down (three analysis rounds
 # guessed wrong). Absent in gdx files written before 2026-08-05, which degrade to no annotation.
 p47_giveUpBy_iter <- extractTrace("giveUpBy", "p47_giveUpBy")

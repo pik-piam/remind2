@@ -46,15 +46,27 @@ knitr::opts_chunk$set(
 Master overview of every convergence criterion. Each **row** is one criterion and the
 **x-axis** is the Nash iteration; each **dot** shows whether that criterion was met at
 that iteration (teal = met, red = not; the top feasibility row also uses amber for
-skipped / feasible-but-not-optimal, and the emission-market row uses amber for a
-best-achievable stop). The run converges only once **every active criterion is teal in
-the same iteration**. A **black** y-axis label marks an active criterion; a **grey**
-label an inactive one. Hover any dot for the underlying value and the regions/periods
-still failing.
+skipped / feasible-but-not-optimal). The run converges only once **every active criterion
+is teal in the same iteration**. A **black** y-axis label marks an active criterion; a
+**grey** label an inactive one. Hover any dot for the underlying value and the
+regions/periods still failing.
+
+On the **Emission Market Target** row, amber is its own outcome: every target has stopped
+steering, so the criterion is satisfied and the run may end, but at least one target was
+**given up** and is carrying a residual outside its tolerance. Its y-axis label turns amber
+too when the run *ends* that way, so a run that merely finished is never mistaken for one
+where every target was actually met. Hovering shows how many targets were met, which were
+not, and by how many multiples of their tolerance.
 
 ```{r results = "asis", fig.height=10}
 diag <- plotNashConvergence(gdx = params$gdx)
 htmltools::tagList(diag$plot)
+```
+
+```{r results = "asis"}
+# Verdict on the regional emission targets, so "did they all converge?" needs no hovering.
+# NULL for runs that carry no targets.
+if (!is.null(diag$emiMktTargetStatus)) cat(diag$emiMktTargetStatus)
 ```
 
 <!--
