@@ -1239,11 +1239,23 @@ g[["phase_diagram"]] <-
           )
         ) else list()
 
+      # Legend floats INSIDE the plot, top right. Left to itself plotly sizes each entry from the room it
+      # thinks is available and TRUNCATES the labels to fit - in this chart's 50%-width flex cell that came
+      # out as a single character each ("s", "s", "c"). entrywidth pins the width instead of letting it be
+      # derived, so the text is never shortened; entrywidthmode = "pixels" makes it an absolute measure.
+      # Sized from the longest method name actually plotted (~6px per character at font size 10) plus room
+      # for the marker and padding.
+      legendChars <- max(nchar(as.character(unique(d_phase$primary_method))), 1)
+      legendEntryW <- max(90, ceiling(legendChars * 6) + 42)
+
       p %>% layout(
           showlegend = TRUE,
           legend = list(x = 0.98, y = 0.98, xanchor = "right", yanchor = "top",
-                        bgcolor = "rgba(255,255,255,0.65)", bordercolor = "#cccccc",
+                        entrywidthmode = "pixels", entrywidth = legendEntryW,
+                        bgcolor = "rgba(255,255,255,0.75)", bordercolor = "#cccccc",
                         borderwidth = 1, font = list(size = 10)),
+          # r matches the paired emissions/price chart so the two plot areas line up across the row.
+          margin = list(r = 60),
           annotations = seg_arrows,
           xaxis = list(title = "Carbon price (US$2005/t CO2)", zeroline = FALSE,
                        gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
@@ -1604,7 +1616,16 @@ dev_data <- target_summary_df %>%
   arrange(ext_regi, ttot2, emiMktExt) %>%
   mutate(dot_color = ifelse(in_tol, "#00BFC4", "#F8766D"))
 
-g[["summary_conv_dev"]] <- plot_ly(dev_data, height = dev_h, width = 550) %>%
+# The category labels are "<region> · <period> · <market>", so they carry the region already - but with a
+# fixed chart width and a 60px left margin plotly clipped it off the left edge and the row read "2060 · all".
+# automargin alone did not rescue it. Size the margin from the longest label instead (~6.6px per character
+# at the default 12px tick font, plus padding) and widen the chart by the same amount so the plotting area
+# keeps its size rather than being eaten by the labels.
+dev_lab_chars <- max(nchar(as.character(dev_data$target_label)), 0)
+dev_margin_l  <- max(60, ceiling(dev_lab_chars * 6.6) + 18)
+
+g[["summary_conv_dev"]] <- plot_ly(dev_data, height = dev_h,
+                                   width = 550 + (dev_margin_l - 60)) %>%
   add_segments(x = ~-tol_pct, xend = ~tol_pct, y = ~target_label, yend = ~target_label,
                line = list(color = "rgba(0,191,196,0.12)", width = 14),
                showlegend = FALSE, hoverinfo = "skip") %>%
@@ -1619,10 +1640,11 @@ g[["summary_conv_dev"]] <- plot_ly(dev_data, height = dev_h, width = 550) %>%
   layout(
     shapes = list(list(type = "line", x0 = 0, x1 = 0, y0 = 0, y1 = 1,
                        yref = "paper", line = list(color = "#999", width = 1))),
+    margin = list(l = dev_margin_l, r = 10, t = 25, b = 40),
     xaxis = list(title = "Final deviation (%)", zeroline = FALSE, gridcolor = "#e8e8e8",
                  mirror = TRUE, ticks = "outside", showline = TRUE,
                  linecolor = "#adadad", linewidth = 2),
-    yaxis = list(title = "", zeroline = FALSE, gridcolor = "#e8e8e8",
+    yaxis = list(title = "", zeroline = FALSE, gridcolor = "#e8e8e8", automargin = TRUE,
                  categoryorder = "array", categoryarray = rev(tgt_order_dev))
   )
 
