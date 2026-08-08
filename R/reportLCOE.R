@@ -996,7 +996,7 @@ reportLCOE <- function(gdx, output.type = "both") {
     ### Read fuel price ----
 
     # fuels to calculate price for
-    fuels <- c("peoil", "pegas", "pecoal", "peur", "pebiolc", "pebios", "pebioil",
+    fuels <- c("peoil", "pegas", "pecoal", "peur", "pebiolc", "pebios", "pemanure", "pebioil",
                "seel", "seliqbio", "seliqfos", "seliqsyn", "sesobio", "sesofos", "seh2", "segabio",
                "segafos", "segasyn", "sehe")
 

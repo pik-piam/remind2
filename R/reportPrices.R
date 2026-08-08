@@ -287,7 +287,9 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
                setNames(mselect(pm_PEPrice, all_enty = "pebios") * tdptwyr2dpgj,
                         "Price|Primary Energy|Biomass|1st Generation|Sugar and Starch (US$2017/GJ)"),
                setNames(mselect(pm_PEPrice, all_enty = "pebioil") * tdptwyr2dpgj,
-                        "Price|Primary Energy|Biomass|1st Generation|Oil-based (US$2017/GJ)")
+                        "Price|Primary Energy|Biomass|1st Generation|Oil-based (US$2017/GJ)"),
+               setNames(mselect(pm_PEPrice, all_enty = "pemanure") * tdptwyr2dpgj,
+                        "Price|Primary Energy|Biomass|Manure (US$2017/GJ)")
   )
 
 
