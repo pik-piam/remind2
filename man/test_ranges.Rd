@@ -12,17 +12,19 @@ test_ranges(
 )
 }
 \arguments{
-\item{data}{A \code{\link[magclass:magclass-package]{magpie}} object to test.}
+\item{data}{A \code{\link[magclass:magclass]{magpie}} object to test.}
 
 \item{tests}{A list of tests to perform, where each tests consists of:
-- A regular expression to match variables names in \code{data} (mandatory
+\itemize{
+\item A regular expression to match variables names in \code{data} (mandatory
 first item).
-- A named entry \code{low} to test the lower bound.  Can be set to \code{NULL} or
+\item A named entry \code{low} to test the lower bound.  Can be set to \code{NULL} or
 omitted.
-- A named entry \code{up} to test the upper bound.  Can be set to \code{NULL} or
+\item A named entry \code{up} to test the upper bound.  Can be set to \code{NULL} or
 omitted.
-- An optional entry \code{ignore.case} which can be set to \code{FALSE} if the
-regular expression should be matched case-sensitive.}
+\item An optional entry \code{ignore.case} which can be set to \code{FALSE} if the
+regular expression should be matched case-sensitive.
+}}
 
 \item{reaction}{A character string, either \code{'message'} or \code{'stop'}, to either
 warn or throw an error if variables exceed the ranges.}

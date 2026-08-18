@@ -1,6 +1,6 @@
 # The REMIND R package (2nd generation)
 
-R package **remind2**, version **2.5.4**
+R package **remind2**, version **2.5.5**
 
    [![R build status](https://github.com/pik-piam/remind2/workflows/check/badge.svg)](https://github.com/pik-piam/remind2/actions) [![codecov](https://codecov.io/gh/pik-piam/remind2/branch/master/graph/badge.svg)](https://app.codecov.io/gh/pik-piam/remind2) [![r-universe](https://pik-piam.r-universe.dev/badges/remind2)](https://pik-piam.r-universe.dev/builds)
 
@@ -37,8 +37,8 @@ The package comes with vignettes describing the basic functionality of the packa
 
 ```r
 vignette("compareScenariosRemind2") # compareScenarios in remind2
-vignette("remind2_reporting")       # remind2 reporting
 vignette("remind_summary")          # Adding plots to the REMIND_summary.pdf
+vignette("remind2_reporting")       # remind2 reporting
 ```
 
 ## Questions / Problems
@@ -49,7 +49,7 @@ In case of questions / problems please contact Renato Rodrigues <renato.rodrigue
 
 To cite package **remind2** in publications use:
 
-Rodrigues R, Baumstark L, Benke F, Bantje D, Dietrich J, Dirnaichner A, Dorndorf T, Duerrwaechter J, Führlich P, Giannousakis A, Hasse R, Hilaire J, Klein D, Koch J, Kowalczyk K, Lécuyer F, Levesque A, Malik A, Merfort A, Merfort L, Morena-Leiva S, Odenweller A, Pehl M, Pietzcker R, Rauner S, Richters O, Rottoli M, Rüter T, Salzwedel R, Schötz C, Schreyer F, Siala K, Sörgel B, Spahr M, Strefler J, Verpoort P, Weigmann P (2026). "remind2: The REMIND R package (2nd generation)." Version: 2.5.4, <https://github.com/pik-piam/remind2>.
+Rodrigues R, Baumstark L, Benke F, Bantje D, Dietrich J, Dirnaichner A, Dorndorf T, Duerrwaechter J, Führlich P, Giannousakis A, Hasse R, Hilaire J, Klein D, Koch J, Kowalczyk K, Lécuyer F, Levesque A, Malik A, Merfort A, Merfort L, Morena-Leiva S, Odenweller A, Pehl M, Pietzcker R, Rauner S, Richters O, Rottoli M, Rüter T, Salzwedel R, Schötz C, Schreyer F, Siala K, Sörgel B, Spahr M, Strefler J, Verpoort P, Weigmann P (2026). "remind2: The REMIND R package (2nd generation)." Version: 2.5.5, <https://github.com/pik-piam/remind2>.
 
 A BibTeX entry for LaTeX users is
 
@@ -60,6 +60,6 @@ A BibTeX entry for LaTeX users is
   date = {2026-08-18},
   year = {2026},
   url = {https://github.com/pik-piam/remind2},
-  note = {Version: 2.5.4},
+  note = {Version: 2.5.5},
 }
 ```
