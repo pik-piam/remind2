@@ -488,12 +488,9 @@ reportLCOE <- function(gdx, output.type = "both") {
       v33_EW_onfield <- readGDX(gdx, c("v33_EW_onfield", "v33_grindrock_onfield"), restore_zeros = FALSE, field = "l", format = "first_found")[, ttot_from2005, ]
       v33_EW_onfield_sum <- dimSums(v33_EW_onfield, dim = 3)
 
-      # EW-specific fixed OM cost are given by vm_omcosts_cdr. This cumulates a) completely fixed cost for mining, grinding and spreading; and b) fixed transportation cost that depend on the distance grade.
-      # To allow interpretation of the LC, separate these cost components.
-      s33_costs_fix <- readGDX(gdx, "s33_costs_fix")
+      # EW-specific fixed OM cost are given by v33_EW_transport_costs, i.e. fixed transportation cost that depend on the distance grade.
       p33_EW_transport_costs <- readGDX(gdx, c("p33_EW_transport_costs", "p33_transport_costs"), format = "first_found")
 
-      EW_fixed_other_cost <- 10^12 * s33_costs_fix * v33_EW_onfield_sum
       EW_fixed_transport_cost <-  10^12 *  dimSums(p33_EW_transport_costs[, , getNames(v33_EW_onfield)] * v33_EW_onfield)
     }
 
@@ -515,8 +512,8 @@ reportLCOE <- function(gdx, output.type = "both") {
     if (EW_name %in% teCDR) {
       # The calculation of cost is associated with the spreading of rocks in a time step. However, the removal induced thereby is spread across time steps.
       # Thus, we need to calculate the total removal induced through spreading a given amount of rock as reference value for the cost incurred in that time step.
-      s33_co2_rem_pot <- readGDX(gdx, "s33_co2_rem_pot")
-      EW_induced_in_tCO2 <- dimSums(v33_EW_onfield * s33_co2_rem_pot * s_GtC2tCO2, dim = 3) # here grades do not matter because the overall removal depends on the type of stone and not grade
+      s33_rockRemPot <- readGDX(gdx, c("s33_rockRemPot","s33_co2_rem_pot"), format = "first_found")
+      EW_induced_in_tCO2 <- dimSums(v33_EW_onfield * s33_rockRemPot * s_GtC2tCO2, dim = 3) # here grades do not matter because the overall removal depends on the type of stone and not grade
       # [Gt stone] * [GtC/GtStone] * [tCO2/GtC]
       EW_induced_in_tCO2[EW_induced_in_tCO2 == 0] <- NA # set NA to avoid infinite investment cost for the standing system when regions do not spread EW in time steps after initial investment was taken
       cdrco2_byTech_tCO2[, , EW_name] <- EW_induced_in_tCO2[, ttot_from2005, ]
@@ -689,15 +686,13 @@ reportLCOE <- function(gdx, output.type = "both") {
           setNames(te_annual_OMV_cost[, , te_sco2] / cdrco2_byTech_tCO2[, ttot_from2005, te_sco2],
                    paste0("LCOCS|average|", "sco2|", te_sco2, "|carbon management", "|OMV Cost")),
           # specific to enhanced weathering
-          setNames(EW_fixed_other_cost[, , ] / cdrco2_byTech_tCO2[, ttot_from2005, EW_name],
-                   paste0("LCOCS|average|", "sco2|", EW_name, "|carbon management", "|OMF other Cost")),
           setNames(EW_fixed_transport_cost / cdrco2_byTech_tCO2[, ttot_from2005, EW_name],
                    paste0("LCOCS|average|", "sco2|", EW_name, "|carbon management", "|OMF transport Cost")),
           # sum for enhanced weathering (incl. special om cost)
-          setNames((te_annual_inv_cost[, ttot_from2005, EW_name] +  te_annual_OMF_cost[, , EW_name] + te_annual_otherFuel_cost[, , EW_name] + EW_fixed_other_cost +
+          setNames((te_annual_inv_cost[, ttot_from2005, EW_name] +  te_annual_OMF_cost[, , EW_name] + te_annual_otherFuel_cost[, , EW_name] +
                       EW_fixed_transport_cost) / cdrco2_byTech_tCO2[, ttot_from2005, EW_name],
                    paste0("LCOCS|average|", "sco2|", EW_name, "|carbon management", "|Total Cost")),
-          setNames((te_annual_inv_cost_wadj[, ttot_from2005, EW_name] + te_annual_otherFuel_cost[, , EW_name] + EW_fixed_other_cost +
+          setNames((te_annual_inv_cost_wadj[, ttot_from2005, EW_name] + te_annual_OMF_cost[, , EW_name] + te_annual_otherFuel_cost[, , EW_name]  +
                       EW_fixed_transport_cost) / cdrco2_byTech_tCO2[, ttot_from2005, EW_name],
                    paste0("LCOCS|average|", "sco2|", EW_name, "|carbon management", "|Total Cost w/ Adj Cost"))
         )
