@@ -12,8 +12,8 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{piamPlotComparison}{\code{\link[piamPlotComparison]{getCs2Profiles}}}
+  \item{piamPlotComparison}{\code{\link[piamPlotComparison:getCs2Profiles]{getCs2Profiles()}}}
 
-  \item{piamutils}{\code{\link[piamutils]{deletePlus}}}
+  \item{piamutils}{\code{\link[piamutils:deletePlus]{deletePlus()}}}
 }}
 

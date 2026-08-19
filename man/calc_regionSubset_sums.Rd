@@ -7,13 +7,13 @@
 calc_regionSubset_sums(data, regionSubsetList)
 }
 \arguments{
-\item{data}{A \code{\link[magclass:magclass-package]{MAgPIE}} object.}
+\item{data}{A \code{\link[magclass:magclass]{MAgPIE}} object.}
 
 \item{regionSubsetList}{A list of region subsets to calculate of the form
 \verb{list(subset_name = c(region_A, region_B, ...)}}
 }
 \value{
-A \code{\link[magclass:magclass-package]{MAgPIE}} object.
+A \code{\link[magclass:magclass]{MAgPIE}} object.
 }
 \description{
 Sum up values in \code{data} for all sets of regions in \code{regionSubsetList}.
