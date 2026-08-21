@@ -551,9 +551,8 @@ tot <- "SE|Solids"
 
 items <- c(
   "SE|Input|Solids|T&D losses",
-  "FE|CDR|Solids",
   "FE|Transport|Solids",  
-  "FE|Buildings|Solids",
+  "FE|Buildings|Solids",  
   "FE|Non-energy Use|Industry|Solids",  
   "FE|w/o Non-energy Use|Industry|Solids")
 showAreaAndBarPlots(data, items, tot, orderVars = "user", scales = "fixed")
