@@ -29,6 +29,27 @@ params:
   .code-folding-btn {
     display: none;
   }
+  .collapsible-section {
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .collapse-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 100;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 6px;
+    line-height: 1.4;
+    color: #555;
+  }
+  .collapse-btn:hover {
+    background: #f0f0f0;
+  }
 </style>
 
 <script type="text/javascript">
@@ -60,8 +81,19 @@ $(document).ready(function() {
     $tocItems.filter(function() {  // ... filter for the toc items pointing to that tab
       return($(this).attr("tab") === key);
     }).toggle();  // ... and show them
-  });  
+  });
 });
+
+function toggleSection(btn) {
+  var content = btn.nextElementSibling;
+  if (content.style.display === 'none') {
+    content.style.display = '';
+    btn.innerHTML = '&#9660;';
+  } else {
+    content.style.display = 'none';
+    btn.innerHTML = '&#9654;';
+  }
+}
 </script>
 
 ```{r loading_libraries, include=FALSE}
@@ -71,6 +103,9 @@ library(ggplot2)
 library(plotly)
 library(mip)
 library(gdx)
+library(reactable)
+library(htmltools)
+library(tidyr)
 
 knitr::opts_chunk$set(
   echo = FALSE,
@@ -122,11 +157,201 @@ p47_factorRescaleemiMktCO2Tax_iter <-
 regiEmiMktRescaleType <-
   gdx::readGDX(params$gdx, "regiEmiMktRescaleType")
 
+# How each target converged. The algorithm guarantees EXACTLY ONE label per target-iteration, in the
+# precedence order  unmetAtCap > unmetFrozen > bestAchievable > lowerThanTolerance  (smallPrice is exclusive),
+# so the last recorded label is the verdict and nothing here needs to tie-break.
+#   lowerThanTolerance  inside the raw user tolerance                      - no residual
+#   smallPrice          price at the floor, emissions BELOW target         - no residual (over-achieved)
+#   bestAchievable      frozen/held outside the tolerance but inside the exit band - CARRIES A RESIDUAL
+#   unmetFrozen         frozen outside the tolerance                       - CARRIES A RESIDUAL
+#   unmetAtCap          still outside the tolerance at the iteration cap   - CARRIES A RESIDUAL
+# The label describes the DEVIATION, not the machinery that produced it; whether a target was deliberately
+# abandoned is p47_giveUp, surfaced separately in the summary table.
+regiEmiMktconvergenceType <- suppressWarnings(gdx::readGDX(params$gdx, "regiEmiMktconvergenceType"))
+convTypeByIter <- if (!is.null(regiEmiMktconvergenceType) && nrow(regiEmiMktconvergenceType) > 0) {
+  .ct <- regiEmiMktconvergenceType
+  if ("ttot1" %in% names(.ct)) .ct <- .ct %>% select(-ttot) %>% rename(ttot2 = ttot1)
+  .typeCol <- if ("convergenceType" %in% names(.ct)) "convergenceType" else
+    tail(setdiff(names(.ct), c("iteration", "ttot2", "ext_regi", "emiMktExt", "value", "ttot")), 1)
+  .ct %>%
+    select(-any_of("value")) %>%
+    mutate(iteration = as.integer(as.character(iteration))) %>%
+    group_by(iteration, ttot2, ext_regi, emiMktExt) %>%
+    summarise(conv_type = paste(sort(unique(.data[[.typeCol]])), collapse = " + "), .groups = "drop")
+} else {
+  data.frame(iteration = integer(), ttot2 = character(), ext_regi = character(),
+             emiMktExt = character(), conv_type = character(), stringsAsFactors = FALSE)
+}
+bestAchByTarget <- if (nrow(convTypeByIter) > 0) {
+  convTypeByIter %>%
+    group_by(ext_regi, ttot2, emiMktExt) %>%
+    summarise(is_bestAch = any(grepl("bestAchievable|unmetFrozen", conv_type)), .groups = "drop") %>%
+    mutate(ttot2 = as.numeric(as.character(ttot2)))
+} else {
+  data.frame(ext_regi = character(), ttot2 = numeric(), emiMktExt = character(),
+             is_bestAch = logical(), stringsAsFactors = FALSE)
+}
+# "unmetAtCap": the run ended by hitting the iteration cap with this target still outside its tolerance. The
+# algorithm records it at the last iteration and drops any stale lowerThanTolerance label, so a target that was
+# certified in-band earlier and then drifted (or is oscillating) can no longer be read as a clean convergence.
+unmetAtCapByTarget <- if (nrow(convTypeByIter) > 0) {
+  convTypeByIter %>%
+    group_by(ext_regi, ttot2, emiMktExt) %>%
+    summarise(is_unmet = grepl("unmetAtCap|unmetFrozen", conv_type[which.max(iteration)]), .groups = "drop") %>%
+    mutate(ttot2 = as.numeric(as.character(ttot2)))
+} else {
+  data.frame(ext_regi = character(), ttot2 = numeric(), emiMktExt = character(),
+             is_unmet = logical(), stringsAsFactors = FALSE)
+}
+# a market is "non-binding" when it ended at the carbon-price floor (smallPrice on the final iteration):
+# emissions are already below its target so the price collapsed to ~0 and carries no information - the
+# region is really steered by its other (binding) market.
+nonBindingByTarget <- if (nrow(convTypeByIter) > 0) {
+  convTypeByIter %>%
+    group_by(ext_regi, ttot2, emiMktExt) %>%
+    summarise(is_nonBinding = grepl("smallPrice", conv_type[which.max(iteration)]), .groups = "drop") %>%
+    mutate(ttot2 = as.numeric(as.character(ttot2)))
+} else {
+  data.frame(ext_regi = character(), ttot2 = numeric(), emiMktExt = character(),
+             is_nonBinding = logical(), stringsAsFactors = FALSE)
+}
+
 emiMktTarget_tolerance <-
   setNames(
     pm_emiMktTarget_tolerance$pm_emiMktTarget_tolerance,
     pm_emiMktTarget_tolerance$ext_regi
   )
+
+tryGetPlotData <- function(name, gdx) {
+  tryCatch(mip::getPlotData(name, gdx), error = function(e) data.frame())
+}
+p47_slopeReferenceIteration_iter     <- tryGetPlotData("p47_slopeReferenceIteration_iter",     params$gdx)
+
+# ── algorithm state added after data8; all read defensively so older gdx files still render ────────────
+# THE ZERO-RECORD TRAP: GAMS drops zero records, so p47_marketMet_iter only ever stores 1s. A missing
+# (iteration, target) row means NOT met, not "unknown" - joining it and leaving NA would make every target
+# look met on every iteration it happened not to be. zeroFill() below is what makes that explicit.
+p47_marketMet_iter  <- tryGetPlotData("p47_marketMet_iter",  params$gdx)   # inside the RAW tolerance
+
+# consolidated algorithm: the PERSISTENT per-target state lives in one set-indexed container
+# p47_targetState(targetState, ...) with targetState in
+# {reopenCount, settledCount, refreshCount, releaseCount, divBrakeCount, aimTries, giveUp, divArmed,
+#  rolledBack, reopenIter, bestDevIter, rollFromIter, bestDevAbs, rollFromDev}.
+# These were 14 standalone p47_* parameters before 2026-08-04, and every gdx older than that still carries
+# them that way, so extractState() falls back to the legacy name - same pattern as extractTrace() below.
+p47_targetState <- tryGetPlotData("p47_targetState", params$gdx)
+extractState <- function(el, legacyName) {
+  if (!is.null(p47_targetState) && nrow(p47_targetState) > 0) {
+    typeCol <- names(p47_targetState)[
+      sapply(p47_targetState, function(col) any(as.character(col) %in%
+        c("reopenCount", "giveUp", "aimTries", "divArmed", "rolledBack")))
+    ][1]
+    if (!is.na(typeCol)) {
+      out <- p47_targetState[as.character(p47_targetState[[typeCol]]) == el, , drop = FALSE]
+      if (nrow(out) > 0) {
+        out[[typeCol]] <- NULL
+        names(out)[names(out) == "p47_targetState"] <- legacyName
+        return(out)
+      }
+    }
+  }
+  tryGetPlotData(legacyName, params$gdx)   # gdx predates the consolidation
+}
+p47_giveUp          <- extractState("giveUp",        "p47_giveUp")          # deliberately abandoned
+p47_reopenCount     <- extractState("reopenCount",   "p47_reopenCount")     # corrections spent
+p47_releaseCount    <- extractState("releaseCount",  "p47_releaseCount")    # uncharged un-freezes
+p47_refreshCount    <- extractState("refreshCount",  "p47_refreshCount")    # re-open budget earned back
+p47_aimTries        <- extractState("aimTries",      "p47_aimTries")        # attempts at the AIM band
+p47_divArmed        <- extractState("divArmed",      "p47_divArmed")        # divergence test live
+p47_divBrakeCount   <- extractState("divBrakeCount", "p47_divBrakeCount")   # divergence brakes applied
+p47_rolledBack      <- extractState("rolledBack",    "p47_rolledBack")      # 0 none / 1 rolled / 2 undone
+
+# collapse a target-indexed parameter to a named lookup keyed "ext_regi|ttot2|emiMktExt"
+targetKeyed <- function(df, valcol) {
+  if (is.null(df) || nrow(df) == 0) return(setNames(numeric(0), character(0)))
+  d <- df
+  if ("ttot1" %in% names(d)) d <- d %>% select(-any_of("ttot")) %>% rename(ttot2 = ttot1)
+  if (!"ttot2" %in% names(d) && "ttot" %in% names(d)) d <- d %>% rename(ttot2 = ttot)
+  vc <- if (valcol %in% names(d)) valcol else tail(setdiff(names(d), c("ttot2","ext_regi","emiMktExt","ttot")), 1)
+  setNames(as.numeric(d[[vc]]),
+           paste(d$ext_regi, as.character(d$ttot2), d$emiMktExt, sep = "|"))
+}
+giveUpByTarget  <- targetKeyed(p47_giveUp,        "p47_giveUp")
+reopenByTarget  <- targetKeyed(p47_reopenCount,   "p47_reopenCount")
+releaseByTarget <- targetKeyed(p47_releaseCount,  "p47_releaseCount")
+refreshByTarget <- targetKeyed(p47_refreshCount,  "p47_refreshCount")
+aimByTarget     <- targetKeyed(p47_aimTries,      "p47_aimTries")
+armedByTarget   <- targetKeyed(p47_divArmed,      "p47_divArmed")
+brakeByTarget   <- targetKeyed(p47_divBrakeCount, "p47_divBrakeCount")
+rolledByTarget  <- targetKeyed(p47_rolledBack,    "p47_rolledBack")
+lookup0 <- function(tbl, key) { v <- tbl[key]; ifelse(is.na(v), 0, v) }
+
+# consolidated algorithm: per-iteration diagnostics live in one set-indexed container
+# p47_slopeTrace_iter(slopeTrace, ...) with slopeTrace in
+# {rawSlope, fitR2, preDamp, rollIter, rollUndo, divBrake, parked, giveUpBy}.
+# The last five are EVENTS rather than measurements - the iteration a price was rolled back, a rollback was
+# undone, a divergence brake fired, the parked-target stop gave up, and WHICH give-up branch abandoned a
+# target - and they are the only record of those decisions anywhere in the gdx. Split the container back into
+# the individual frames the rest expects.
+p47_slopeTrace_iter <- tryGetPlotData("p47_slopeTrace_iter", params$gdx)
+extractTrace <- function(tp, valname) {
+  if (is.null(p47_slopeTrace_iter) || nrow(p47_slopeTrace_iter) == 0) return(data.frame())
+  typeCol <- names(p47_slopeTrace_iter)[
+    sapply(p47_slopeTrace_iter, function(col) any(as.character(col) %in% c("rawSlope", "fitR2", "preDamp")))
+  ][1]
+  if (is.na(typeCol)) return(data.frame())
+  out <- p47_slopeTrace_iter[as.character(p47_slopeTrace_iter[[typeCol]]) == tp, , drop = FALSE]
+  out[[typeCol]] <- NULL
+  names(out)[names(out) == "p47_slopeTrace_iter"] <- valname
+  out
+}
+p47_clampedRescaleSlope_iter             <- extractTrace("rawSlope", "p47_clampedRescaleSlope_iter")
+p47_slopeFitR2_iter                      <- extractTrace("fitR2",    "p47_slopeFitR2_iter")
+p47_dampedFactorRescaleemiMktCO2Tax_iter <- extractTrace("preDamp",  "p47_dampedFactorRescaleemiMktCO2Tax_iter")
+
+# Which give-up branch abandoned each target. `Outcome = gave up` says a branch fired; without this it is not
+# recoverable from the gdx which one, and reopenCount/divBrakeCount only narrow it down (three analysis rounds
+# guessed wrong). Absent in gdx files written before 2026-08-05, which degrade to no annotation.
+p47_giveUpBy_iter <- extractTrace("giveUpBy", "p47_giveUpBy")
+giveUpBranchName <- c("1" = "noise floor", "2" = "infeasible", "3" = "divergence",
+                     "4" = "re-open budget", "5" = "parked")
+giveUpBranchByTarget <- local({
+  d <- p47_giveUpBy_iter
+  if (is.null(d) || nrow(d) == 0) return(setNames(character(0), character(0)))
+  vc <- if ("p47_giveUpBy" %in% names(d)) "p47_giveUpBy" else
+        tail(setdiff(names(d), c("iteration", "ttot", "ttot1", "ttot2", "ext_regi", "emiMktExt")), 1)
+  d <- d[as.numeric(d[[vc]]) > 0, , drop = FALSE]
+  if (nrow(d) == 0) return(setNames(character(0), character(0)))
+  tt <- if ("ttot1" %in% names(d)) "ttot1" else "ttot2"
+  key <- paste(d$ext_regi, as.character(d[[tt]]), d$emiMktExt, sep = "|")
+  it  <- suppressWarnings(as.numeric(as.character(d$iteration)))
+  ord <- order(key, it)                       # last firing per target wins
+  d <- d[ord, , drop = FALSE]; key <- key[ord]
+  last <- !duplicated(key, fromLast = TRUE)
+  setNames(unname(giveUpBranchName[as.character(as.numeric(d[[vc]][last]))]), key[last])
+})
+# backward compatibility: fall back to the legacy separate parameters for older gdx files
+if (nrow(p47_clampedRescaleSlope_iter) == 0)
+  p47_clampedRescaleSlope_iter <- tryGetPlotData("p47_clampedRescaleSlope_iter", params$gdx)
+if (nrow(p47_slopeFitR2_iter) == 0)
+  p47_slopeFitR2_iter <- tryGetPlotData("p47_slopeFitR2_iter", params$gdx)
+if (nrow(p47_dampedFactorRescaleemiMktCO2Tax_iter) == 0)
+  p47_dampedFactorRescaleemiMktCO2Tax_iter <- tryGetPlotData("p47_dampedFactorRescaleemiMktCO2Tax_iter", params$gdx)
+
+# minR2 threshold for the R2 chart (from the config container; legacy scalar as fallback)
+slopeParamData <- tryGetPlotData("p47_slopeParam", params$gdx)
+minR2_threshold <- tryCatch({
+  if (!is.null(slopeParamData) && nrow(slopeParamData) > 0) {
+    typeCol <- names(slopeParamData)[sapply(slopeParamData, function(col) any(as.character(col) == "minR2"))][1]
+    slopeParamData[[grep("^p47_slopeParam$|value", names(slopeParamData), value = TRUE)[1]]][as.character(slopeParamData[[typeCol]]) == "minR2"][1]
+  } else NA_real_
+}, error = function(e) NA_real_)
+if (is.na(minR2_threshold)) minR2_threshold <- 0.5
+
+# legacy clamp parameters (present only in older gdx files from the adaptive-clamp algorithm;
+# empty data.frames for the consolidated algorithm, which the downstream joins skip gracefully)
+p47_slopeUpperClampBound_iter <- tryGetPlotData("p47_slopeUpperClampBound_iter", params$gdx)
+p47_upperClampActive_iter     <- tryGetPlotData("p47_upperClampActive_iter", params$gdx)
 
 ```
 
@@ -135,6 +360,17 @@ emiMktTarget_tolerance <-
 #aesthetics
 booleanColor <- c("yes" = "#00BFC4", "no" = "#F8766D")
 qttyPriceColor <- c("qtty" = "#00BFC4", "price" = "#F8766D")
+methodPalette <- c(
+  # consolidated (least-squares slope) algorithm
+  "slope"     = "#1f78b4", "sq·spread" = "#984ea3", "sq·fit"   = "#a65628",
+  # shared / legacy (adaptive-clamp algorithm) codes kept for backward compatibility
+  "sq·1st"   = "#e41a1c", "sq·match" = "#ff7f00", "sq·small" = "#f7c842",
+  "sq·win"   = "#984ea3", "sq·+sl"   = "#a65628", "sq·clamp" = "#f781bf",
+  "sq·degen" = "#aaaaaa",
+  "sl·ref"   = "#1f78b4", "sl·1st"   = "#377eb8", "sl·rep"   = "#00BFC4",
+  # iterations with no rescale method recorded (target frozen after convergence, or another period being solved)
+  "converged"= "#93c47d", "inactive" = "#d9d9d9"
+)
 
 g <- NULL
 
@@ -243,10 +479,10 @@ plotData <-
             "<br>",
             "Rescale Type : ",
             ifelse(
-              rescaleType %in% c("slope_prevIteration", "slope_firstIteration"),
+              grepl("^slope", rescaleType),
               paste0(
                 rescaleType,
-                " ( slope=",
+                " (slope=",
                 round(p47_factorRescaleSlope_iter, 2),
                 ")"
               ),
@@ -261,13 +497,28 @@ plotData <-
 
 g[["qtty_and_price"]] <-
   lapply(setNames(tgtRegions, tgtRegions), function(reg) {
-    subGroup <-
-      setNames(
-        tgts %>% filter(ext_regi == reg) %>% pull(ttot2),
-        tgts %>% filter(ext_regi == reg) %>% pull(group)
-      )
-    lapply(subGroup, function(tgtPeriod) {
-      d <- plotData %>% filter(ext_regi == reg, ttot2 == tgtPeriod)
+    # iterate over the group string (period_market), so a region with several markets
+    # in the same period (e.g. DEU ETS + ESR @2030) gets one chart per market instead
+    # of both markets interleaved into a single (sawtoothing) price trace.
+    subGroups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(subGroups, subGroups), function(grp) {
+      tgtPeriod <- as.numeric(sub("_.*$", "", grp))
+      tgtMkt    <- sub("^[0-9]+_", "", grp)
+      d <- plotData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == tgtMkt)
+      # aimed target as an emission level (same transform as the emissions series) -> horizontal target line
+      tgtEmi <- pm_emiMktTarget %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == tgtMkt) %>%
+        slice(1) %>% pull(pm_emiMktTarget)
+      tgtEmi <- if (length(tgtEmi) == 1 && !is.na(tgtEmi)) tgtEmi * 3.66667 * 1000 else NA_real_
+      emiVals <- d %>% pull(emissions)
+      emiHi <- max(c(emiVals, if (!is.na(tgtEmi)) tgtEmi), na.rm = TRUE) * 1.05
+      emiLo <- min(c(0, emiVals, if (!is.na(tgtEmi)) tgtEmi), na.rm = TRUE)
+      # dark-gray target line: neutral reference that contrasts with both the teal emissions and red price lines
+      tgtShapes <- if (!is.na(tgtEmi)) list(list(type = "line", xref = "paper", x0 = 0, x1 = 1,
+        yref = "y", y0 = tgtEmi, y1 = tgtEmi, line = list(color = "#404040", dash = "dot", width = 1.5))) else list()
+      tgtAnn <- if (!is.na(tgtEmi)) list(list(text = "target", xref = "paper", x = 0.99, xanchor = "right",
+        yref = "y", y = tgtEmi, yanchor = "bottom", showarrow = FALSE,
+        font = list(size = 10, color = "#404040"), bgcolor = "rgba(255,255,255,0.6)")) else list()
       secAxisScale <-
         max(d %>% pull(pm_taxemiMkt_iteration)) / max(d %>% pull(emissions))
       
@@ -307,10 +558,12 @@ g[["qtty_and_price"]] <-
           hovermode = "x unified",
           showlegend = FALSE,
           margin = list(r = 60),
+          shapes = tgtShapes,
+          annotations = tgtAnn,
           xaxis = list(
             zeroline = FALSE,
             range = c(0.5, max(d$iteration) + 0.5),
-            title = "Iterations",
+            title = "Iteration",
             gridcolor = "#e8e8e8",
             mirror = TRUE,
             ticks = 'outside',
@@ -324,9 +577,7 @@ g[["qtty_and_price"]] <-
             zerolinewidth = 3,
             title = list(text = "Emissions (Mt CO2)", font = list(color =
                                                                     qttyPriceColor["qtty"])),
-            range = c(min(
-              0, min(d %>% pull(emissions)) - max(d %>% pull(emissions)) * 0.05
-            ), max(d %>% pull(emissions)) * 1.05),
+            range = c(emiLo, emiHi),
             gridcolor = "#e8e8e8",
             ticks = 'outside',
             showline = TRUE,
@@ -342,14 +593,7 @@ g[["qtty_and_price"]] <-
                                                                        qttyPriceColor["price"])),
             overlaying = "y",
             side = "right",
-            range = c(
-              min(
-                0,
-                min(d %>% pull(emissions)) * secAxisScale - max(d %>% pull(emissions)) *
-                  secAxisScale * 0.05
-              ),
-              max(d %>% pull(emissions)) * secAxisScale * 1.05
-            ),
+            range = c(emiLo * secAxisScale, emiHi * secAxisScale),
             ticks = 'outside',
             showline = TRUE,
             linecolor = "#adadad",
@@ -401,13 +645,12 @@ plotData <- pm_emiMktTarget_dev_iter %>%
 
 g[["deviation"]] <-
   lapply(setNames(tgtRegions, tgtRegions), function(reg) {
-    subGroup <-
-      setNames(
-        tgts %>% filter(ext_regi == reg) %>% pull(ttot2),
-        tgts %>% filter(ext_regi == reg) %>% pull(group)
-      )
-    lapply(subGroup, function(tgtPeriod) {
-      d <- plotData %>% filter(ext_regi == reg, ttot2 == tgtPeriod)
+    # one chart per market (period_market), see qtty_and_price note above
+    subGroups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(subGroups, subGroups), function(grp) {
+      tgtPeriod <- as.numeric(sub("_.*$", "", grp))
+      tgtMkt    <- sub("^[0-9]+_", "", grp)
+      d <- plotData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == tgtMkt)
       p <-
         ggplot(d,
                aes_string(x = "iteration", y = "pm_emiMktTarget_dev_iter")) +
@@ -446,7 +689,56 @@ g[["deviation"]] <-
                            breaks = 1:max(d$iteration)) +
         theme(plot.margin = margin(0, 42, 0, 22, "pt")) # t,r,b,l
       
-      plotly::ggplotly(p, tooltip = c("text"), height = 200) #, autosize = FALSE
+      tol_frac         <- emiMktTarget_tolerance[[reg]]
+      tol_pct          <- round(100 * tol_frac, 2)
+      refYear_val      <- pm_emiMktRefYear %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == tgtMkt) %>%
+        slice(1) %>% pull(pm_emiMktRefYear)
+      tol_MtCO2 <- if (length(refYear_val) > 0 && !is.na(refYear_val))
+        round(tol_frac * refYear_val * 3.66667 * 1000, 1) else NA
+      tol_label <- paste0("Tolerance: ±", tol_pct, "%",
+                          if (!is.na(tol_MtCO2)) paste0(" (±", tol_MtCO2, " MtCO₂)") else "")
+
+      # flag a non-binding market: it converged at the carbon-price floor (smallPrice), so its carbon
+      # price carries no information and the region is really steered by its other (binding) market.
+      is_nonBinding_here <- nrow(nonBindingByTarget %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == tgtMkt, is_nonBinding)) > 0
+      if (is_nonBinding_here) {
+        tol_label <- paste0("● Non-binding market · carbon price floored    |    ", tol_label)
+      }
+
+      # flag a best-achievable (noise-floor) stop: target "converged" with residual OUTSIDE the band
+      is_bestAch_here <- nrow(bestAchByTarget %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == tgtMkt, is_bestAch)) > 0
+      annot_color <- if (is_nonBinding_here) "#3b7dd8" else "#666"
+      if (is_bestAch_here) {
+        residual_pct <- round(100 * (d %>% arrange(iteration) %>% slice(n()) %>% pull(pm_emiMktTarget_dev_iter)), 2)
+        tol_label <- paste0("⚠ Best-achievable stop · residual ", residual_pct,
+                            "% (outside tolerance)    |    ", tol_label)
+        annot_color <- "#e07b39"
+      }
+
+      # flag a target that was still outside tolerance when the run hit the iteration cap - this is NOT a
+      # convergence, it is where the target happened to stand when the run was stopped.
+      is_unmet_here <- nrow(unmetAtCapByTarget %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == tgtMkt, is_unmet)) > 0
+      if (is_unmet_here) {
+        residual_pct <- round(100 * (d %>% arrange(iteration) %>% slice(n()) %>% pull(pm_emiMktTarget_dev_iter)), 2)
+        tol_label <- paste0("✗ NOT converged · iteration cap reached with deviation ", residual_pct,
+                            "%    |    ", tol_label)
+        annot_color <- "#c0392b"
+      }
+
+      plotly::ggplotly(p, tooltip = c("text"), height = 200) %>%
+        plotly::layout(annotations = list(list(
+          text      = tol_label,
+          xref      = "paper", yref = "paper",
+          x = 0.99, y = 0.02,
+          xanchor   = "right", yanchor = "bottom",
+          showarrow = FALSE,
+          font      = list(size = 10, color = annot_color),
+          bgcolor   = "rgba(255,255,255,0.75)"
+        )))
     })
   })
 
@@ -455,30 +747,1082 @@ g[["deviation"]] <-
 
 
 
+```{r rescaleTableData, echo=FALSE, include=FALSE}
+
+rescaleTypeAbbrev <- c(
+  # consolidated (least-squares slope) algorithm
+  slope                          = "slope",
+  squareDev_lowPriceSpread       = "sq·spread",
+  squareDev_unstableFit          = "sq·fit",
+  # shared / legacy (adaptive-clamp algorithm) codes kept for backward compatibility
+  squareDev_firstIteration       = "sq·1st",
+  squareDev_perfectMatch         = "sq·match",
+  squareDev_smallChange          = "sq·small",
+  squareDev_outsideWindow        = "sq·win",
+  squareDev_noNonPositiveSlope   = "sq·+sl",
+  squareDev_adaptiveClamp        = "sq·clamp",
+  squareDev_degenerateSlope      = "sq·degen",
+  slope_refIteration             = "sl·ref",
+  slope_firstIteration           = "sl·1st",
+  slope_repeatPrev_positiveSlope = "sl·rep"
+)
+
+safeJoin <- function(base, extra, by, extra_col_rename = NULL) {
+  if (nrow(extra) == 0) return(base)
+  if (!is.null(extra_col_rename)) extra <- dplyr::rename(extra, !!extra_col_rename)
+  dplyr::left_join(base, extra, by = by)
+}
+
+tableData <- pm_emiMktTarget_dev_iter %>%
+  select(-ttot) %>%
+  mutate(iteration = as.integer(iteration)) %>%
+  left_join(
+    regiEmiMktRescaleType %>%
+      select(-ttot) %>% rename(ttot2 = ttot1) %>%
+      mutate(iteration = as.integer(iteration)) %>% select(-any_of("value")) %>%
+      group_by(iteration, ttot2, ext_regi, emiMktExt) %>%
+      summarise(rescaleType = paste(sort(unique(rescaleType)), collapse = " + "), .groups = "drop"),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  left_join(
+    p47_targetConverged_iter %>% rename(ttot2 = ttot),
+    by = c("iteration", "ttot2", "ext_regi")
+  ) %>%
+  left_join(
+    p47_factorRescaleSlope_iter %>% select(-ttot),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  left_join(
+    p47_factorRescaleemiMktCO2Tax_iter %>% select(-ttot),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_slopeReferenceIteration_iter) > 0) p47_slopeReferenceIteration_iter %>% rename(ttot2 = ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_slopeUpperClampBound_iter) > 0) p47_slopeUpperClampBound_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_upperClampActive_iter) > 0) p47_upperClampActive_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_clampedRescaleSlope_iter) > 0) p47_clampedRescaleSlope_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_dampedFactorRescaleemiMktCO2Tax_iter) > 0) p47_dampedFactorRescaleemiMktCO2Tax_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_slopeFitR2_iter) > 0) p47_slopeFitR2_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(convTypeByIter) > 0) convTypeByIter else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  safeJoin(
+    if (nrow(p47_marketMet_iter) > 0) p47_marketMet_iter %>% select(-ttot) else data.frame(),
+    by = c("iteration", "ttot2", "ext_regi", "emiMktExt")
+  ) %>%
+  arrange(ext_regi, ttot2, emiMktExt, iteration) %>%
+  group_by(ext_regi, ttot2, emiMktExt) %>%
+  mutate(delta_dev_raw = pm_emiMktTarget_dev_iter - lag(pm_emiMktTarget_dev_iter)) %>%
+  ungroup() %>%
+  mutate(
+    method     = sapply(strsplit(rescaleType, " + ", fixed = TRUE), function(types) {
+      codes <- rescaleTypeAbbrev[types]
+      paste(codes[!is.na(codes)], collapse = " + ")
+    }),
+    dev_pct    = round(100 * pm_emiMktTarget_dev_iter, 2),
+    converged  = ifelse(!is.na(p47_targetConverged_iter) & p47_targetConverged_iter == 1, "✓", "✗"),
+    used_slope = round(p47_factorRescaleSlope_iter, 3),
+    final_rsc  = round(p47_factorRescaleemiMktCO2Tax_iter, 3),
+    delta_dev  = round(abs(100 * delta_dev_raw), 2)
+  )
+
+# MET answers "is the target actually achieved", measured against the RAW tolerance with no hysteresis.
+# CONVERGED answers "should this target keep steering its carbon price". They differ exactly where a target is
+# frozen while unmet - which several give-up branches do deliberately - so showing only the second is how a run
+# reports success while sitting far outside its tolerance.
+# A missing value is the zero record GAMS dropped, i.e. NOT met - never "unknown".
+tableData$met <- if ("p47_marketMet_iter" %in% names(tableData)) {
+  ifelse(!is.na(tableData$p47_marketMet_iter) & tableData$p47_marketMet_iter == 1, "✓", "✗")
+} else {
+  NA_character_
+}
+tableData$slope_ref  <- if ("p47_slopeReferenceIteration_iter" %in% names(tableData)) tableData$p47_slopeReferenceIteration_iter else NA_real_
+tableData$raw_slope  <- if ("p47_clampedRescaleSlope_iter" %in% names(tableData)) round(tableData$p47_clampedRescaleSlope_iter, 3) else NA_real_
+tableData$fit_r2     <- if ("p47_slopeFitR2_iter" %in% names(tableData)) round(tableData$p47_slopeFitR2_iter, 3) else NA_real_
+tableData$clamp_bnd  <- if ("p47_slopeUpperClampBound_iter" %in% names(tableData)) round(tableData$p47_slopeUpperClampBound_iter, 3) else NA_real_
+tableData$clamp_act  <- if ("p47_upperClampActive_iter" %in% names(tableData)) {
+  ifelse(is.na(tableData$p47_upperClampActive_iter), NA_character_,
+         ifelse(tableData$p47_upperClampActive_iter == 1, "✓", "—"))
+} else {
+  NA_character_
+}
+tableData$pre_damp   <- if ("p47_dampedFactorRescaleemiMktCO2Tax_iter" %in% names(tableData)) round(tableData$p47_dampedFactorRescaleemiMktCO2Tax_iter, 3) else NA_real_
+tableData$damped     <- if ("p47_dampedFactorRescaleemiMktCO2Tax_iter" %in% names(tableData)) {
+  ifelse(is.na(tableData$p47_dampedFactorRescaleemiMktCO2Tax_iter), NA_character_,
+         ifelse(abs(tableData$p47_dampedFactorRescaleemiMktCO2Tax_iter - tableData$p47_factorRescaleemiMktCO2Tax_iter) > 1e-4, "✓", "—"))
+} else {
+  NA_character_
+}
+
+# flag best-achievable (noise-floor) convergence distinctly from a clean tolerance hit
+tableData$conv_type <- if ("conv_type" %in% names(tableData)) ifelse(is.na(tableData$conv_type), "", tableData$conv_type) else ""
+# ✗ = outside the tolerance and not steering any more; ≈ = accepted short of the tolerance but inside the
+# exit band. Both carry a residual and neither may be shown as a clean ✓.
+tableData$converged <- ifelse(grepl("unmetAtCap", tableData$conv_type), "✗",
+                       ifelse(grepl("unmetFrozen", tableData$conv_type), "✗",
+                       ifelse(grepl("bestAchievable", tableData$conv_type), "≈", tableData$converged)))
+tableData$conv_type <- ifelse(grepl("unmetAtCap", tableData$conv_type), "unmet@cap",
+                       ifelse(grepl("unmetFrozen", tableData$conv_type), "unmet-frozen",
+                       ifelse(grepl("bestAchievable", tableData$conv_type), "best-ach",
+                       ifelse(grepl("smallPrice", tableData$conv_type), "small-price",
+                       ifelse(grepl("lowerThanTolerance", tableData$conv_type), "in-tol", "")))))
+
+tableData <- tableData %>%
+  select(iteration, ttot2, ext_regi, emiMktExt,
+         method, rescaleType, dev_pct, delta_dev, converged, met, conv_type,
+         slope_ref, raw_slope, fit_r2, clamp_bnd, clamp_act, used_slope,
+         pre_damp, final_rsc, damped)
+
+legendRow <- function(code, fullname, what, when) {
+  htmltools::tags$tr(
+    style = "border-bottom: 1px solid #f0f0f0;",
+    htmltools::tags$td(style = "padding: 2px 8px; font-family: monospace; white-space: nowrap;", code),
+    htmltools::tags$td(style = "padding: 2px 8px; font-family: monospace; white-space: nowrap; color: #888; font-size: 0.85em;", fullname),
+    htmltools::tags$td(style = "padding: 2px 8px;", what),
+    htmltools::tags$td(style = "padding: 2px 8px; color: #666;", when)
+  )
+}
+
+makeRescaleTable <- function(data, reg, tgtPeriod, emiMktExtVal) {
+  d <- data %>%
+    filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+    arrange(iteration)
+
+  tol_frac    <- emiMktTarget_tolerance[[reg]]
+  tol_pct     <- round(100 * tol_frac, 2)
+  refYear_val <- pm_emiMktRefYear %>%
+    filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+    slice(1) %>% pull(pm_emiMktRefYear)
+  tol_MtCO2 <- if (length(refYear_val) > 0 && !is.na(refYear_val))
+    round(tol_frac * refYear_val * 3.66667 * 1000, 1) else NA
+  caption_text <- paste0(
+    "Tolerance: ±", tol_pct, "%",
+    if (!is.na(tol_MtCO2)) paste0(" (±", tol_MtCO2, " MtCO2)") else ""
+  )
+
+  # ── parameter metadata ────────────────────────────────────────────────────
+  param_order  <- c("method","dev_pct","delta_dev","converged","met","conv_type",
+                    "slope_ref","raw_slope","fit_r2","used_slope",
+                    "pre_damp","final_rsc","damped")
+  param_labels <- c(
+    method     = "Method",
+    dev_pct    = "Deviation (%)",
+    delta_dev  = "|Δdev| (%)",
+    converged  = "Converged",
+    met        = "Met (raw tol.)",
+    conv_type  = "Conv. type",
+    slope_ref  = "Ref. iter.",
+    raw_slope  = "Raw slope",
+    fit_r2     = "Fit R²",
+    used_slope = "Used slope",
+    pre_damp   = "Pre-damp factor",
+    final_rsc  = "Applied factor",
+    damped     = "Damped"
+  )
+  param_groups <- c(
+    method="Convergence", dev_pct="Convergence", delta_dev="Convergence", converged="Convergence", met="Convergence", conv_type="Convergence",
+    slope_ref="Slope", raw_slope="Slope", fit_r2="Slope", used_slope="Slope",
+    pre_damp="Rescale Factor", final_rsc="Rescale Factor", damped="Rescale Factor"
+  )
+  group_colors <- c(Convergence="#4a9eca", Slope="#e07b39", `Rescale Factor`="#5cb85c")
+
+  # ── transpose: rows = parameters, cols = iterations ───────────────────────
+  iter_cols <- as.character(d$iteration)
+  d_t <- d %>%
+    select(iteration, all_of(param_order)) %>%
+    mutate(across(everything(), as.character)) %>%
+    tidyr::pivot_longer(cols = -iteration, names_to = "param", values_to = "value") %>%
+    tidyr::pivot_wider(names_from = iteration, values_from = value) %>%
+    mutate(group = param_groups[param], label = param_labels[param]) %>%
+    arrange(match(param, param_order)) %>%
+    select(group, param, label, all_of(iter_cols))
+
+  # ── per-iteration lookups for cell styling ─────────────────────────────────
+  method_per_iter    <- setNames(d$method,    iter_cols)
+  converged_per_iter <- setNames(d$converged, iter_cols)
+
+  # ── column definitions ─────────────────────────────────────────────────────
+  label_coldef <- list(
+    group = reactable::colDef(show = FALSE),
+    param = reactable::colDef(show = FALSE),
+    label = reactable::colDef(
+      name  = "",
+      width = 145,
+      style = function(value, index) {
+        list(fontWeight  = "600",
+             fontSize    = "0.82em",
+             borderLeft  = paste0("3px solid ", group_colors[d_t$group[index]]),
+             paddingLeft = "6px",
+             whiteSpace  = "nowrap")
+      }
+    )
+  )
+
+  iter_coldefs <- lapply(setNames(iter_cols, iter_cols), function(iter) {
+    method  <- method_per_iter[[iter]]
+    is_conv <- identical(converged_per_iter[[iter]], "✓")
+    is_sq   <- !is.na(method) && grepl("^sq", method)
+
+    reactable::colDef(
+      name  = iter,
+      width = 46,
+      align = "center",
+      html  = TRUE,
+      header = htmltools::div(
+        style = paste0("font-weight:bold; font-size:0.88em;",
+                       if (is_conv) " color:#c0c0c0;" else ""),
+        iter
+      ),
+      cell = function(value, index) {
+        if (is.na(value) || value == "NA")
+          return(htmltools::span(style = "color:#e8e8e8;", "—"))
+        pname <- d_t$param[index]
+        if (pname == "method")
+          gsub(" \\+ ", "<br><span style='color:#aaa; font-size:0.85em;'>+</span>",
+               value, perl = TRUE)
+        else if (pname == "converged")
+          if (value == "✓")
+            htmltools::span(style = "color:#00BFC4; font-weight:bold;", value)
+          else if (value == "≈")
+            htmltools::span(title = "best-achievable (noise-floor) stop — residual is outside tolerance",
+                            style = "color:#e07b39; font-weight:bold;", value)
+          else if (value == "✗")
+            htmltools::span(title = "iteration cap reached with this target still outside its tolerance — not converged",
+                            style = "color:#c0392b; font-weight:bold;", value)
+          else
+            htmltools::span(style = "color:#F8766D; font-weight:bold;", value)
+        else if (pname == "conv_type")
+          if (value == "best-ach")
+            htmltools::span(style = "color:#e07b39; font-weight:bold;", value)
+          else if (value == "unmet@cap")
+            htmltools::span(style = "color:#c0392b; font-weight:bold;", value)
+          else
+            htmltools::span(style = "color:#999; font-size:0.85em;", value)
+        else
+          value
+      },
+      style = function(value, index) {
+        pname <- d_t$param[index]
+        is_slope_row <- param_groups[pname] == "Slope"
+        if (is.na(value) || value == "NA") return(list(color = "#ebebeb"))
+        if (is_conv)  return(list(color = "#c8c8c8", fontSize = "0.78em"))
+        if (is_slope_row && is_sq) return(list(color = "#d0d0d0"))
+        NULL
+      }
+    )
+  })
+
+  tbl <- reactable::reactable(
+    d_t,
+    columns  = c(label_coldef, iter_coldefs),
+    rowStyle = function(index) {
+      base <- list(fontSize = "0.84em", lineHeight = "1.4")
+      if (index > 1 && d_t$group[index] != d_t$group[index - 1])
+        base <- c(base, list(borderTop = "2px solid #d8d8d8", marginTop = "4px"))
+      base
+    },
+    sortable   = FALSE,
+    bordered   = FALSE,
+    compact    = TRUE,
+    highlight  = TRUE,
+    pagination = FALSE,
+    theme = reactable::reactableTheme(
+      headerStyle = list(borderBottom = "2px solid #ccc", fontSize = "0.88em",
+                         background = "#eeeeee")
+    )
+  )
+
+  legend <- htmltools::div(
+    style = "font-size:0.8em; color:#444; margin-top:8px;",
+    htmltools::tags$details(
+      htmltools::tags$summary(
+        style = "cursor:pointer; font-weight:bold; color:#555; padding:4px 0;",
+        "Method legend"
+      ),
+      htmltools::tags$table(
+        style = "border-collapse:collapse; margin-top:6px; width:100%;",
+        htmltools::tags$thead(
+          htmltools::tags$tr(
+            htmltools::tags$th(style = "text-align:left; padding:3px 8px; border-bottom:2px solid #ccc;", "Code"),
+            htmltools::tags$th(style = "text-align:left; padding:3px 8px; border-bottom:2px solid #ccc;", "Full name"),
+            htmltools::tags$th(style = "text-align:left; padding:3px 8px; border-bottom:2px solid #ccc;", "What it does"),
+            htmltools::tags$th(style = "text-align:left; padding:3px 8px; border-bottom:2px solid #ccc;", "When it fires")
+          )
+        ),
+        htmltools::tags$tbody(
+          legendRow("slope",     "slope",                          "Rescale = (target − current) / (slope × price) + 1, capped to the trust region [0.5, 2]", "Consolidated algorithm — windowed least-squares slope is negative and well-fit (R² ≥ s47_slopeMinR2): the normal Newton path"),
+          legendRow("sq·spread", "squareDev_lowPriceSpread",       "Rescale = (1 + dev)²",                                            "Consolidated algorithm — carbon price barely moved across the window, so the slope is ill-conditioned (replaces perfectMatch / smallChange / outsideWindow)"),
+          legendRow("sq·fit",    "squareDev_unstableFit",          "Rescale = (1 + dev)²",                                            "Consolidated algorithm — windowed slope is non-negative (wrong sign) or the fit is poor (R² < s47_slopeMinR2), so it is unreliable for a Newton step (replaces repeatPrev / noNonPositiveSlope)"),
+          legendRow("sq·1st",    "squareDev_firstIteration",       "Rescale = (1 + dev)²",                                            "First iteration, or slope window just restarted — no slope history yet"),
+          legendRow("sq·match",  "squareDev_perfectMatch",         "Rescale = (1 + dev)²",                                            "Tax identical to both reference and iteration 1 — division-by-zero guard"),
+          legendRow("sq·small",  "squareDev_smallChange",          "Rescale = (1 + dev)²",                                            "Tax change vs both reference and iteration 1 is < 1e−2 — avoids stagnation from negligible price variation"),
+          legendRow("sq·win",    "squareDev_outsideWindow",        "Rescale = (1 + dev)²",                                            "Reference near-zero denominator AND using iteration 1 would exceed the slope window"),
+          legendRow("sq·+sl",    "squareDev_noNonPositiveSlope",   "Rescale = (1 + dev)²",                                            "Slope is positive (price rise → more emissions) AND no prior slope to repeat — sign assumption violated"),
+          legendRow("sq·clamp",  "squareDev_adaptiveClamp",        "Rescale = (1 + dev)²; slope reference reset",                     "Adaptive Upper Clamp Bound fired twice consecutively at same level — slope-based convergence exhausted"),
+          legendRow("sq·degen",  "squareDev_degenerateSlope",      "Rescale = (1 + dev)²; slope reference reset",                     "Emission change negligible relative to 2005 emissions — degenerate slope from near-net-zero starting point"),
+          legendRow("sl·ref",    "slope_refIteration",             "Rescale = (target − current) / (slope × price) + 1",         "Normal path — slope computed against the current Slope Reference Iteration"),
+          legendRow("sl·1st",    "slope_firstIteration",           "Rescale = (target − current) / (slope × price) + 1",         "Reference denominator near-zero, but iteration 1 is within slope window — uses iteration 1 as baseline"),
+          legendRow("sl·rep",    "slope_repeatPrev_positiveSlope", "Rescale = (target − current) / (slope × price) + 1 (prev.)", "Computed slope is positive, but prior slope exists with same reference — repeats previous slope to avoid sign anomaly")
+        )
+      )
+    )
+  )
+
+  htmltools::tagList(
+    tbl,
+    legend
+  )
+}
+
+```
+
+```{r rescaleFactorChart, echo=FALSE, include=FALSE}
+
+g[["rescale_factor"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+      d <- tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>% arrange(iteration)
+
+      hasDamp <- !all(is.na(d$pre_damp))
+      p <- plot_ly(data = d, height = 280) %>%
+        add_segments(x = min(d$iteration) - 0.5, xend = max(d$iteration) + 0.5,
+                     y = 1, yend = 1, showlegend = FALSE,
+                     line = list(color = "#aaaaaa", dash = "dot", width = 1)) %>%
+        add_trace(x = ~iteration, y = ~final_rsc,
+                  name = "Final rescale", mode = "lines+markers", type = "scatter",
+                  line = list(color = "#5cb85c", width = 2),
+                  marker = list(color = "#5cb85c", size = 6),
+                  hovertemplate = "Iter %{x}<br>Final: %{y:.3f}<extra></extra>")
+
+      if (hasDamp) {
+        d_damp <- d %>% filter(!is.na(pre_damp) & abs(pre_damp - final_rsc) > 1e-4)
+        if (nrow(d_damp) > 0) {
+          p <- p %>% add_trace(data = d_damp,
+                               x = ~iteration, y = ~pre_damp,
+                               name = "Pre-damp", mode = "markers", type = "scatter",
+                               marker = list(color = "#e07b39", size = 10, symbol = "circle-open",
+                                             line = list(width = 2, color = "#e07b39")),
+                               opacity = 0.7,
+                               hovertemplate = "Iter %{x}<br>Pre-damp: %{y:.3f}<extra></extra>")
+        }
+      }
+
+      p %>% layout(
+        hovermode = "x unified", showlegend = TRUE,
+        legend = list(orientation = "h", y = -0.18),
+        xaxis = list(title = "Iteration", zeroline = FALSE,
+                     range = c(0.5, max(d$iteration) + 0.5),
+                     gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                     showline = TRUE, linecolor = "#adadad", linewidth = 2),
+        yaxis = list(title = "Rescale factor", gridcolor = "#e8e8e8",
+                     ticks = "outside", showline = TRUE, linecolor = "#adadad", linewidth = 2)
+      )
+    })
+  })
+
+```
+
+
+```{r phaseDiagramChart, echo=FALSE, include=FALSE}
+
+g[["phase_diagram"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+
+      emi_d <- p47_emiMktCurrent_iter %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+        mutate(emissions = p47_emiMktCurrent_iter * 3.66667 * 1000) %>%
+        select(iteration, emissions)
+
+      price_d <- price %>%
+        filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+        select(iteration, pm_taxemiMkt_iteration) %>%
+        rename(carbon_price = pm_taxemiMkt_iteration)
+
+      d_phase <- emi_d %>%
+        inner_join(price_d, by = "iteration") %>%
+        left_join(tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod,
+                                       emiMktExt == emiMktExtVal) %>%
+                    select(iteration, method, converged), by = "iteration") %>%
+        arrange(iteration)
+
+      tgt_emi_MtCO2 <- tryCatch({
+        v <- pm_emiMktTarget %>%
+          filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+          slice(1) %>% pull(pm_emiMktTarget)
+        if (length(v) == 1 && !is.na(v)) v * 3.66667 * 1000 else NULL
+      }, error = function(e) NULL)
+
+      p <- plot_ly(data = d_phase, height = 350)
+
+      if (!is.null(tgt_emi_MtCO2)) {
+        p <- p %>% add_segments(
+          x = min(d_phase$carbon_price, na.rm = TRUE),
+          xend = max(d_phase$carbon_price, na.rm = TRUE),
+          y = tgt_emi_MtCO2, yend = tgt_emi_MtCO2,
+          showlegend = FALSE,
+          line = list(color = "#e07b39", dash = "dash", width = 1.5)
+        )
+      }
+
+      d_phase <- d_phase %>%
+        mutate(
+          primary_method = sub(" \\+.*", "", ifelse(is.na(method) | method == "", NA, method)),
+          # iterations with no rescale method: the target was already converged (its price frozen), or a
+          # different period was being solved that iteration. Label them by convergence, not "unknown".
+          primary_method = ifelse(!is.na(primary_method) & primary_method %in% names(methodPalette), primary_method,
+                            ifelse(converged %in% c("✓", "≈"), "converged", "inactive")),
+          point_color    = ifelse(primary_method %in% names(methodPalette),
+                                  methodPalette[primary_method], "#aaaaaa")
+        )
+
+      p <- p %>%
+        add_trace(x = ~carbon_price, y = ~emissions,
+                  type = "scatter", mode = "lines",
+                  line = list(color = "#cccccc", width = 1),
+                  showlegend = FALSE, hoverinfo = "skip")
+
+      for (meth in unique(d_phase$primary_method)) {
+        d_sub <- d_phase %>% filter(primary_method == meth)
+        col   <- if (meth %in% names(methodPalette)) methodPalette[[meth]] else "#aaaaaa"
+        p <- p %>% add_trace(
+          data = d_sub,
+          x = ~carbon_price, y = ~emissions,
+          type = "scatter", mode = "markers+text",
+          name = meth,
+          text = ~as.character(iteration), textposition = "top right",
+          textfont = list(size = 9, color = "#555"),
+          marker = list(size = 8, color = col),
+          customdata = ~paste0("Iter: ", iteration,
+                               "<br>Price: ", round(carbon_price), " US$2005/t CO2",
+                               "<br>Emi: ", round(emissions), " Mt CO2",
+                               "<br>Method: ", ifelse(is.na(method), "—", method)),
+          hovertemplate = "%{customdata}<extra></extra>"
+        )
+      }
+
+      seg_arrows <- if (nrow(d_phase) > 1)
+        lapply(seq_len(nrow(d_phase) - 1), function(i)
+          list(
+            ax       = d_phase$carbon_price[i],
+            ay       = d_phase$emissions[i],
+            x        = d_phase$carbon_price[i + 1],
+            y        = d_phase$emissions[i + 1],
+            xref = "x", yref = "y", axref = "x", ayref = "y",
+            arrowhead = 2, arrowsize = 0.8, arrowwidth = 1.2,
+            arrowcolor = "#aaaaaa",
+            showarrow = TRUE, text = ""
+          )
+        ) else list()
+
+      # Legend floats INSIDE the plot, top right. Left to itself plotly sizes each entry from the room it
+      # thinks is available and TRUNCATES the labels to fit - in this chart's 50%-width flex cell that came
+      # out as a single character each ("s", "s", "c"). entrywidth pins the width instead of letting it be
+      # derived, so the text is never shortened; entrywidthmode = "pixels" makes it an absolute measure.
+      # Sized from the longest method name actually plotted (~6px per character at font size 10) plus room
+      # for the marker and padding.
+      legendChars <- max(nchar(as.character(unique(d_phase$primary_method))), 1)
+      legendEntryW <- max(90, ceiling(legendChars * 6) + 42)
+
+      p %>% layout(
+          showlegend = TRUE,
+          legend = list(x = 0.98, y = 0.98, xanchor = "right", yanchor = "top",
+                        entrywidthmode = "pixels", entrywidth = legendEntryW,
+                        bgcolor = "rgba(255,255,255,0.75)", bordercolor = "#cccccc",
+                        borderwidth = 1, font = list(size = 10)),
+          # r matches the paired emissions/price chart so the two plot areas line up across the row.
+          margin = list(r = 60),
+          annotations = seg_arrows,
+          xaxis = list(title = "Carbon price (US$2005/t CO2)", zeroline = FALSE,
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2),
+          yaxis = list(title = "Emissions (Mt CO2)", zeroline = FALSE,
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2)
+        )
+    })
+  })
+
+```
+
+
+```{r summaryTargetRow, echo=FALSE, include=FALSE}
+
+# Reusable summary row for one target: the ALREADY-BUILT emissions & carbon-price chart (left) and phase
+# diagram (right), side by side. Reuses the g$ objects so there is no chart-code duplication, and both
+# already carry the aimed-target line.
+summaryTargetRow <- function(reg, grp) {
+  htmltools::div(
+    style = "display:flex; flex-wrap:nowrap; gap:14px; align-items:flex-start; margin:2px 0 18px 0;",
+    htmltools::div(style = "flex:1 1 50%; min-width:0;", g$qtty_and_price[[reg]][[grp]]),
+    htmltools::div(style = "flex:1 1 50%; min-width:0;", g$phase_diagram[[reg]][[grp]])
+  )
+}
+
+```
+
+
+```{r methodTimelineChart, echo=FALSE, include=FALSE}
+
+g[["method_timeline"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+      d <- tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+        arrange(iteration) %>%
+        mutate(
+          primary = sub(" \\+.*", "", method),
+          primary = ifelse(!is.na(converged) & converged == "✓", "converged",
+                           ifelse(is.na(primary) | nchar(trimws(primary)) == 0, "inactive", primary)),
+          color   = ifelse(primary == "inactive", "#eeeeee",
+                           ifelse(primary %in% names(methodPalette), as.character(methodPalette[primary]), "#aaaaaa")),
+          label = ifelse(is.na(method) | nchar(trimws(method)) == 0, "target not active", method)
+        )
+
+      present_methods <- intersect(names(methodPalette), unique(d$primary))
+
+      # Single bar trace — continuous strip, per-bar color from d$color
+      p <- plot_ly(height = 70) %>%
+        add_bars(
+          data = d,
+          x = ~iteration, y = rep(1, nrow(d)),
+          marker = list(color = d$color, line = list(width = 0)),
+          hovertemplate = ~paste0("Iter ", iteration, ": ", label, "<extra></extra>"),
+          showlegend = FALSE
+        )
+
+      # Circle legend entries — placed off-chart so they appear without fading
+      for (meth in names(methodPalette)) {
+        if (!meth %in% present_methods) next
+        col <- methodPalette[[meth]]
+        p <- p %>% add_trace(
+          type = "scatter", mode = "markers",
+          x = -999L, y = -999,
+          name = meth,
+          marker = list(color = col, symbol = "circle", size = 8),
+          showlegend = TRUE,
+          hoverinfo = "skip"
+        )
+      }
+
+      p %>% layout(
+        barmode  = "stack",
+        showlegend = TRUE,
+        legend = list(
+          orientation = "h",
+          x = 0.98, xanchor = "right",
+          y = 0.45, yanchor = "top",
+          font = list(size = 10),
+          traceorder = "normal",
+          bgcolor = "rgba(0,0,0,0)",
+          borderwidth = 0
+        ),
+        xaxis = list(title = "", zeroline = FALSE,
+                     range = c(0.5, max(d$iteration) + 0.5),
+                     fixedrange = TRUE,
+                     showticklabels = FALSE, showgrid = FALSE),
+        yaxis = list(title = "", showticklabels = FALSE, zeroline = FALSE,
+                     range = c(0, 1.01), fixedrange = TRUE, showgrid = FALSE),
+        margin = list(t = 2, b = 50, l = 80, r = 60)
+      ) %>%
+        plotly::config(displayModeBar = FALSE)
+    })
+  })
+
+```
+
+
+```{r slopeClampChart, echo=FALSE, include=FALSE}
+
+g[["slope_clamp"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+      d <- tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>% arrange(iteration)
+
+      p <- plot_ly(data = d, height = 280)
+
+      # legacy adaptive-clamp bound (only present for older gdx files)
+      if ("clamp_bnd" %in% names(d) && !all(is.na(d$clamp_bnd))) {
+        p <- p %>% add_trace(x = ~iteration, y = ~clamp_bnd,
+                             name = "Adaptive clamp bound (legacy)", type = "scatter", mode = "lines",
+                             line = list(color = "#e07b39", width = 1.5, dash = "dot", shape = "hv"),
+                             hovertemplate = "Iter %{x}<br>Clamp bound: %{y:.3f}<extra></extra>")
+      }
+      if ("raw_slope" %in% names(d) && !all(is.na(d$raw_slope))) {
+        p <- p %>% add_trace(x = ~iteration, y = ~raw_slope,
+                             name = "Raw slope (pre-cap)", type = "scatter", mode = "markers",
+                             marker = list(color = "#e07b39", size = 9, symbol = "circle-open",
+                                           line = list(width = 2, color = "#e07b39")),
+                             opacity = 0.7,
+                             hovertemplate = "Iter %{x}<br>Raw slope: %{y:.3f}<extra></extra>")
+      }
+
+      p <- p %>%
+        add_trace(x = ~iteration, y = ~used_slope,
+                  name = "Used slope", type = "scatter", mode = "lines+markers",
+                  line = list(color = "#4a9eca", width = 2),
+                  marker = list(color = "#4a9eca", size = 6),
+                  hovertemplate = "Iter %{x}<br>Used slope: %{y:.3f}<extra></extra>") %>%
+        add_segments(x = min(d$iteration) - 0.5, xend = max(d$iteration) + 0.5,
+                     y = 0, yend = 0, showlegend = FALSE,
+                     line = list(color = "#e8e8e8", width = 2))
+
+      # fit R2 on a secondary axis, with the acceptance threshold (only when available)
+      hasR2 <- "fit_r2" %in% names(d) && !all(is.na(d$fit_r2))
+      if (hasR2) {
+        p <- p %>%
+          add_trace(x = ~iteration, y = ~fit_r2,
+                    name = "Fit R²", type = "scatter", mode = "lines+markers",
+                    yaxis = "y2",
+                    line = list(color = "#5cb85c", width = 1.5, dash = "dash"),
+                    marker = list(color = "#5cb85c", size = 5, symbol = "diamond"),
+                    hovertemplate = "Iter %{x}<br>Fit R²: %{y:.3f}<extra></extra>") %>%
+          add_segments(x = min(d$iteration) - 0.5, xend = max(d$iteration) + 0.5,
+                       y = minR2_threshold, yend = minR2_threshold, yaxis = "y2",
+                       showlegend = FALSE, hoverinfo = "skip",
+                       line = list(color = "#5cb85c", width = 1, dash = "dot"))
+      }
+
+      p %>%
+        layout(
+          hovermode = "x unified", showlegend = TRUE,
+          legend = list(orientation = "h", y = -0.2),
+          xaxis = list(title = "Iteration", zeroline = FALSE,
+                       range = c(0.5, max(d$iteration) + 0.5),
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2),
+          yaxis = list(title = "Slope", gridcolor = "#e8e8e8",
+                       ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2),
+          yaxis2 = list(title = list(text = "Fit R²", font = list(color = "#5cb85c")),
+                        overlaying = "y", side = "right",
+                        range = c(0, 1.02), showgrid = FALSE, zeroline = FALSE,
+                        tickfont = list(color = "#5cb85c"))
+        )
+    })
+  })
+
+```
+
+
+```{r convergenceRateChart, echo=FALSE, include=FALSE}
+
+g[["convergence_rate"]] <-
+  lapply(setNames(tgtRegions, tgtRegions), function(reg) {
+    groups <- tgts %>% filter(ext_regi == reg) %>% pull(group)
+    lapply(setNames(groups, groups), function(grp) {
+      tgtPeriod    <- as.numeric(strsplit(grp, "_", fixed = TRUE)[[1]][1])
+      emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == grp) %>% pull(emiMktExt)
+      d <- tableData %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>%
+        arrange(iteration) %>% filter(!is.na(delta_dev)) %>%
+        mutate(abs_delta = delta_dev)
+
+      plot_ly(data = d, height = 220) %>%
+        add_bars(x = ~iteration, y = ~abs_delta,
+                 marker = list(color = "#4a9eca", opacity = 0.85),
+                 hovertemplate = "Iter %{x}<br>|Δdev|: %{y:.2f}%<extra></extra>",
+                 showlegend = FALSE) %>%
+        layout(
+          xaxis = list(title = "Iteration", zeroline = FALSE,
+                       range = c(0.5, max(d$iteration) + 0.5),
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2),
+          yaxis = list(title = "|Δdeviation| (%)", zeroline = FALSE,
+                       gridcolor = "#e8e8e8", mirror = TRUE, ticks = "outside",
+                       showline = TRUE, linecolor = "#adadad", linewidth = 2)
+        )
+    })
+  })
+
+```
+
+
+```{r summaryData, echo=FALSE, include=FALSE}
+
+activity_long <- tableData %>%
+  mutate(
+    target_label = paste(ext_regi, ttot2, emiMktExt, sep = " · "),
+    primary      = sub(" \\+.*", "", method),
+    primary      = ifelse(!is.na(converged) & converged == "✓", "converged",
+                          ifelse(is.na(primary) | nchar(trimws(primary)) == 0, "inactive", primary)),
+    cell_color   = ifelse(primary == "inactive", "#eeeeee",
+                          ifelse(primary %in% names(methodPalette), as.character(methodPalette[primary]), "#aaaaaa")),
+    is_conv = !is.na(converged) & converged == "✓",
+    tooltip = ifelse(
+      primary == "inactive",
+      paste0(
+        gsub(" · ", " | ", target_label), " — Iter ", iteration,
+        "<br>Method: not active"
+      ),
+      paste0(
+        gsub(" · ", " | ", target_label), " — Iter ", iteration,
+        "<br>Method: ", ifelse(is.na(method) | nchar(trimws(method)) == 0, "not active", method),
+        "<br>Deviation: ", ifelse(is.na(dev_pct), "—", paste0(dev_pct, "%")),
+        "<br>|Δdev|: ", ifelse(is.na(delta_dev), "—", paste0(delta_dev, "%")),
+        "<br>Applied factor: ", ifelse(is.na(final_rsc), "—", as.character(final_rsc)),
+        "<br>Converged: ", ifelse(is_conv, "✓", "✗")
+      )
+    )
+  )
+
+conv_first <- activity_long %>%
+  filter(is_conv) %>%
+  group_by(target_label) %>%
+  summarise(first_conv = min(iteration), .groups = "drop")
+
+target_summary_df <- tableData %>%
+  group_by(ext_regi, ttot2, emiMktExt) %>%
+  arrange(iteration) %>%
+  summarise(
+    n_total_iters   = max(iteration),
+    n_active        = sum(!is.na(method)),
+    n_conv_iters    = sum(!is.na(converged) & converged == "✓"),
+    first_conv_iter = { ci <- iteration[!is.na(converged) & converged == "✓"]
+                        if (length(ci) > 0) min(ci) else NA_integer_ },
+    last_conv_iter  = { ci <- iteration[!is.na(converged) & converged == "✓"]
+                        if (length(ci) > 0) max(ci) else NA_integer_ },
+    pct_conv        = round(100 * sum(!is.na(converged) & converged == "✓") /
+                            max(1, max(iteration)), 1),
+    final_dev_pct   = last(dev_pct),
+    final_conv      = last(converged),
+    peak_abs_dev    = round(max(abs(dev_pct), na.rm = TRUE), 2),
+    n_damped        = sum(!is.na(damped) & damped == "✓"),
+    methods_used    = {
+      pm <- sub(" \\+.*", "", method[!is.na(method)])
+      pm <- pm[nchar(trimws(pm)) > 0]
+      if (length(pm) == 0) "—"
+      else { mc <- sort(table(pm), decreasing = TRUE)
+             paste(paste0(names(mc), " (", as.integer(mc), ")"), collapse = " · ") }
+    },
+    .groups = "drop"
+  ) %>%
+  mutate(
+    tol_pct         = round(100 * emiMktTarget_tolerance[ext_regi], 2),
+    target_label    = paste(ext_regi, ttot2, emiMktExt, sep = " · "),
+    in_tol          = !is.na(final_dev_pct) & abs(final_dev_pct) <= tol_pct,
+    first_conv_disp = ifelse(is.na(first_conv_iter), "—", as.character(first_conv_iter)),
+    last_conv_disp  = ifelse(is.na(last_conv_iter),  "—", as.character(last_conv_iter)),
+    # ── what the algorithm actually DID to this target ─────────────────────────────────────────────────
+    # A residual on its own does not say whether the algorithm ran out of road, deliberately stopped, or
+    # never engaged. These are the counters that answer that, and none of them was visible in this report
+    # before. `gave_up` is the important one: it is the difference between "still trying and failing" and
+    # "stopped trying on purpose", and the run-end signal depends on it.
+    tkey            = paste(ext_regi, as.character(ttot2), emiMktExt, sep = "|"),
+    gave_up         = lookup0(giveUpByTarget,  tkey) > 0,
+    n_reopen        = lookup0(reopenByTarget,  tkey),
+    n_release       = lookup0(releaseByTarget, tkey),
+    n_refresh       = lookup0(refreshByTarget, tkey),
+    n_aim           = lookup0(aimByTarget,     tkey),
+    div_armed       = lookup0(armedByTarget,   tkey) > 0,
+    n_brake         = lookup0(brakeByTarget,   tkey),
+    rolled          = lookup0(rolledByTarget,  tkey),
+    outcome         = ifelse(gave_up, "gave up", ifelse(in_tol, "met", "unmet")),
+    state_disp      = paste0(
+      ifelse(n_reopen  > 0, paste0("reopen ", n_reopen, " "), ""),
+      ifelse(n_refresh > 0, paste0("refresh ", n_refresh, " "), ""),
+      ifelse(n_release > 0, paste0("release ", n_release, " "), ""),
+      ifelse(n_brake   > 0, paste0("brake ", n_brake, " "), ""),
+      ifelse(rolled    > 0, ifelse(rolled >= 2, "rollback undone ", "rollback "), ""),
+      ifelse(gave_up & !is.na(giveUpBranchByTarget[tkey]),
+             paste0("gave up: ", giveUpBranchByTarget[tkey], " "), "")
+    ),
+    state_disp      = ifelse(nchar(trimws(state_disp)) == 0, "—", trimws(state_disp))
+  )
+
+```
+
+
+```{r summaryCharts, echo=FALSE, include=FALSE}
+
+# ── Activity heatmap + legend ─────────────────────────────────────────────
+target_order <- target_summary_df %>%
+  arrange(ext_regi, desc(ttot2), emiMktExt) %>%
+  pull(target_label) %>% rev()
+
+activity_long$target_f <- factor(activity_long$target_label, levels = target_order)
+
+p_act <- ggplot(activity_long,
+                aes(x = iteration, y = target_f, fill = cell_color, text = tooltip)) +
+  geom_tile(height = 0.82, color = NA, linewidth = 0) +
+  scale_fill_identity() +
+  theme_minimal() +
+  theme(axis.title.y = element_blank(), panel.grid = element_blank(),
+        axis.text.y = element_text(size = 9), axis.title.x = element_text(size = 9),
+        plot.margin = margin(4, 4, 4, 4, "pt")) +
+  labs(x = "Iteration")
+
+act_h <- max(100, length(target_order) * 38 + 90)
+act_plotly <- ggplotly(p_act, tooltip = "text", height = act_h) %>%
+  layout(
+    showlegend = TRUE,
+    legend = list(orientation = "h", x = 0.98, xanchor = "right",
+                  y = -0.04, yanchor = "top",
+                  font = list(size = 10), bgcolor = "rgba(0,0,0,0)", borderwidth = 0),
+    shapes = lapply(conv_first$first_conv, function(i)
+      list(type = "line", x0 = i - 0.5, x1 = i - 0.5, y0 = 0, y1 = 1,
+           yref = "paper", line = list(color = "rgba(0,0,0,0.18)", width = 1, dash = "dot")))
+  )
+
+present_in_summary <- intersect(names(methodPalette), unique(activity_long$primary))
+for (meth in names(methodPalette)) {
+  if (!meth %in% present_in_summary) next
+  act_plotly <- act_plotly %>% add_trace(
+    type = "scatter", mode = "markers",
+    x = -999L, y = target_order[1],
+    name = meth,
+    marker = list(color = methodPalette[[meth]], symbol = "circle", size = 8),
+    showlegend = TRUE, hoverinfo = "skip",
+    inherit = FALSE
+  )
+}
+g[["summary_activity"]] <- act_plotly %>%
+  layout(xaxis = list(range = c(0.5, max(activity_long$iteration) + 0.5),
+                      fixedrange = TRUE))
+
+# ── Final deviation strip ──────────────────────────────────────────────────
+dev_h         <- max(140, nrow(target_summary_df) * 42 + 80)
+tgt_order_dev <- target_summary_df %>% arrange(ext_regi, ttot2, emiMktExt) %>% pull(target_label)
+
+dev_data <- target_summary_df %>%
+  arrange(ext_regi, ttot2, emiMktExt) %>%
+  mutate(dot_color = ifelse(in_tol, "#00BFC4", "#F8766D"))
+
+# The category labels are "<region> · <period> · <market>", so they carry the region already - but with a
+# fixed chart width and a 60px left margin plotly clipped it off the left edge and the row read "2060 · all".
+# automargin alone did not rescue it. Size the margin from the longest label instead (~6.6px per character
+# at the default 12px tick font, plus padding) and widen the chart by the same amount so the plotting area
+# keeps its size rather than being eaten by the labels.
+dev_lab_chars <- max(nchar(as.character(dev_data$target_label)), 0)
+dev_margin_l  <- max(60, ceiling(dev_lab_chars * 6.6) + 18)
+
+g[["summary_conv_dev"]] <- plot_ly(dev_data, height = dev_h,
+                                   width = 550 + (dev_margin_l - 60)) %>%
+  add_segments(x = ~-tol_pct, xend = ~tol_pct, y = ~target_label, yend = ~target_label,
+               line = list(color = "rgba(0,191,196,0.12)", width = 14),
+               showlegend = FALSE, hoverinfo = "skip") %>%
+  add_segments(x = 0, xend = ~final_dev_pct, y = ~target_label, yend = ~target_label,
+               line = list(color = "#cccccc", width = 1),
+               showlegend = FALSE, hoverinfo = "skip") %>%
+  add_markers(x = ~final_dev_pct, y = ~target_label,
+              marker = list(color = ~dot_color, size = 10),
+              text = ~paste0(target_label, "<br>Final dev: ", final_dev_pct, "%",
+                             "<br>Tolerance: ±", tol_pct, "%<br>", final_conv),
+              hoverinfo = "text", showlegend = FALSE) %>%
+  layout(
+    shapes = list(list(type = "line", x0 = 0, x1 = 0, y0 = 0, y1 = 1,
+                       yref = "paper", line = list(color = "#999", width = 1))),
+    margin = list(l = dev_margin_l, r = 10, t = 25, b = 40),
+    xaxis = list(title = "Final deviation (%)", zeroline = FALSE, gridcolor = "#e8e8e8",
+                 mirror = TRUE, ticks = "outside", showline = TRUE,
+                 linecolor = "#adadad", linewidth = 2),
+    yaxis = list(title = "", zeroline = FALSE, gridcolor = "#e8e8e8", automargin = TRUE,
+                 categoryorder = "array", categoryarray = rev(tgt_order_dev))
+  )
+
+# ── Summary reactable ──────────────────────────────────────────────────────
+convCell <- function(v) if (identical(v, "✓"))
+  htmltools::span(style = "color:#00BFC4;font-weight:bold;", v) else
+  htmltools::span(style = "color:#F8766D;font-weight:bold;", v)
+
+# "met" / "unmet" / "gave up" - the last is NOT a failure of the algorithm but a deliberate decision, and it
+# is what allows the run to terminate at all, so it is coloured as its own state rather than as a miss.
+outcomeCell <- function(v) {
+  col <- switch(v, "met" = "#00BFC4", "gave up" = "#e0a030", "#F8766D")
+  htmltools::span(style = paste0("color:", col, ";font-weight:bold;"), v)
+}
+
+devCell <- function(v, row) {
+  tol <- target_summary_df$tol_pct[row]
+  col <- if (!is.na(v) && abs(v) <= tol) "#00BFC4" else "#F8766D"
+  htmltools::span(style = paste0("color:", col, ";"), paste0(v, "%"))
+}
+
+summary_react <- reactable::reactable(
+  target_summary_df %>%
+    select(target_label, final_conv, outcome, first_conv_disp, final_dev_pct,
+           tol_pct, n_aim, state_disp, n_damped, n_conv_iters, methods_used),
+  columns = list(
+    target_label    = reactable::colDef(name = "Target",         minWidth = 140),
+    final_conv      = reactable::colDef(name = "Conv.",          align = "center", width = 56,
+                                        html = TRUE, cell = convCell),
+    outcome         = reactable::colDef(name = "Outcome",        align = "center", width = 82,
+                                        html = TRUE, cell = outcomeCell),
+    first_conv_disp = reactable::colDef(name = "First conv.",    align = "center", width = 80),
+    final_dev_pct   = reactable::colDef(name = "Final dev (%)",  align = "right",  width = 95,
+                                        cell = devCell),
+    tol_pct         = reactable::colDef(name = "Tolerance",      align = "right",  width = 80,
+                                        cell = function(v) paste0("±", v, "%")),
+    n_aim           = reactable::colDef(name = "Aim tries",      align = "center", width = 76),
+    state_disp      = reactable::colDef(name = "Interventions",  minWidth = 150,
+                                        style = list(fontSize = "0.82em", color = "#555")),
+    n_damped        = reactable::colDef(name = "Damped",         align = "center", width = 70),
+    n_conv_iters    = reactable::colDef(name = "Iters conv.",    align = "center", width = 80),
+    methods_used    = reactable::colDef(name = "Methods used",
+                                        style = list(fontSize = "0.82em", color = "#555"))
+  ),
+  striped = TRUE, highlight = TRUE, compact = TRUE, pagination = FALSE,
+  theme = reactable::reactableTheme(
+    headerStyle = list(borderBottom = "2px solid #ccc", fontSize = "0.88em",
+                       background = "#eeeeee")
+  )
+)
+
+```
+
+
 ## {.tabset}
 
 ```{r, include=FALSE}
 
 # Creating sections
-out <- ""
+# short "what it shows / how to read it" note rendered under a section title
+note <- function(txt) paste0("<p style='color:#555;font-size:0.9em;margin:2px 0 10px 0;'><em>", txt, "</em></p>\n\n")
+# collapsible wrapper around a code chunk that evaluates `expr` (matches the report's collapsible style)
+collapsibleChunk <- function(expr, opts = "results='asis'") paste0(
+  "<div class='collapsible-section'>\n",
+  "<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n",
+  "<div class='collapsible-content'>\n\n",
+  "```{r , ", opts, "}\n\n", expr, "\n\n```\n\n",
+  "</div></div>\n\n")
+
+out <- "### Summary\n\n"
+
+out <- paste0(out, "##### Activity and Convergence Timeline\n\n")
+out <- paste0(out, note("When each target was the one actively being solved (colored) and the iteration at which it converged (marker), across the whole run."))
+out <- paste0(out, collapsibleChunk("g$summary_activity"))
+
+out <- paste0(out, "##### Final Deviation vs Tolerance\n\n")
+out <- paste0(out, note("Each target's final deviation from its target versus its tolerance band (shaded). Bars reaching outside the band are unmet, or accepted as best-achievable at the noise floor."))
+out <- paste0(out, collapsibleChunk("g$summary_conv_dev"))
+
+# NEW: per-target overview - one row per target, emissions&price (left) + phase diagram (right), placed
+# right before the summary table. Reuses the g$ chart objects via summaryTargetRow (no duplication).
+out <- paste0(out, "##### Per-target Overview\n\n")
+out <- paste0(out, note("One row per target: emissions &amp; carbon price (left) and the emissions-vs-price phase diagram (right), each with the dashed aimed-target line. A converged target shows emissions settling on the target line and the phase path ending on it."))
+out <- paste0(out, "<div class='collapsible-section'>\n<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n<div class='collapsible-content'>\n\n")
+for (reg in tgtRegions) {
+  for (grp in tgts %>% filter(ext_regi == reg) %>% pull(group)) {
+    out <- paste0(out, "<p style='margin:6px 0 0 0;'><b>", reg, " &mdash; ", grp, "</b></p>\n\n")
+    out <- paste0(out, "```{r , fig.height=4}\n\nsummaryTargetRow('", reg, "','", grp, "')\n\n```\n\n")
+  }
+}
+out <- paste0(out, "</div></div>\n\n")
+
+out <- paste0(out, "##### Summary Table\n\n")
+out <- paste0(out, note("One row per target. <b>Conv.</b> is whether the target still steers its price; <b>Outcome</b> is what actually happened to it &mdash; <span style='color:#00BFC4'>met</span> (inside the raw tolerance), <span style='color:#F8766D'>unmet</span>, or <span style='color:#e0a030'>gave up</span> (a give-up branch deliberately abandoned it, which is what lets the run end). <b>Aim tries</b> is attempts spent closing the last stretch to the aim band; a target at the budget converged through the accept fallback rather than by aiming. <b>Interventions</b> lists what the algorithm had to do: re-opens charged, re-open budget refreshed after a long settled stretch, uncharged releases, divergence brakes, and price rollbacks, and &mdash; for an abandoned target &mdash; <b>which give-up branch</b> let it go (noise floor, infeasible, divergence, re-open budget, or parked). The parked stop is the only branch that can fire from the converged state, so it is the one to look for when a run ends with a target held unmet inside its exit band."))
+out <- paste0(out, collapsibleChunk("summary_react"))
+
 for(reg in tgtRegions){
   out <- paste0(out,knitr::knit_expand(text=paste0("### ", reg, " {.tabset}\n\n")))
   for(subGroup in tgts %>% filter(ext_regi == reg) %>% pull(group)){
-    
-    tgtPeriod <- strsplit(subGroup,"_",fixed=T)[[1]][1]
-    unit <- pm_emiMktTarget %>% filter(ext_regi == reg, ttot2 == tgtPeriod) %>% pull(emi_type_47)
-    
+
+    tgtPeriod    <- strsplit(subGroup,"_",fixed=T)[[1]][1]
+    emiMktExtVal <- tgts %>% filter(ext_regi == reg, group == subGroup) %>% pull(emiMktExt)
+    # filter by market too, otherwise a region with >1 market in a period returns a
+    # length-2 vector here and the section header is emitted twice.
+    unit         <- pm_emiMktTarget %>% filter(ext_regi == reg, ttot2 == tgtPeriod, emiMktExt == emiMktExtVal) %>% pull(emi_type_47)
+
     out <- paste0(out,knitr::knit_expand(text=paste0("#### ", subGroup, "\n\n")))
-    
+
     out <- paste0(out,knitr::knit_expand(text=paste0("##### Emissions and Carbon Price (", unit, ")\n\n")))
+    out <- paste0(out, note("Emissions (teal, left axis) and the carbon price (red, right axis) per Nash iteration; the dashed orange line is the aimed target. Convergence = emissions settling on the target line. The colored squares below mark the rescale method used each iteration; a deviation-vs-tolerance chart and the per-iteration detail table follow."))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"<div style='margin-bottom:-18px'>\n")
     out <- paste0(out,"```{r , results = 'asis', fig.height=10}\n\n")
     out <- paste0(out,"g$qtty_and_price[['", reg, "']][['", subGroup, "']]\n\n")
     out <- paste0(out,"```\n\n")
-    
-#    out <- paste0(out,knitr::knit_expand(text=paste0("##### Deviation per iteration\n\n")))
+    out <- paste0(out,"</div>\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$method_timeline[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
     out <- paste0(out,"```{r , results = 'asis', fig.height=10}\n\n")
     out <- paste0(out,"g$deviation[['", reg, "']][['", subGroup, "']]\n\n")
     out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , echo=FALSE}\n\n")
+    out <- paste0(out,"makeRescaleTable(tableData, '",reg,"', '",tgtPeriod,"', '",emiMktExtVal,"')\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,knitr::knit_expand(text=paste0("##### Rescale Factor\n\n")))
+    out <- paste0(out, note("The multiplicative change applied to the carbon price each iteration (&gt;1 raises it, &lt;1 lowers it). Values pinned at the trust-region cap [0.5, 2] mark maximal steps; progressive dampening shrinks the step when the price oscillates."))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$rescale_factor[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,knitr::knit_expand(text=paste0("##### Phase Diagram\n\n")))
+    out <- paste0(out, note("Emissions vs carbon price, one point per iteration with arrows tracing the path; the dashed line is the aimed target. A path flattening onto the target line means the price is still moving emissions; a near-vertical stall away from it means the price no longer helps (noise floor / infeasible)."))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$phase_diagram[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,knitr::knit_expand(text=paste0("##### Slope and Fit R² Evolution\n\n")))
+    out <- paste0(out, note("The fitted emissions-vs-price slope used for the Newton price step and its R² (fit quality). Low R² (below the dashed threshold) means the slope is unreliable, so a squareDev fallback step is used that iteration instead."))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$slope_clamp[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
+
+    out <- paste0(out,knitr::knit_expand(text=paste0("##### Convergence Rate\n\n")))
+    out <- paste0(out, note("How fast the deviation shrinks from one iteration to the next. A flat line near zero means the target has stalled - either at its noise floor or because it is (locally) infeasible."))
+    out <- paste0(out,"<div class='collapsible-section'>\n")
+    out <- paste0(out,"<button class='collapse-btn' onclick='toggleSection(this)' title='Hide/Show'>&#9660;</button>\n")
+    out <- paste0(out,"<div class='collapsible-content'>\n\n")
+    out <- paste0(out,"```{r , results = 'asis'}\n\n")
+    out <- paste0(out,"g$convergence_rate[['", reg, "']][['", subGroup, "']]\n\n")
+    out <- paste0(out,"```\n\n")
+    out <- paste0(out,"</div></div>\n\n")
   }
 }
 

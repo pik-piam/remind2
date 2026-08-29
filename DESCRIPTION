@@ -68,6 +68,7 @@ Imports:
     piamutils,
     plotly (>= 4.10.4),
     quitte (>= 0.3132.0),
+    reactable,
     readr,
     rlang,
     rmarkdown,

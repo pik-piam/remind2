@@ -10,13 +10,14 @@
 #'   }
 #'
 #' @importFrom gdx readGDX
-#' @importFrom dplyr summarise group_by mutate filter distinct case_when
+#' @importFrom dplyr summarise group_by mutate filter distinct case_when n transmute left_join ungroup
 #' @importFrom quitte as.quitte
 #' @importFrom data.table :=
 #' @importFrom mip plotstyle
 #' @importFrom ggplot2 scale_y_continuous scale_x_continuous scale_y_discrete scale_fill_manual scale_color_manual
 #' @importFrom ggplot2 coord_cartesian aes_ geom_rect theme geom_point geom_hline
 #' @importFrom plotly ggplotly config hide_legend subplot layout
+#' @importFrom reactable reactable
 #'
 #' @export
 plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
@@ -358,53 +359,165 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
 
     # Emission Market Deviation (optional) ----
 
+    # NULL for runs without regional emission targets; the overview Rmd then prints nothing.
+    out_emiMktTargetStatus <- NULL
+
     pmEmiMktTarget <- readGDX(gdx, name = "pm_emiMktTarget", react = "silent", restore_zeros = FALSE)
 
     if (!is.null(pmEmiMktTarget)) {
 
-      pmEmiMktTargetDevIter <- suppressWarnings(
-        readGDX(gdx, name = "pm_emiMktTarget_dev_iter", react = "silent", restore_zeros = FALSE)
+      pmEmiMktTargetDevIter_orig <- suppressWarnings(
+        readGDX(gdx, name = "pm_emiMktTarget_dev_iter", react = "silent", restore_zeros = FALSE,
+                spatial = "ext_regi", temporal = "ttot2")
       )
 
       pm_emiMktTarget_tolerance <- mip::getPlotData("pm_emiMktTarget_tolerance", gdx)
-      emiMktTarget_tolerance <- setNames(pm_emiMktTarget_tolerance$pm_emiMktTarget_tolerance,pm_emiMktTarget_tolerance$ext_regi)
+      emiMktTarget_tolerance <- setNames(pm_emiMktTarget_tolerance[[3]], pm_emiMktTarget_tolerance[[1]])
 
-      pmEmiMktTargetDevIter <- pmEmiMktTargetDevIter %>%
+      # Per-iteration outcome labels. Read these rather than the p47_* flag parameters: readGDX returns a set
+      # as a tidy data.frame, whereas the flags come back as magpie objects, and they carry the terminal year
+      # (ttot1) so a region with several targets can be told apart.
+      #   lowerThanTolerance  inside the raw tolerance                                    -> met
+      #   smallPrice          price at the floor, emissions BELOW target: legitimately     -> met (slack,
+      #                       slack, so an over-achievement however large the deviation        over-achieved)
+      #   bestAchievable      frozen/held outside tolerance but inside the exit band       -> GIVEN UP
+      #   unmetFrozen         frozen outside the tolerance                                 -> GIVEN UP
+      #   unmetAtCap          still outside tolerance when the iteration cap hit           -> not converged
+      # No label at all means the target was steering that iteration, i.e. neither met nor abandoned - which
+      # is also the safe default, since it shows up as "still being worked on" rather than as a give-up.
+      targetLabels <- tryCatch({
+        ct <- gdx::readGDX(gdx, name = "regiEmiMktconvergenceType", react = "silent")
+        if (!is.null(ct) && nrow(ct) > 0 && "convergenceType" %in% names(ct)) {
+          periodCol <- if ("ttot1" %in% names(ct)) "ttot1" else "ttot"
+          ct %>%
+            transmute(iteration = as.integer(as.character(.data$iteration)),
+                      period    = as.integer(as.character(.data[[periodCol]])),
+                      ext_regi  = as.character(.data$ext_regi),
+                      emiMktExt = as.character(.data$emiMktExt),
+                      label     = as.character(.data$convergenceType)) %>%
+            group_by(.data$iteration, .data$period, .data$ext_regi, .data$emiMktExt) %>%
+            summarise(is_slack  = any(.data$label == "smallPrice"),
+                      is_frozen = any(.data$label %in% c("bestAchievable", "unmetFrozen")),
+                      .groups = "drop")
+        } else NULL
+      }, error = function(e) NULL)
+      if (is.null(targetLabels)) {
+        targetLabels <- data.frame(iteration = integer(), period = integer(), ext_regi = character(),
+                                   emiMktExt = character(), is_slack = logical(), is_frozen = logical())
+      }
+
+      # THE LABELS ALONE ARE NOT ENOUGH AT THE FINAL ITERATION. The cap re-check overwrites every
+      # residual-carrying label with unmetAtCap, which does not distinguish a target that was abandoned
+      # iterations ago from one the algorithm was still steering when the cap hit. p47_targetState("giveUp")
+      # is the state behind the label; it is not iteration-indexed, so it applies to the end of the run.
+      # Read the consolidated container first and the pre-2026-08-04 standalone symbol second: the 14 per-target
+      # state parameters were collapsed into p47_targetState then, and every archived run predates it.
+      readGaveUp <- function(symbol, element) {
+        st <- mip::getPlotData(symbol, gdx)
+        if (is.null(st) || nrow(st) == 0) return(NULL)
+        if (!is.null(element)) {
+          if (!("targetState" %in% names(st))) return(NULL)
+          st <- st[as.character(st$targetState) == element, , drop = FALSE]
+        }
+        if (nrow(st) == 0) return(NULL)
+        valueCol <- tail(setdiff(names(st), c("targetState", "ttot", "ttot1", "ttot2",
+                                              "ext_regi", "emiMktExt", "iteration")), 1)
+        periodCol <- if ("ttot2" %in% names(st)) "ttot2" else "ttot1"
+        st %>% filter(as.numeric(.data[[valueCol]]) > 0.5) %>%
+          transmute(period = as.integer(as.character(.data[[periodCol]])),
+                    ext_regi = as.character(.data$ext_regi),
+                    emiMktExt = as.character(.data$emiMktExt), gave_up_final = TRUE) %>%
+          distinct()
+      }
+      gaveUpFinal <- tryCatch(readGaveUp("p47_targetState", "giveUp"), error = function(e) NULL)
+      if (is.null(gaveUpFinal) || nrow(gaveUpFinal) == 0) {
+        gaveUpFinal <- tryCatch(readGaveUp("p47_giveUp", NULL), error = function(e) NULL)
+      }
+      if (is.null(gaveUpFinal)) {
+        gaveUpFinal <- data.frame(period = integer(), ext_regi = character(),
+                                  emiMktExt = character(), gave_up_final = logical())
+      }
+
+      pmEmiMktTargetDevIter <- pmEmiMktTargetDevIter_orig %>%
         as.quitte() %>%
+        {
+          if ("region" %in% colnames(.) && !("ext_regi" %in% colnames(.))) rename(., "ext_regi" = "region") else .
+        } %>%
         filter(!is.na(.data$value)) %>% # remove unwanted combinations introduced by readGDX
-        select("period", "iteration", "ext_regi", "emiMktExt", "value") %>%
-        mutate("converged" = .data$value <= emiMktTarget_tolerance[.data$ext_regi])
+        select("period", "iteration", "ext_regi", "emiMktExt", "value", any_of("ttot")) %>%
+        mutate("iteration" = as.integer(as.character(.data$iteration)),
+               "ext_regi"  = as.character(.data$ext_regi),
+               "emiMktExt" = as.character(.data$emiMktExt),
+               "tol"       = emiMktTarget_tolerance[.data$ext_regi],
+               # ABS. pm_emiMktTarget_dev_iter is SIGNED, so a bare `value <= tol` passes every
+               # over-shoot below the target no matter how large: a target at -58x tolerance read as
+               # converged and the whole row showed teal.
+               "ratio"     = abs(.data$value) / .data$tol,
+               "met"       = abs(.data$value) <= .data$tol) %>%
+        mutate("period" = as.integer(as.character(.data$period))) %>%
+        left_join(targetLabels, by = c("iteration", "period", "ext_regi", "emiMktExt")) %>%
+        left_join(gaveUpFinal, by = c("period", "ext_regi", "emiMktExt")) %>%
+        mutate("is_slack"  = !is.na(.data$is_slack) & .data$is_slack,
+               # the give-up state only speaks for the end of the run, so apply it there; earlier iterations
+               # are already covered by their own labels
+               "is_frozen" = (!is.na(.data$is_frozen) & .data$is_frozen) |
+                             (!is.na(.data$gave_up_final) &
+                                .data$iteration == max(.data$iteration)),
+               "met"       = .data$met | .data$is_slack,
+               # abandoned: the algorithm stopped steering this price while the target is still outside
+               # its tolerance. A deliberate decision - distinct from a target it is still working on.
+               "gaveUp"    = !.data$met & .data$is_frozen,
+               "target_ok" = .data$met | .data$gaveUp)
+
+      itemLabel <- function(df, withRatio = TRUE) {
+        lbl <- paste0(df$ext_regi, " ", df$period, " ", df$emiMktExt)
+        if (withRatio) lbl <- paste0(lbl, " (", round(df$ratio, 1), "x tol)")
+        unique(lbl)
+      }
 
       data <- pmEmiMktTargetDevIter %>%
         group_by(.data$iteration) %>%
-        summarise(converged = ifelse(any(.data$converged == FALSE), "no", "yes")) %>%
-        mutate("tooltip" = paste0("Iteration: ", .data$iteration, "<br>","Converged"))
+        summarise(converged = ifelse(!all(.data$target_ok), "no",
+                                     ifelse(any(.data$gaveUp), "gaveUp", "yes")),
+                  nTot = n(), nMet = sum(.data$met), nGaveUp = sum(.data$gaveUp),
+                  .groups = "drop") %>%
+        mutate("tooltip" = "")
 
-      for (i in unique(pmEmiMktTargetDevIter$iteration)) {
-        if (data[data$iteration == i, "converged"] == "no") {
-          tmp <- filter(pmEmiMktTargetDevIter, .data$iteration == i, .data$converged == FALSE) %>%
-            mutate("item" = paste0(.data$ext_regi, " ", .data$period, " ", .data$emiMktExt)) %>%
-            select("ext_regi", "period", "emiMktExt", "item") %>%
-            distinct()
+      for (i in unique(data$iteration)) {
+        row <- data[data$iteration == i, ]
+        it  <- filter(pmEmiMktTargetDevIter, .data$iteration == i)
+        head <- paste0("<b>Iteration ", i, "</b><br>",
+                       row$nMet, " of ", row$nTot, " targets met (within tolerance)<br>")
+        body <- switch(
+          row$converged,
+          "yes"    = "All regional emission targets met.",
+          "gaveUp" = paste0(
+            "All targets resolved, but ", row$nGaveUp, " was/were <b>given up</b><br>",
+            "(price frozen with the residual outside tolerance):<br>",
+            paste0(itemLabel(filter(it, .data$gaveUp)), collapse = "<br>")
+          ),
+          "no"     = paste0(
+            "<b>Not converged.</b> Still outside tolerance and still steering:<br>",
+            paste0(itemLabel(filter(it, !.data$target_ok)), collapse = "<br>"),
+            if (row$nGaveUp > 0) paste0(
+              "<br>Already given up:<br>",
+              paste0(itemLabel(filter(it, .data$gaveUp)), collapse = "<br>")
+            ) else ""
+          )
+        )
+        data[data$iteration == i, "tooltip"] <- paste0(head, body)
+      }
 
-          if (nrow(tmp) > 10) {
-            data[data$iteration == i, "tooltip"] <- paste0(
-              "Iteration ", i, "<br>",
-              "Not converged:<br>",
-              paste0(unique(tmp$ext_regi), collapse = ", "),
-              "<br>",
-              paste0(unique(tmp$period), collapse = ", "),
-              "<br>",
-              paste0(unique(tmp$emiMktExt), collapse = ", ")
-            )
-          } else {
-            data[data$iteration == i, "tooltip"] <- paste0(
-              "Iteration ", i, "<br>",
-              "Not converged:<br>",
-              paste0(unique(tmp$item), collapse = ", ")
-            )
-          }
-        }
+      # The row label turns AMBER when the run ends with a target given up. The run is over and every price
+      # is frozen, so the criterion is satisfied - but a residual is being carried, and that must not look
+      # identical to a run where every target was actually met.
+      finalState <- data$converged[data$iteration == max(data$iteration)]
+      emiMktLabelColour <- if (!("regiTarget" %in% activeCriteria)) {
+        activeCriteriaColor["false"]
+      } else if (length(finalState) == 1 && finalState == "gaveUp") {
+        "#b8860b"
+      } else {
+        activeCriteriaColor["true"]
       }
 
       emiMktTargetDev <- suppressWarnings(ggplot(data, aes_(
@@ -412,14 +525,69 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
         fill = ~converged, text = ~tooltip
       ))) +        theme_minimal() +
         geom_point(size = 2, alpha = aestethics$alpha) +
-        scale_fill_manual(values = booleanColor) +
+        scale_fill_manual(values = c(booleanColor, "gaveUp" = "#f4c430")) +
         scale_y_discrete(breaks = c("Emission Market\nTarget"), drop = FALSE) +
         labs(x = NULL, y = NULL) +
-        theme(axis.text.y = element_text(colour = ifelse(("regiTarget" %in% activeCriteria), activeCriteriaColor["true"], activeCriteriaColor["false"])))
+        theme(axis.text.y = element_text(colour = emiMktLabelColour))
 
       emiMktTargetDevPlotly <- ggplotly(emiMktTargetDev, tooltip = c("text"))
 
       subplots <- append(subplots, list(emiMktTargetDevPlotly))
+
+      # At-a-glance verdict, so the answer to "did every target actually converge?" does not require
+      # hovering a dot. Rendered by nashConvergence-overview.Rmd underneath the chart.
+      emiMktTargetStatus <- local({
+        fin <- filter(pmEmiMktTargetDevIter, .data$iteration == max(.data$iteration))
+        if (nrow(fin) == 0) return(NULL)
+        branch <- tryCatch({
+          tr <- gdx::readGDX(gdx, name = "p47_slopeTrace_iter", react = "silent")
+          if (!is.null(tr) && nrow(tr) > 0 && "slopeTrace" %in% names(tr)) {
+            valueCol <- tail(names(tr), 1)
+            nm <- c("1" = "noise floor", "2" = "infeasible target", "3" = "divergence",
+                    "4" = "re-open budget spent", "5" = "parked")
+            tr %>% filter(.data$slopeTrace == "giveUpBy", as.numeric(.data[[valueCol]]) > 0) %>%
+              mutate(iteration = as.integer(as.character(iteration))) %>%
+              group_by(.data$ext_regi, .data$emiMktExt) %>%
+              filter(.data$iteration == max(.data$iteration)) %>% ungroup() %>%
+              transmute(ext_regi = as.character(.data$ext_regi),
+                        emiMktExt = as.character(.data$emiMktExt),
+                        branch = unname(nm[as.character(as.numeric(.data[[valueCol]]))]))
+          } else NULL
+        }, error = function(e) NULL)
+        if (!is.null(branch) && nrow(branch) > 0) {
+          fin <- left_join(fin, branch, by = c("ext_regi", "emiMktExt"))
+        } else {
+          fin$branch <- NA_character_
+        }
+        bad <- filter(fin, !.data$met)
+        if (nrow(bad) == 0) {
+          paste0("<div style='padding:8px;border-left:4px solid #00BFC4;background:#f0fdfa'>",
+                 "<b>All ", nrow(fin), " regional emission targets met</b> within tolerance at the final ",
+                 "iteration.</div>")
+        } else {
+          items <- paste0(
+            "<li><b>", bad$ext_regi, " ", bad$period, " ", bad$emiMktExt, "</b> &mdash; ",
+            round(100 * bad$value, 3), "% deviation, <b>", round(bad$ratio, 1), "x</b> its ",
+            round(100 * bad$tol, 3), "% tolerance",
+            ifelse(bad$gaveUp,
+                   paste0(" &mdash; <i>given up",
+                          ifelse(is.na(bad$branch), "", paste0(" (", bad$branch, " stop)")), "</i>"),
+                   " &mdash; <i>still steering at the iteration cap</i>"),
+            "</li>", collapse = "")
+          allGaveUp <- all(bad$gaveUp)
+          paste0("<div style='padding:8px;border-left:4px solid ",
+                 if (allGaveUp) "#f4c430" else "#F8766D", ";background:#fffbeb'>",
+                 "<b>", nrow(fin) - nrow(bad), " of ", nrow(fin),
+                 " regional emission targets met.</b> ",
+                 if (allGaveUp) {
+                   "The rest were deliberately abandoned by a give-up branch, so the run could end &mdash; they carry a residual:"
+                 } else {
+                   "The rest are still outside tolerance:"
+                 },
+                 "<ul>", items, "</ul></div>")
+        }
+      })
+      out_emiMktTargetStatus <- emiMktTargetStatus
     }
 
     # Implicit Quantity Target (optional) ----
@@ -434,6 +602,9 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
 
       pmImplicitQttyTarget <- readGDX(gdx, name = "pm_implicitQttyTarget", restore_zeros = FALSE, react = "error") %>%
         as.quitte() %>%
+        {
+          if ("region" %in% colnames(.) && !("ext_regi" %in% colnames(.))) rename(., "ext_regi" = "region") else .
+        } %>%
         select("period", "ext_regi", "taxType", "qttyTarget", "qttyTargetGroup")
 
       pmImplicitQttyTargetIsLimited <- readGDX(gdx, name = "pm_implicitQttyTarget_isLimited", restore_zeros = FALSE, react = "error")
@@ -441,6 +612,9 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       p80ImplicitQttyTargetDevIter <- readGDX(gdx, name = "p80_implicitQttyTarget_dev_iter",
                                               restore_zeros = FALSE, react = "error") %>%
         as.quitte() %>%
+        {
+          if ("region" %in% colnames(.) && !("ext_regi" %in% colnames(.))) rename(., "ext_regi" = "region") else .
+        } %>%
         select("period", "value", "iteration", "ext_regi", "qttyTarget", "qttyTargetGroup")
 
       if(all(lengths(attr(pmImplicitQttyTargetIsLimited, 'dimnames')) != 0)){
@@ -763,6 +937,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
     out <- list()
 
     out$tradeDetailPlot <- surplusConvergencePlotly
+    out$emiMktTargetStatus <- out_emiMktTargetStatus
 
     n <- length(subplots)
     out$plot <- subplot(
