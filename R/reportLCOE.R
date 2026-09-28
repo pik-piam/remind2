@@ -37,6 +37,7 @@
 #' @importFrom tidyr spread gather expand fill
 
 reportLCOE <- function(gdx, output.type = "both") {
+
   # test whether output.type defined
   if (!output.type %in% c("marginal", "average", "both", "marginal detail")) {
     print("Unknown output type. Please choose either marginal, average, both or marginal detail.")
