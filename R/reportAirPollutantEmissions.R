@@ -347,10 +347,16 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
   if (cm_MAgPIE_Nash == 0) {
     # standalone mode
     getSets(APMagpie) <- c("region", "year", "ssp", "rcp", "variable")
-    cm_LU_emi_scen <- suppressWarnings(gdx2::readGDX(gdx, "cm_LU_emi_scen"))
-    cm_rcp_scen <- suppressWarnings(gdx2::readGDX(gdx, "cm_rcp_scen"))
+    cm_LU_emi_scen <- gdx2::readGDX(gdx, "cm_LU_emi_scen", react = "silent")
+    cm_rcp_scen <- gdx2::readGDX(gdx, "cm_rcp_scen", react = "silent")
 
     # Subset the chosen scenario and SSP
+    if (is.null(cm_LU_emi_scen)) {
+      cm_LU_emi_scen <- gdx2::readGDX(gdx, "cm_GDPpopScen")
+    }
+    if (is.null(cm_rcp_scen)) {
+      cm_rcp_scen <- "rcp45"
+    }
     APMagpie <- APMagpie[, , list(ssp = cm_LU_emi_scen, rcp = cm_rcp_scen)]
     APMagpie <- collapseDim(APMagpie, dim = c("ssp", "rcp"))
   } else {
