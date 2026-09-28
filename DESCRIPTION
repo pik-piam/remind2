@@ -53,7 +53,6 @@ Imports:
     assertr,
     data.table,
     dplyr (>= 1.1.1),
-    gdx,
     gdx2,
     GDPuc,
     ggplot2,
