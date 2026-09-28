@@ -56,7 +56,7 @@ reportMOFEX <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default") 
 
   ## equations
   fuel2pe.m <- readGDX(gdx, name = "qm_fuel2pe", types = "equations", field = "m")
-  budget.m <- readGDX(gdx, name = "qm_budget", types = "equations", field = "m", format = "first_found") # Alternative: calcPrice
+  budget.m <- readGDX(gdx, name = "qm_budget", types = "equations", field = "m", format = "first_found")
   tradebal.m <- readGDX(gdx, name = "q31_MOFEX_tradebal", types = "equations", field = "m")
 
   ## Filter time period and fossil fuels

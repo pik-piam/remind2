@@ -93,7 +93,7 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   ## equations
   budget.m <- gdx2::readGDX(gdx, name = "qm_budget", type = "Equation",
-                            select = list("_field" = "marginal"))[, t, ] # Alternative: calcPrice
+                            select = list("_field" = "marginal"))[, t, ]
   balcapture.m <- gdx2::readGDX(gdx, name = c("q_balcapture", "q12_balcapture"),
                                 select = list("_field" = "marginal"), format = "first_found",
                                 restoreZeros = FALSE)[, t, ]

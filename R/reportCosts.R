@@ -130,7 +130,7 @@ reportCosts <- function(gdx,
   pebal.m <- gdx2::readGDX(gdx, name = c("q_balPe", "qm_pebal"), type = "Equation",
                            select = list("_field" = "marginal"), format = "first_found")
   budget.m <- gdx2::readGDX(gdx, name = "qm_budget", type = "Equation",
-                            select = list("_field" = "marginal"), format = "first_found") # alternative: calcPrice
+                            select = list("_field" = "marginal"), format = "first_found")
   sebal.m <- gdx2::readGDX(gdx, name = c("q_balSe", "q_sebal"), type = "Equation",
                            select = list("_field" = "marginal"), format = "first_found")
   balfinen.m <- gdx2::readGDX(gdx, name = c("qm_balFeForCesAndEs", "qm_balFeForCes",
