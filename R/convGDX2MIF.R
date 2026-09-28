@@ -135,12 +135,7 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
 
   # SDP variables ----
   message("running reportSDPVariables...")
-  tmp <- try(reportSDPVariables(gdx, output, t))  # test whether reportSDPVariables works
-  if (!inherits(tmp, "try-error")) {
-    if (!is.null(tmp)) output <- tmp
-  } else {
-    message("function reportSDPVariables does not work and is skipped")
-  }
+  output <- reportSDPVariables(gdx, output, t)
 
   # climate assessment variables ----
   message("running reportClimate...")
