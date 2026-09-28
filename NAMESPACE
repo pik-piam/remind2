@@ -65,10 +65,7 @@ importFrom(assertr,
   assert,
   not_na
 )
-importFrom(data.table,
-  ":=",
-  frollmean
-)
+importFrom(data.table,frollmean)
 importFrom(dplyr,
   across,
   arrange,

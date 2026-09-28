@@ -54,8 +54,8 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       select(c("solveinfo80", "region", "iteration", "value")) %>%
       tidyr::pivot_wider(names_from = "solveinfo80") %>%
       mutate(
-        "iteration" := as.numeric(as.character(.data$iteration)),
-        "convergence" := case_when(
+        "iteration" = as.numeric(as.character(.data$iteration)),
+        "convergence" = case_when(
           .data$modelstat == 1 & .data$solvestat == 1 ~ "optimal",
           .data$modelstat == 2 & .data$solvestat == 1 ~ "optimal",
           .data$modelstat == 7 & .data$solvestat == 4 ~ "feasible",
@@ -102,13 +102,13 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
     p80ConvNashObjValIter <- gdx2::readGDX(gdx, name = "p80_convNashObjVal_iter", react = "error") %>%
       as.quitte() %>%
       select(c("region", "iteration", "objvalDifference" = "value")) %>%
-      mutate("iteration" := as.numeric(as.character(.data$iteration))) %>%
+      mutate("iteration" = as.numeric(as.character(.data$iteration))) %>%
       filter(.data$iteration <= lastIteration)
 
     p80RepyIteration <- gdx2::readGDX(gdx, name = "p80_repy_iteration", restoreZeros = FALSE, react = "error") %>%
       as.quitte() %>%
       select(c("solveinfo80", "region", "iteration", "value")) %>%
-      mutate("iteration" := as.numeric(as.character(.data$iteration))) %>%
+      mutate("iteration" = as.numeric(as.character(.data$iteration))) %>%
       tidyr::pivot_wider(names_from = "solveinfo80")
 
     p80RepyIteration <- p80RepyIteration %>%
@@ -130,8 +130,8 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       select("iteration", "objvalConverge") %>%
       distinct() %>%
       mutate(
-        "objVarCondition" := ifelse(.data$objvalConverge, "yes", "no"),
-        "tooltip" := paste0("Iteration: ", .data$iteration, "<br>Converged")
+        "objVarCondition" = ifelse(.data$objvalConverge, "yes", "no"),
+        "tooltip" = paste0("Iteration: ", .data$iteration, "<br>Converged")
       )
 
     for (iter in unique(data$iteration)) {
@@ -173,9 +173,9 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       as.quitte() %>%
       select(c("period", "value", "all_enty", "iteration")) %>%
       mutate(
-        "iteration" := as.numeric(as.character(.data$iteration)),
-        "value" := ifelse(is.na(.data$value), 0, .data$value),
-        "type" := case_when(
+        "iteration" = as.numeric(as.character(.data$iteration)),
+        "value" = ifelse(is.na(.data$value), 0, .data$value),
+        "type" = case_when(
           .data$all_enty == "good" ~ "Goods trade surplus",
           .data$all_enty == "perm" ~ "Permits",
           TRUE ~ "Primary energy trade surplus"
@@ -188,8 +188,8 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
 
     surplus <- left_join(surplus, p80SurplusMaxTolerance, by = "all_enty") %>%
       mutate(
-        "maxTol" := ifelse(.data$period == 2150, .data$maxTol * 10, .data$maxTol),
-        "withinLimits" := ifelse(.data$value > .data$maxTol, "no", "yes")
+        "maxTol" = ifelse(.data$period == 2150, .data$maxTol * 10, .data$maxTol),
+        "withinLimits" = ifelse(.data$value > .data$maxTol, "no", "yes")
       )
 
     data <- surplus
@@ -322,7 +322,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
       as.quitte() %>%
       select("iteration", "value") %>%
       mutate(
-        "iteration" := as.numeric(as.character(.data$iteration)),
+        "iteration" = as.numeric(as.character(.data$iteration)),
         "converged" = ifelse(.data$value > devPriceAnticipTolFactor * maxTolerance, "no", "yes"),
         "tooltip" = ifelse(.data$value > devPriceAnticipTolFactor * maxTolerance,
                            paste0(
@@ -501,7 +501,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
         filter(!is.na(.data$value)) %>%
         select("iteration", "value") %>%
         mutate(
-          "iteration" := as.numeric(as.character(.data$iteration)),
+          "iteration" = as.numeric(as.character(.data$iteration)),
           "failed" = abs(.data$value) > implicitPriceTol
         )
 
@@ -545,7 +545,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
         filter(!is.na(.data$value)) %>%
         select("iteration", "value") %>%
         mutate(
-          "iteration" := as.numeric(as.character(.data$iteration)),
+          "iteration" = as.numeric(as.character(.data$iteration)),
           "failed" = abs(.data$value) > implicitPePriceTol
         )
 
@@ -618,13 +618,13 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
                                                          react = "error") %>%
         as.quitte() %>%
         select("iteration", "p80SccConvergenceMaxDeviationIter" = "value") %>%
-        mutate("iteration" := as.numeric(as.character(.data$iteration))) %>%
+        mutate("iteration" = as.numeric(as.character(.data$iteration))) %>%
         filter(.data$iteration <= lastIteration)
 
       p80GmtConvIter <- gdx2::readGDX(gdx, name = "p80_gmt_conv_iter", react = "error") %>%
         as.quitte() %>%
         select("iteration", "p80GmtConvIter" = "value") %>%
-        mutate("iteration" := as.numeric(as.character(.data$iteration))) %>%
+        mutate("iteration" = as.numeric(as.character(.data$iteration))) %>%
         filter(.data$iteration <= lastIteration)
 
       data <- left_join(p80SccConvergenceMaxDeviationIter, p80GmtConvIter, by = "iteration") %>%
@@ -718,7 +718,7 @@ plotNashConvergence <- function(gdx) { # nolint cyclocomp_linter
 
     data <- p80FadeoutPriceAnticipIter %>%
       mutate(
-        "iteration" := as.numeric(as.character(.data$iteration)),
+        "iteration" = as.numeric(as.character(.data$iteration)),
         "converged" = ifelse(.data$fadeoutPriceAnticip > cmMaxFadeoutPriceAnticip, "no", "yes"),
         "tooltip" = ifelse(
           .data$converged == "yes",
