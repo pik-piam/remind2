@@ -23,7 +23,6 @@
 #' @return MAgPIE object - LCOE calculated by model post-processing.
 #' Two types a) standing system LCOE b) new plant LCOE.
 #' @author Felix Schreyer, Robert Pietzcker, Lavinia Baumstark
-#' @seealso \code{\link{convGDX2MIF_LCOE}}
 #' @examples
 #' \dontrun{
 #' reportLCOE(gdx)

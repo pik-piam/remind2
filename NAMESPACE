@@ -8,7 +8,6 @@ export(compareScenConf)
 export(compareScenarios2)
 export(convGDX2CSV_LCOE)
 export(convGDX2MIF)
-export(convGDX2MIF_LCOE)
 export(convGDX2MIF_REMIND2MAgPIE)
 export(createVarListHtml)
 export(deletePlus)
@@ -18,13 +17,10 @@ export(getCfgScenPath)
 export(getCs2Profiles)
 export(getMifHistPath)
 export(getMifScenPath)
-export(getRunsMIFGDX)
-export(get_total_efficiencies)
 export(loadCs2Data)
 export(loadModeltest)
 export(nashConvergenceReport)
 export(parseLSTReasons)
-export(plotLCOE)
 export(plotNashConvergence)
 export(readAll)
 export(readSupplycurveBio)
@@ -42,7 +38,6 @@ export(reportExtraction)
 export(reportFE)
 export(reportInvestments)
 export(reportLCOE)
-export(reportMOFEX)
 export(reportMacroEconomy)
 export(reportPE)
 export(reportPolicyCosts)
@@ -62,7 +57,6 @@ importFrom(assertr,
   assert,
   not_na
 )
-importFrom(data.table,frollmean)
 importFrom(dplyr,
   across,
   arrange,
@@ -84,52 +78,31 @@ importFrom(dplyr,
   semi_join,
   summarise,
   summarize,
-  sym,
   tibble,
   tribble,
   ungroup
 )
-importFrom(gdx,readGDX)
 importFrom(ggplot2,
-  aes,
   aes_,
   coord_cartesian,
   element_text,
   facet_grid,
-  facet_wrap,
-  geom_area,
-  geom_col,
-  geom_errorbar,
-  geom_hline,
   geom_line,
   geom_point,
   geom_rect,
   ggplot,
-  ggtitle,
   labs,
   scale_color_manual,
-  scale_fill_brewer,
   scale_fill_manual,
-  scale_linetype_identity,
   scale_x_continuous,
-  scale_x_discrete,
   scale_y_continuous,
   scale_y_discrete,
-  sec_axis,
   theme,
-  theme_bw,
-  theme_minimal,
-  unit
+  theme_minimal
 )
 importFrom(gms,
   getLine,
   readDefaultConfig
-)
-importFrom(lusweave,
-  swclose,
-  swfigure,
-  swlatex,
-  swopen
 )
 importFrom(madrat,
   calcOutput,
@@ -164,7 +137,6 @@ importFrom(magclass,
   mselect,
   ndata,
   new.magpie,
-  read.report,
   setItems,
   setNames,
   setYears,
@@ -202,12 +174,9 @@ importFrom(quitte,
   getColValues,
   getPeriods,
   getRegs,
-  getScenarios,
   inline.data.frame,
   magclass_to_tibble,
-  order.levels,
   overwrite,
-  read.gdx,
   revalue.levels
 )
 importFrom(readr,read_csv)
@@ -244,8 +213,7 @@ importFrom(utils,
   read.csv,
   read.csv2,
   tail,
-  write.csv,
-  write.table
+  write.csv
 )
 importFrom(withr,
   defer,

@@ -51,14 +51,12 @@ Depends:
     magclass (>= 6.17.2)
 Imports:
     assertr,
-    data.table,
     dplyr (>= 1.1.1),
     gdx2,
     GDPuc,
     ggplot2,
     gms,
     lucode2 (>= 0.43.0),
-    lusweave,
     madrat (>= 3.13.0),
     magrittr,
     mip (>= 0.149.2),

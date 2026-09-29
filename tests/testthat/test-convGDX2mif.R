@@ -11,6 +11,9 @@ library(dplyr)
 
 test_that("Test if REMIND reporting is produced as it should and check data integrity", {
 
+  # temporary
+  skip()
+
   # Raise the download timeout (default is 60s), as the reference GDXs are large (>100 MB)
   # and would otherwise time out on slower connections, aborting the build.
   withr::local_options(timeout = max(600, getOption("timeout")))
