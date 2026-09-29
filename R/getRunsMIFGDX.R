@@ -1,8 +1,9 @@
 
-#' Copy fulldata.gdx and mif files from a suite of runs into one folder. This function creates the folder "./data/" in
-#' your working directory if such folder does not exist. It will furthermore create a subfolder with the experiment name where the gdx and mif-files
-#' will be copied to. Care: If this subfolder is already existing, old files in this subfolder will be overwritten!
-#'
+#' Copy fulldata.gdx and mif files from a suite of runs into one folder.
+#' This function creates the folder "./data/" in your working directory if such
+#' folder does not exist. It will furthermore create a subfolder with the experiment
+#' name where the gdx and mif-files will be copied to.
+#' Care: If this subfolder is already existing, old files in this subfolder will be overwritten!
 #'
 #' @param output.folder a vector with the paths to REMIND output folders of the desired runs
 #' @param experiment name of this experiment (suite of runs)
@@ -35,7 +36,7 @@ getRunsMIFGDX <- function(output.folder, experiment) {
     dir.create(paste0("./data/", experiment))
   }
 
- 
+
   # copy .mif and .gdx files to folder
   output.files <- unlist(c(lapply(output.folder,
                                   FUN=function(x){list.files(x,pattern="REMIND_generic*", full.names = T)}),
