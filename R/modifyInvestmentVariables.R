@@ -11,7 +11,7 @@
 #' See also: https://github.com/remindmodel/remind/pull/1238.
 #'
 #'
-#' @param x a magclass object to be manipulated, must have timesteps in 'ttot'
+#' @param x a magclass object to be manipulated
 #' @param ref an optional magclass object to be used for fixing values before 'startYear'
 #' @param startYear years before will be overwritten with values from 'ref'
 #'
@@ -21,11 +21,6 @@
 #'
 modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
 
-  ttot <- c(seq(1900, 2060, 5), seq(2070, 2110, 10), 2130, 2150)
-
-  if (!setequal(getYears(x, as.integer = TRUE), ttot)) {
-    stop("Timesteps must equal to 'ttot'")
-  }
 
   # generate mapping from REMIND timesteps to yearly timesteps for REMIND investment variables (vm_deltaCap etc.)
   # REMIND investment variables are defined to cover years between the last and the current REMIND time step.
@@ -60,12 +55,7 @@ modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
     )
 
   investTs <- investTs %>%
-    mutate(
-      "year" = paste0("y", .data$year),
-      "period" = paste0("y", .data$period),
-    )
-
-  remindTs <- remindTs %>%
+    filter(.data$period %in% getYears(x, as.integer = TRUE)) %>%
     mutate(
       "year" = paste0("y", .data$year),
       "period" = paste0("y", .data$period),
@@ -73,6 +63,13 @@ modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
 
   # map variables from model timesteps to yearly timesteps (e.g. 2020 -> 2016-2020)
   x <- toolAggregate(x, dim = 2, rel = investTs, from = "period", to = "year", verbosity = 2)
+
+  remindTs <- remindTs %>%
+    filter(.data$year %in% getYears(x, as.integer = TRUE)) %>%
+    mutate(
+      "year" = paste0("y", .data$year),
+      "period" = paste0("y", .data$period),
+    )
 
   w <- remindTs %>%
     select(-"period") %>%

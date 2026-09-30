@@ -153,14 +153,14 @@ reportLCOE <- function(gdx, output.type = "both") {
                                      select = list("_field" = "level"), format = "first_found")[, ttot, ]
 
     # capacity additions per year
-    vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"))[, ttot, ]
+    vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"), restoreZeros = FALSE)[, ttot, ]
 
     vm_demPe <- gdx2::readGDX(gdx, name = c("vm_demPe", "v_pedem"),
                               select = list("_field" = "level"), restoreZeros = FALSE,
                               format = "first_found", uniqueStyle = "classic")
     v_investcost <- gdx2::readGDX(gdx, name = c("vm_costTeCapital", "v_costTeCapital", "v_investcost"),
                                   select = list("_field" = "level"), format = "first_found")[, ttot, ]
-    vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level"))
+    vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level"), restoreZeros = FALSE)
     vm_prodFe <- gdx2::readGDX(gdx, name = "vm_prodFe", select = list("_field" = "level"),
                                uniqueStyle = "classic", restoreZeros = FALSE)
     v_emiTeDetail <- gdx2::readGDX(gdx, name = c("vm_emiTeDetail", "v_emiTeDetail"),
@@ -1319,7 +1319,8 @@ reportLCOE <- function(gdx, output.type = "both") {
       # DAC marginal adjustment costs
       ttot_from2010 <- paste0("y", ttot[which(ttot >= 2010)])
 
-      vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"), format = "first_found")[, ttot_from2005, ]
+      vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"),
+                                   format = "first_found", restoreZeros = FALSE)[, ttot_from2005, ]
       vm_capFac <- gdx2::readGDX(gdx, "vm_capFac", select = list("_field" = "level"), restoreZeros = FALSE)
       p_adj_seed_reg <- gdx2::readGDX(gdx, "p_adj_seed_reg", restoreZeros = TRUE)[, ttot_from2005, ]
       p_adj_seed_te <- gdx2::readGDX(gdx, "p_adj_seed_te", restoreZeros = FALSE)

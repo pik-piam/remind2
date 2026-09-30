@@ -30,7 +30,7 @@ reportInvestments <- function(gdx,
   v_costInv <- gdx2::readGDX(gdx, "v_costInv", select = list("_field" = "level"))
   vm_costInvTeDir <- gdx2::readGDX(gdx, "vm_costInvTeDir", select = list("_field" = "level"))
   vm_costInvTeAdj <- gdx2::readGDX(gdx, "vm_costInvTeAdj", select = list("_field" = "level"))
-  vm_costAddTeInv <- gdx2::readGDX(gdx, "vm_costAddTeInv", select = list("_field" = "level"))
+  vm_costAddTeInv <- gdx2::readGDX(gdx, "vm_costAddTeInv", select = list("_field" = "level"), restoreZeros = FALSE)
   vm_costCESMkup <- gdx2::readGDX(gdx, "vm_costCESMkup", select = list("_field" = "level"))
 
   # Apply 'modifyInvestmentVariables' to shift from the model-internal time coverage (deltacap and investment
@@ -73,7 +73,7 @@ reportInvestments <- function(gdx,
   vm_costInvTeAdj <- modifyInvestmentVariables(vm_costInvTeAdj[, ttot, ],
                                                ref = vm_costInvTeAdj_ref,
                                                startYear = cm_startyear)
-  vm_costAddTeInv <- modifyInvestmentVariables(vm_costAddTeInv[, ttot, ],
+  vm_costAddTeInv <- modifyInvestmentVariables(vm_costAddTeInv,
                                                ref = vm_costAddTeInv_ref,
                                                startYear = cm_startyear)
   vm_costCESMkup <- modifyInvestmentVariables(vm_costCESMkup[, ttot, ],

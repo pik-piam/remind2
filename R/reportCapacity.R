@@ -40,8 +40,9 @@ reportCapacity <- function(gdx, regionSubsetList = NULL,
   )
 
   # read variables
-  vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level")) * 1000 # convert from TW to GW
-  vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level")) * 1000 # convert from TW to GW
+  vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level"), restoreZeros = FALSE) * 1000 # convert from TW to GW
+  vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"),
+                               restoreZeros = FALSE) * 1000 # convert from TW to GW
   v_earlyreti <- gdx2::readGDX(gdx, name = c("vm_capEarlyReti", "v_capEarlyReti", "v_earlyreti"),
                                select = list("_field" = "level"), format = "first_found")
 
@@ -61,7 +62,8 @@ reportCapacity <- function(gdx, regionSubsetList = NULL,
   # the reporting template (all variables represent the average of the years from t-2.5years to t+2.5years)
   if (!is.null(gdx_ref)) {
     cm_startyear <- as.integer(gdx2::readGDX(gdx, name = "cm_startyear", format = "simplest"))
-    vm_deltaCapRef <- gdx2::readGDX(gdx_ref, name = "vm_deltaCap", select = list("_field" = "level")) * 1000 # convert from TW to GW
+    vm_deltaCapRef <- gdx2::readGDX(gdx_ref, name = "vm_deltaCap",
+                                    select = list("_field" = "level"), restoreZeros = FALSE) * 1000 # convert from TW to GW
     vm_deltaCapRef <- vm_deltaCapRef[teall2rlf]
     vm_deltaCapRef <- vm_deltaCapRef[, ttot, ]
     vm_deltaCap <- modifyInvestmentVariables(vm_deltaCap, vm_deltaCapRef, cm_startyear)

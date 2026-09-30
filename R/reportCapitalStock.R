@@ -39,8 +39,9 @@ reportCapitalStock <- function(gdx,
   teue2rlf <- gdx2::readGDX(gdx, name = c("teue2rlf", "tees2rlf"), format = "first_found")
 
   # read variables
-  vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level"))
-  vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"))
+  vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level"), restoreZeros = FALSE)
+  vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"),
+                               restoreZeros = FALSE)
 
   vm_costTeCapital <- gdx2::readGDX(gdx, name = c("vm_costTeCapital", "v_costTeCapital"), select = list("_field" = "level"),
                                     format = "first_found")
@@ -58,7 +59,8 @@ reportCapitalStock <- function(gdx,
 
   if (!is.null(gdx_ref)) {
     cm_startyear <- as.integer(gdx2::readGDX(gdx, name = "cm_startyear", format = "simplest"))
-    vm_deltaCapRef <- gdx2::readGDX(gdx_ref, name = "vm_deltaCap", select = list("_field" = "level"))[, y, ]
+    vm_deltaCapRef <- gdx2::readGDX(gdx_ref, name = "vm_deltaCap",
+                                    select = list("_field" = "level"), restoreZeros = FALSE)[, y, ]
     vm_deltaCap <- modifyInvestmentVariables(vm_deltaCap, vm_deltaCapRef, cm_startyear)
   } else {
     vm_deltaCap <- modifyInvestmentVariables(vm_deltaCap)
