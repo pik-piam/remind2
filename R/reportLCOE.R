@@ -1319,8 +1319,7 @@ reportLCOE <- function(gdx, output.type = "both") {
       # DAC marginal adjustment costs
       ttot_from2010 <- paste0("y", ttot[which(ttot >= 2010)])
 
-      vm_deltaCap <- gdx2::readGDX(gdx, name = c("vm_deltaCap"), select = list("_field" = "level"),
-                                   format = "first_found")[, ttot_from2005, ]
+      vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"), format = "first_found")[, ttot_from2005, ]
       vm_capFac <- gdx2::readGDX(gdx, "vm_capFac", select = list("_field" = "level"), restoreZeros = FALSE)
       p_adj_seed_reg <- gdx2::readGDX(gdx, "p_adj_seed_reg", restoreZeros = TRUE)[, ttot_from2005, ]
       p_adj_seed_te <- gdx2::readGDX(gdx, "p_adj_seed_te", restoreZeros = FALSE)

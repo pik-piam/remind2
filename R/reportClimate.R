@@ -16,7 +16,7 @@
 #' @importFrom magclass setNames mbind
 reportClimate <- function(gdx, output) {
 
-  # Try reading climate asessment data from GDX, but fail silently if none are available. If output is provided, match
+  # Try reading climate assessment data from GDX, but fail silently if none are available. If output is provided, match
   # the dimensions of the climate assessment variables individually to the output object. This is only necessary for
   # legacy reasons, as there is one single test case in which these variables have different dimensions.
   pm_globalMeanTemperature <- gdx2::readGDX(gdx, "pm_globalMeanTemperature", react = "silent", restore_zeros = FALSE)
@@ -27,10 +27,9 @@ reportClimate <- function(gdx, output) {
     message("reportClimate.R: pm_globalMeanTemperature not found in GDX file.")
   }
 
-  p15_forc_magicc <- gdx2::readGDX(gdx, "p15_forc_magicc", react = "silent",
-                                   format = "raw", restoreZeros = FALSE)
-  if (!is.null(p15_forc_magicc) && !is.null(p15_forc_magicc[["records"]])) {
-    p15_forc_magicc <- gdx2::readGDX(gdx, "p15_forc_magicc", restoreZeros = FALSE)
+  p15_forc_magicc <- gdx2::readGDX(gdx, "p15_forc_magicc", react = "silent", restoreZeros = FALSE)
+
+  if (!is.null(p15_forc_magicc)) {
     p15_forc_magicc <- setNames(p15_forc_magicc, "Forcing (W/m2)")
     p15_forc_magicc <- magclass::matchDim(p15_forc_magicc, output, dim = c(1, 2), fill = NA)
   } else {

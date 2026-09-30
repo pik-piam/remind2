@@ -39,8 +39,8 @@ reportCapitalStock <- function(gdx,
   teue2rlf <- gdx2::readGDX(gdx, name = c("teue2rlf", "tees2rlf"), format = "first_found")
 
   # read variables
-  vm_cap <- gdx2::readGDX(gdx, name = c("vm_cap"), select = list("_field" = "level"), format = "first_found")
-  vm_deltaCap <- gdx2::readGDX(gdx, name = c("vm_deltaCap"), select = list("_field" = "level"), format = "first_found")
+  vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level"))
+  vm_deltaCap <- gdx2::readGDX(gdx, name = "vm_deltaCap", select = list("_field" = "level"))
 
   vm_costTeCapital <- gdx2::readGDX(gdx, name = c("vm_costTeCapital", "v_costTeCapital"), select = list("_field" = "level"),
                                     format = "first_found")
@@ -58,7 +58,7 @@ reportCapitalStock <- function(gdx,
 
   if (!is.null(gdx_ref)) {
     cm_startyear <- as.integer(gdx2::readGDX(gdx, name = "cm_startyear", format = "simplest"))
-    vm_deltaCapRef <- gdx2::readGDX(gdx_ref, name = c("vm_deltaCap"), select = list("_field" = "level"), format = "first_found")[, y, ]
+    vm_deltaCapRef <- gdx2::readGDX(gdx_ref, name = "vm_deltaCap", select = list("_field" = "level"))[, y, ]
     vm_deltaCap <- modifyInvestmentVariables(vm_deltaCap, vm_deltaCapRef, cm_startyear)
   } else {
     vm_deltaCap <- modifyInvestmentVariables(vm_deltaCap)
@@ -68,7 +68,7 @@ reportCapitalStock <- function(gdx,
 
   # ---- report transport capital stocks ----
   if (tran_mod == "complex") {
-    LDV35 <- gdx2::readGDX(gdx, name = c("LDV35"), format = "first_found")
+    LDV35 <- gdx2::readGDX(gdx, name = "LDV35")
     tmp <- mbind(tmp, setNames(dimSums((vm_cap * vm_costTeCapital)[teue2rlf],
                                        dim = c(3.1, 3.2)) * 1000, "Est Capital Stock|ESM|Transp vehic (billion US$2017)"))
     tmp <- mbind(tmp, setNames(dimSums((vm_cap * vm_costTeCapital)[teall2rlf][, , LDV35],

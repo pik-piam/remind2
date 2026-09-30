@@ -46,7 +46,8 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
   p_dataeta <- gdx2::readGDX(gdx, name = c("pm_dataeta", "p_dataeta"), format = "first_found")
   p_eta_conv <- gdx2::readGDX(gdx, name = c("pm_eta_conv", "p_eta_conv"), format = "first_found")
   pm_inco0_t <- gdx2::readGDX(gdx, name = c("pm_inco0_t", "p_inco0_t"), format = "first_found")
-  v_investcost <- gdx2::readGDX(gdx, name = c("vm_costTeCapital", "v_costTeCapital", "v_investcost"), select = list("_field" = "level"), format = "first_found")
+  v_investcost <- gdx2::readGDX(gdx, name = c("vm_costTeCapital", "v_costTeCapital", "v_investcost"),
+                                select = list("_field" = "level"), format = "first_found")
 
   y <- Reduce(intersect, list(getYears(p_dataeta), getYears(p_eta_conv), getYears(v_investcost)))
   p_dataeta <- p_dataeta[, y, ]

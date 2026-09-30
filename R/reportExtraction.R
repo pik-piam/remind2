@@ -37,24 +37,24 @@ reportExtraction <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060,
   ts <- gdx2::readGDX(gdx, "pm_ts")[, t, ]
 
   ## parameters
-  grades <- gdx2::readGDX(gdx,
-    name = c("p31_grades"), restoreZeros = FALSE,
-    format = "first_found", react = "silent"
-  )
+  grades <- gdx2::readGDX(gdx, name = "p31_grades", restoreZeros = FALSE, react = "silent")
   if (!is.null(grades)) {
     grades[is.na(grades)] <- 0
   } # substitute na by 0
   datarog <- gdx2::readGDX(gdx, name = c("p31_costExPoly", "p31_datarog"), format = "first_found")
-  datarog2 <- gdx2::readGDX(gdx, name = c("p31_ffPolyCoeffs"), format = "first_found")
+  datarog2 <- gdx2::readGDX(gdx, name = "p31_ffPolyCoeffs")
   pebiolc_demandmag <- gdx2::readGDX(gdx, name = c("pm_pebiolc_demandmag", "p30_pebiolc_demandmag"), format = "first_found")
   p_cint <- gdx2::readGDX(gdx, name = c("pm_cint", "p_cint"), format = "first_found",
                           react = "silent", uniqueStyle = "classic")
-  fuExtrOwnCons <- gdx2::readGDX(gdx, name = c("pm_fuExtrOwnCons"), format = "first_found", uniqueStyle = "classic")
+  fuExtrOwnCons <- gdx2::readGDX(gdx, name = "pm_fuExtrOwnCons", uniqueStyle = "classic")
   ## variables
-  fuelex <- gdx2::readGDX(gdx, name = c("vm_fuExtr", "vm_fuelex"), select = list("_field" = "level"), restoreZeros = FALSE, format = "first_found")
-  fuelex_cum <- gdx2::readGDX(gdx, name = c("v31_fuExtrCum", "v31_fuelex_cum"), select = list("_field" = "level"), restoreZeros = FALSE, format = "first_found")
+  fuelex <- gdx2::readGDX(gdx, name = c("vm_fuExtr", "vm_fuelex"),
+                          select = list("_field" = "level"), restoreZeros = FALSE, format = "first_found")
+  fuelex_cum <- gdx2::readGDX(gdx, name = c("v31_fuExtrCum", "v31_fuelex_cum"), select = list("_field" = "level"),
+                              restoreZeros = FALSE, format = "first_found")
   fuelex_cum[is.na(fuelex_cum)] <- 0 # overwrite NA by 0
-  costfu_ex <- gdx2::readGDX(gdx, name = c("vm_costFuEx", "vm_costfu_ex"), select = list("_field" = "level"), restoreZeros = FALSE, format = "first_found")
+  costfu_ex <- gdx2::readGDX(gdx, name = c("vm_costFuEx", "vm_costfu_ex"), select = list("_field" = "level"),
+                             restoreZeros = FALSE, format = "first_found")
 
   ####### select relevant items #####
   if (!is.null(grades)) {

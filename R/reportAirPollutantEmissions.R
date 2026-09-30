@@ -132,6 +132,7 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
     # read files
     emi2020  <- read.magpie(file.path(extraData, paste0(file_name_emi2020, ".cs4r")))
     emifacs  <- read.magpie(file.path(extraData, paste0(file_name_emifacs, ".cs4r")))
+    APMagpie <- read.magpie(file.path(extraData, paste0(file_name_apmagpie,".cs4r")))
   }
 
   # Set dim names

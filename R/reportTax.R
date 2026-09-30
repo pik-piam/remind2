@@ -217,8 +217,8 @@ reportTax <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
 
   fuEx_sub <- gdx2::readGDX(gdx, name = "p21_tau_fuEx_sub", react = "silent")[, t, c("pecoal", "peoil", "pegas")] * tdptwyr2dpgj
   fuEx_sub[is.na(fuEx_sub)] <- 0
-  fuExtr <- gdx2::readGDX(gdx, "vm_fuExtr", select = list("_field" = "level"),
-                          format = "first_found", restoreZeros = FALSE, react = "silent")[, t, ] * TWa_2_EJ
+  fuExtr <- gdx2::readGDX(gdx, name = "vm_fuExtr", select = list("_field" = "level"),
+                          restoreZeros = FALSE, react = "silent")[, t, ] * TWa_2_EJ
 
   out <- mbind(
     out,

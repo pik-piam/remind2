@@ -136,7 +136,12 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
   )
 
   for (var in names(varWeights)) {
-    tmp["GLO", , var] <- toolAggregate(tmp[map$region, , var], rel = map, weight = output[map$region, , varWeights[[var]]])
+    tmp["GLO", , var] <- toolAggregate(
+      tmp[map$region, , var],
+      rel = map,
+      weight = output[map$region, , varWeights[[var]]],
+      zeroWeight = "allow"
+    )
   }
 
   # correct region aggregated values for intensive variables (prices, LCOES, Capacity factors)
