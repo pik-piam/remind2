@@ -50,9 +50,6 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
     }
   }
 
-  # uncomment to add current calibration gdxes
-  # gdxPaths <- c(gdxPaths, Sys.glob("/p/projects/remind/inputdata/CESparametersAndGDX/*.gdx"))
-
   numberOfMifs <- 0
 
   for (gdxPath in gdxPaths) {
