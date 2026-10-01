@@ -46,7 +46,7 @@ reportInvestments <- function(gdx,
     v_costInv_ref <- gdx2::readGDX(gdx_ref, "v_costInv", select = list("_field" = "level"))[, ttot, ]
     vm_costInvTeDir_ref <- gdx2::readGDX(gdx_ref, "vm_costInvTeDir", select = list("_field" = "level"))[, ttot, ]
     vm_costInvTeAdj_ref <- gdx2::readGDX(gdx_ref, "vm_costInvTeAdj", select = list("_field" = "level"))[, ttot, ]
-    vm_costAddTeInv_ref <- gdx2::readGDX(gdx_ref, "vm_costAddTeInv", select = list("_field" = "level"))[, ttot, ]
+    vm_costAddTeInv_ref <- gdx2::readGDX(gdx_ref, "vm_costAddTeInv", select = list("_field" = "level"), restoreZeros = FALSE)
     vm_costCESMkup_ref <- gdx2::readGDX(gdx_ref, "vm_costCESMkup", select = list("_field" = "level"))[, ttot, ]
   } else {
     vm_invMacro_ref <- NULL

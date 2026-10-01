@@ -83,11 +83,10 @@ modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
 
   if (!is.null(ref)) {
     if (!all(
-      setequal(getYears(x), getYears(ref)),
       setequal(getItems(x, dim = 1), getItems(ref, dim = 1)),
       setequal(getNames(x), getNames(ref))
     )) {
-      stop("ref does not match the dimensions of x")
+      stop("ref does not match the dimensions 1 and 3 of x")
     }
 
     fixedYears <- getYears(x, as.integer = TRUE)[getYears(x, as.integer = TRUE) < startYear]
@@ -99,5 +98,5 @@ modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
     x[, fixedYears, ] <- ref[, fixedYears, ]
   }
 
-  return(x)
+  return(magclass::magpiesort(x))
 }
