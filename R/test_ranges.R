@@ -41,8 +41,6 @@
 #' @importFrom quitte magclass_to_tibble
 #' @importFrom tidyr unite
 #' @importFrom tidyselect everything
-#' @importFrom rlang !! sym
-
 #' @export
 test_ranges <- function(data, tests, reaction = c('message', 'stop'),
                         report.missing = FALSE) {
