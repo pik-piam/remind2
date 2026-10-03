@@ -82,12 +82,6 @@ modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
   x <- toolAggregate(x, dim = 2, rel = remindTs, weight = w, from = "year", to = "period")
 
   if (!is.null(ref)) {
-    if (!all(
-      setequal(getItems(x, dim = 1), getItems(ref, dim = 1)),
-      setequal(getNames(x), getNames(ref))
-    )) {
-      stop("ref does not match the dimensions 1 and 3 of x")
-    }
 
     fixedYears <- getYears(x, as.integer = TRUE)[getYears(x, as.integer = TRUE) < startYear]
     if (length(fixedYears) == 0) {
@@ -95,7 +89,9 @@ modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
     }
 
     ref <- modifyInvestmentVariables(ref)
-    x[, fixedYears, ] <- ref[, fixedYears, ]
+    d1 <- intersect(getItems(x, dim = 1), getItems(ref, dim = 1))
+    d3 <- intersect(getNames(x), getNames(ref))
+    x[d1, fixedYears, d3] <- ref[d1, fixedYears, d3]
   }
 
   return(magclass::magpiesort(x))

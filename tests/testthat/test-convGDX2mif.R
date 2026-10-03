@@ -83,6 +83,8 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
       scenario = paste0(magclass::getItems(mifContent, dim = "scenario"), numberOfMifs),
       model = "REMIND"
     )
+
+    rm(mifContent)
   }
 
   unlink(tempdir(), recursive = TRUE)
