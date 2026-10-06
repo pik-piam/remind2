@@ -21,7 +21,6 @@
 #'
 modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
 
-
   # generate mapping from REMIND timesteps to yearly timesteps for REMIND investment variables (vm_deltaCap etc.)
   # REMIND investment variables are defined to cover years between the last and the current REMIND time step.
   # Example: vm_deltaCap(2020) refers to annual capacity additions from 2016 to 2020.
@@ -79,9 +78,12 @@ modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
 
   # Average variables with yearly timesteps to 5-year reporting time steps defined
   # around center year (e.g. 2018-2022 average -> 2020)
-  x <- toolAggregate(x, dim = 2, rel = remindTs, weight = w, from = "year", to = "period")
+  x <- toolAggregate(x, dim = 2, rel = remindTs, weight = w, from = "year", to = "period") %>%
+    magpiesort()
 
   if (!is.null(ref)) {
+
+    ref <- magpiesort(ref)
 
     fixedYears <- getYears(x, as.integer = TRUE)[getYears(x, as.integer = TRUE) < startYear]
     if (length(fixedYears) == 0) {
@@ -89,9 +91,10 @@ modifyInvestmentVariables <- function(x, ref = NULL, startYear = NULL) {
     }
 
     ref <- modifyInvestmentVariables(ref)
-    d1 <- intersect(getItems(x, dim = 1), getItems(ref, dim = 1))
-    d3 <- intersect(getNames(x), getNames(ref))
-    x[d1, fixedYears, d3] <- ref[d1, fixedYears, d3]
+    if (!is.null(getNames(x))) {
+      ref <- magclass::matchDim(ref, x, dim = 3, fill = 0)
+    }
+    x[, fixedYears, ] <- ref[, fixedYears, ]
   }
 
   return(magclass::magpiesort(x))

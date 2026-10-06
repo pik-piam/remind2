@@ -105,7 +105,7 @@ reportCosts <- function(gdx,
   v_costin <- gdx2::readGDX(gdx, name = c("v_costInv", "v_costin"), select = list("_field" = "level"), format = "first_found")
   vm_EW_transport_costs <- gdx2::readGDX(gdx, name = c("vm_omcosts_cdr", "vm_EW_transport_costs"), select = list("_field" = "level"), format = "first_found")
   v_investcost <- gdx2::readGDX(gdx, name = c("vm_costTeCapital", "v_costTeCapital", "v_investcost"), select = list("_field" = "level"), format = "first_found")
-  vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level"))
+  vm_cap <- gdx2::readGDX(gdx, name = "vm_cap", select = list("_field" = "level"), restoreZeros = FALSE)
   vm_cap[is.na(vm_cap)] <- 0
   vm_prodSe <- gdx2::readGDX(gdx, name = "vm_prodSe", select = list("_field" = "level"),
                              restoreZeros = FALSE, uniqueStyle = "classic")
