@@ -107,7 +107,7 @@ reportPolicyCosts <- function(gdx, gdx_ref, regionSubsetList = NULL,
 
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    tmp <- mbind(tmp, calc_regionSubset_sums(tmp, regionSubsetList))
+    tmp <- mbind(tmp, calcRegionSubsetSums(tmp, regionSubsetList))
   }
 
   getSets(tmp)[3] <- "variable"

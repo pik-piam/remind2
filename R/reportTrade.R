@@ -118,8 +118,8 @@ reportTrade <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), 
   trade <- mbind(trade, dimSums(trade, dim = 1))
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    tmp <- mbind(tmp, calc_regionSubset_sums(tmp, regionSubsetList))
-    trade <- mbind(trade, calc_regionSubset_sums(trade, regionSubsetList))
+    tmp <- mbind(tmp, calcRegionSubsetSums(tmp, regionSubsetList))
+    trade <- mbind(trade, calcRegionSubsetSums(trade, regionSubsetList))
   }
 
   # values use global prices

@@ -387,7 +387,7 @@ reportTax <- function(gdx, output = NULL, regionSubsetList = NULL, t = c(seq(200
   out <- mbind(out, setItems(dimSums(out, dim = 1), dim = 1, "GLO"))
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
+    out <- mbind(out, calcRegionSubsetSums(out, regionSubsetList))
   }
 
   # select variables that cannot be aggregated by simply sums and set their values to NA

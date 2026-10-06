@@ -57,7 +57,7 @@ A BibTeX entry for LaTeX users is
 @Misc{,
   title = {remind2: The REMIND R package (2nd generation)},
   author = {Renato Rodrigues and Lavinia Baumstark and Falk Benke and David Bantje and Jan Philipp Dietrich and Alois Dirnaichner and Tabea Dorndorf and Jakob Duerrwaechter and Pascal Führlich and Anastasis Giannousakis and Robin Hasse and Jérome Hilaire and David Klein and Johannes Koch and Katarzyna Kowalczyk and Fabrice Lécuyer and Antoine Levesque and Aman Malik and Anne Merfort and Leon Merfort and Simón Morena-Leiva and Adrian Odenweller and Michaja Pehl and Robert Pietzcker and Sebastian Rauner and Oliver Richters and Marianna Rottoli and Tonn Rüter and Robert Salzwedel and Christof Schötz and Felix Schreyer and Kais Siala and Björn Sörgel and Mike Spahr and Jessica Strefler and Philipp Verpoort and Pascal Weigmann and Simon Krogmann},
-  date = {2026-10-03},
+  date = {2026-10-06},
   year = {2026},
   url = {https://github.com/pik-piam/remind2},
   note = {Version: 2.8.0},

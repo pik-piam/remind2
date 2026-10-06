@@ -663,7 +663,7 @@ reportCosts <- function(gdx,
   tmp <- mbind(tmp, dimSums(tmp, dim = 1))
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    tmp <- mbind(tmp, calc_regionSubset_sums(tmp, regionSubsetList))
+    tmp <- mbind(tmp, calcRegionSubsetSums(tmp, regionSubsetList))
   }
 
   # cannot be summed for aggregation

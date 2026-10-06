@@ -152,7 +152,7 @@ reportCapitalStock <- function(gdx,
 
   # ---- add region aggregates ----
   if (!is.null(regionSubsetList))
-    tmp <- mbind(tmp, calc_regionSubset_sums(tmp, regionSubsetList))
+    tmp <- mbind(tmp, calcRegionSubsetSums(tmp, regionSubsetList))
 
   getSets(tmp)[3] <- "variable"
 

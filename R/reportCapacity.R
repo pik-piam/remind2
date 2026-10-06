@@ -357,7 +357,7 @@ reportCapacity <- function(gdx, regionSubsetList = NULL,
   reported <- mbind(reported, dimSums(reported, dim = 1))
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    reported <- mbind(reported, calc_regionSubset_sums(reported, regionSubsetList))
+    reported <- mbind(reported, calcRegionSubsetSums(reported, regionSubsetList))
   }
 
   getSets(reported)[3] <- "variable"

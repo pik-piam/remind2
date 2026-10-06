@@ -3675,7 +3675,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   out <- mbind(out, dimSums(out, dim = 1))
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
+    out <- mbind(out, calcRegionSubsetSums(out, regionSubsetList))
   }
 
   ## Aggregate intensive variables
@@ -3849,7 +3849,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     intersect(getNames(out)) # keep only variables that are in out
 
   outCumul <- setNames(
-    time_cumulate(out[, , varsCumul], includeEndYear = TRUE), # calculate cumulated values
+    timeCumulate(out[, , varsCumul], includeEndYear = TRUE), # calculate cumulated values
     addEmiString(varsCumul, "Cumulated") %>% sub("\\/yr", "", .)
   ) # create |Cumulated variables with relevant unit (eg Mt CO2 instead of Mt CO2/yr)
 

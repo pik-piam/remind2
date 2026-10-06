@@ -154,7 +154,7 @@ reportEmiForClimateAssessment <- function(gdx, output = NULL, regionSubsetList =
   out <- mbind(out, dimSums(out, dim = 1))
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
+    out <- mbind(out, calcRegionSubsetSums(out, regionSubsetList))
   }
 
   # Run air pollution report

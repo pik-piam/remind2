@@ -68,7 +68,7 @@ test_that("Test if REMIND reporting is produced as it should and check data inte
     }
 
     expect_no_error(
-      test_ranges(
+      testRanges(
         data = mifContent,
         tests = list(
           list(

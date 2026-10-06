@@ -194,7 +194,7 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
 
   # Add other region aggregations
   if (!is.null(regionSubsetList)) {
-    output_AP_unaggregated <- mbind(output_AP_unaggregated, calc_regionSubset_sums(output_AP_unaggregated, regionSubsetList))
+    output_AP_unaggregated <- mbind(output_AP_unaggregated, calcRegionSubsetSums(output_AP_unaggregated, regionSubsetList))
   }
 
   # 4.2 REPORTING OF SECTORAL AGGREGATIONS -------------------------------------
@@ -372,7 +372,7 @@ reportAirPollutantEmissions <- function(gdx, output = NULL, regionSubsetList = N
 
   # Add other region aggregations
   if (!is.null(regionSubsetList)) {
-    APMagpie <- mbind(APMagpie, calc_regionSubset_sums(APMagpie, regionSubsetList))
+    APMagpie <- mbind(APMagpie, calcRegionSubsetSums(APMagpie, regionSubsetList))
   }
 
   # "AFOLU|+|Agriculture" only exists for NH3 and NOx, but it is needed for the summation to "AFOLU". Thus, we add it as zero for all other species

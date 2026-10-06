@@ -121,7 +121,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
   tmp <- mbind(tmp, dimSums(tmp, dim = 1))
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    tmp <- mbind(tmp, calc_regionSubset_sums(tmp, regionSubsetList))
+    tmp <- mbind(tmp, calcRegionSubsetSums(tmp, regionSubsetList))
   }
 
   # correct global values for intensive variables (prices, LCOES, Capacity factors)
@@ -443,7 +443,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
       as.magpie(temporal = 1, spatial = 2)
 
     if (!is.null(regionSubsetList)) {
-      projections <- mbind(projections, calc_regionSubset_sums(projections, regionSubsetList))
+      projections <- mbind(projections, calcRegionSubsetSums(projections, regionSubsetList))
     }
 
     unlink(f)
@@ -459,7 +459,7 @@ reportCrossVariables <- function(gdx, output = NULL, regionSubsetList = NULL,
     ) %>% as.magpie(temporal = 1, spatial = 2)
 
     if (!is.null(regionSubsetList)) {
-      projections <- mbind(projections, calc_regionSubset_sums(projections, regionSubsetList))
+      projections <- mbind(projections, calcRegionSubsetSums(projections, regionSubsetList))
     }
 
     # check if regional resolution matches

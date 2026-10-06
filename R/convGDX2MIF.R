@@ -182,7 +182,7 @@ convGDX2MIF <- function(gdx, gdx_ref = NULL, file = NULL, scenario = "default",
   }
 
   ## range checks ----
-  rangeChecks <- test_ranges(
+  rangeChecks <- testRanges(
     data = output,
     tests = list(
       list(

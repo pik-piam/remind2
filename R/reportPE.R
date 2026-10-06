@@ -192,7 +192,7 @@ reportPE <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060, 5), seq
   out <- mbind(out, dimSums(out, dim = 1))
   # add other region aggregations
   if (!is.null(regionSubsetList))
-    out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
+    out <- mbind(out, calcRegionSubsetSums(out, regionSubsetList))
 
   getSets(out)[3] <- "variable"
   return(out)

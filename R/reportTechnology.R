@@ -467,7 +467,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
   tmp2 <- mbind(tmp2, dimSums(tmp2, dim = 1))
 
   if (!is.null(regionSubsetList)) {
-    tmp2 <- mbind(tmp2, calc_regionSubset_sums(tmp2, regionSubsetList))
+    tmp2 <- mbind(tmp2, calcRegionSubsetSums(tmp2, regionSubsetList))
   }
 
   ## combine main reporting and EW ----
@@ -494,7 +494,7 @@ reportTechnology <- function(gdx, output = NULL, regionSubsetList = NULL,
     tmp3 <- mbind(tmp3, dimSums(tmp3, dim = 1))
 
     if (!is.null(regionSubsetList)) {
-      tmp3 <- mbind(tmp3, calc_regionSubset_sums(tmp3, regionSubsetList))
+      tmp3 <- mbind(tmp3, calcRegionSubsetSums(tmp3, regionSubsetList))
     }
   } else {
     tmp3 <- new.magpie(getRegions(tmp), getYears(tmp), "CDR|OAE quicklime (Mt CaO/yr)", fill = 0)

@@ -291,7 +291,7 @@ reportExtraction <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060,
 
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
+    out <- mbind(out, calcRegionSubsetSums(out, regionSubsetList))
   }
 
   # costs cannot be summed for aggregation

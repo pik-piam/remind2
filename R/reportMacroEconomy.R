@@ -306,7 +306,7 @@ reportMacroEconomy <- function(gdx,
   out <- mbind(out, mbind(damageFactor[, tintersect, ], glo_damageFactor))
   # add other region aggregations
   if (!is.null(regionSubsetList)) {
-    out <- mbind(out, calc_regionSubset_sums(out, regionSubsetList))
+    out <- mbind(out, calcRegionSubsetSums(out, regionSubsetList))
   }
 
   # remove regional aggregations for CES Prices and CES MRS
