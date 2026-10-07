@@ -83,6 +83,7 @@ Suggests:
     htmltools,
     kableExtra,
     knitr,
+    piamValidation,
     remulator,
     scales,
     testthat,
