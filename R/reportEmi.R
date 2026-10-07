@@ -1476,7 +1476,8 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
       out,
       setNames(out[, , "Emi|CO2|Land-Use Change|Negative|+|Intentional (Mt CO2/yr)"] +
         out[, , "Emi|CO2|Land-Use Change|Negative|+|Unintentional (Mt CO2/yr)"], "Emi|CO2|Land-Use Change|+|Negative (Mt CO2/yr)"),
-      setNames(out[, , "Emi|CO2|Land-Use Change|+|Positive (Mt CO2/yr)"], "Emi|CO2|Gross|+|Land-Use Change (Mt CO2/yr)")
+      setNames(out[, , "Emi|CO2|Land-Use Change|+|Positive (Mt CO2/yr)"] +
+        out[, , "Emi|CO2|Land-Use Change|Negative|+|Unintentional (Mt CO2/yr)"], "Emi|CO2|Gross|+|Land-Use Change (Mt CO2/yr)")
     )
   }
 
@@ -2381,8 +2382,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     out,
     # total negative land-use change emissions
     setNames(
-      out[, , "Emi|CO2|Land-Use Change|Negative|+|Intentional (Mt CO2/yr)"]
-      + out[, , "Emi|CO2|Land-Use Change|Negative|+|Unintentional (Mt CO2/yr)"],
+      out[, , "Emi|CO2|Land-Use Change|Negative|+|Intentional (Mt CO2/yr)"],
       "Emi|CO2|CDR|+|Land-Use Change (Mt CO2/yr)"
     ),
     # total BECCS (pe2se + bio FE w CCS in industry and CDR demand sector + waste incineration BECCS)
