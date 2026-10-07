@@ -63,8 +63,11 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   s_GWP_CH4 <- as.numeric(gdx2::readGDX(gdx, c("sm_gwpCH4", "s_gwpCH4", "s_GWP_CH4"), format = "first_found", react = "silent"))
   s_GWP_N2O <- as.numeric(gdx2::readGDX(gdx, c("s_gwpN2O", "s_GWP_N2O"), format = "first_found", react = "silent"))
   s_twa2mwh <- as.numeric(gdx2::readGDX(gdx, "sm_TWa_2_MWh", react = "silent"))
+  s_tBC_2_TWa <- as.numeric(gdx2::readGDX(gdx, name = "sm_tBC_2_TWa"))
+  sm_trillion_2_non <- as.numeric(gdx2::readGDX(gdx, "sm_trillion_2_non"))
   tdptwyr2dpgj <- 31.71 # TerraDollar per TWyear to Dollar per GJ
   p80_subset <- c("perm", "good", "peur", "peoil", "pegas", "pecoal", "pebiolc") # TODO: read in from gdx as sets trade
+
   ####### read in needed data #########
 
   #---- Functions
@@ -88,6 +91,8 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   pm_taxemiMkt <- gdx2::readGDX(gdx, name = "pm_taxemiMkt", react = "silent")[, t, ]
   p47_taxCO2eq_AggFE <- gdx2::readGDX(gdx, name = "p47_taxCO2eq_AggFE", react = "silent")[, t, ]
   p47_taxCO2eq_SectorAggFE <- gdx2::readGDX(gdx, name = "p47_taxCO2eq_SectorAggFE", react = "silent")[, t, ]
+  p33_BiocharPrice <- gdx2::readGDX(gdx, "p33_BiocharPrice")[, t, ]
+
 
   ## variables
   pric_emu <- gdx2::readGDX(gdx, name = "vm_pebiolc_price", select = list("_field" = "level"))[, t, ]
@@ -1255,7 +1260,8 @@ reportPrices <- function(gdx, output = NULL, regionSubsetList = NULL,
   for (i in getItems(out, dim = 1)) glob_price[i, , ] <- pm_pvp[, , "pebiolc"] / pm_pvp[, , "good"] * tdptwyr2dpgj
   out <- mbind(out, setNames(glob_price, "Price|Biomass|World Market (US$2017/GJ)"))
 
-  out <- mbind(out, new.magpie(getItems(out, dim = 1), getYears(out), "Price|Biochar (US$2017/t Biochar)", fill = NA))
+  for (i in getRegions(out)) glob_price[i, , ] <- p33_BiocharPrice * s_tBC_2_TWa * sm_trillion_2_non # [trilUS$2017/TWa BC] * [TWa/t BC] * [TrilUSD/USD]
+  out <- mbind(out, setNames(glob_price, "Price|Biochar (US$2017/t Biochar)"))
 
   ## special global prices
 
