@@ -262,6 +262,7 @@ items <- c(
   "PE|Production|Biomass|Lignocellulosic|Energy Crops",
   "PE|Production|Biomass|Lignocellulosic|Residues",
   "PE|Production|Biomass|1st Generation",
+  "PE|Production|Biomass|Manure",
   NULL)
 showAreaAndBarPlots(data, items, tot = "PE|Production|Biomass", orderVars = "user", scales = "fixed")
 ```
@@ -376,6 +377,19 @@ items <- c(
   "PE|Biomass|Liquids|w/o CC",
   "PE|Biomass|Solids",
   "PE|Biomass|Biochar",
+  NULL)
+
+showLinePlots(data, tot)
+showAreaAndBarPlots(data, items, tot = tot, orderVars = "user", scales = "fixed")
+```
+
+### PE Manure
+```{r PE Manure}
+tot <- "PE|Biomass|Manure"
+items <- c(
+  "PE|Biomass|Manure|Electricity",
+  "PE|Biomass|Manure|Heat",
+  "PE|Biomass|Manure|Gases",
   NULL)
 
 showLinePlots(data, tot)
