@@ -32,7 +32,7 @@ readSupplycurveBio <- function(outputdirs,
   .readvar <- function(gdx, name, enty = NULL) {
     if (is.null(enty)) {
       out <- gdx2::readGDX(gdx, name, format = "first_found", select = list("_field" = "level"))
-      getNames(out) <- "dummy" # something has to be here, will be removed by collapseNames anyway
+      getNames(out) <- "dummy" # something has to be , will be removed by collapseNames anyway
     } else {
       out <- gdx2::readGDX(gdx, name = name, format = "first_found", select = list("_field" = "level"))[, , enty]
     }
@@ -118,7 +118,7 @@ readSupplycurveBio <- function(outputdirs,
   # demand
   dem_mag <- readAll(gdx_path, .readpar, name = c("pm_pebiolc_demandmag", "p30_pebiolc_demandmag"), asList = FALSE)
   # price
-  pri_mag <- readAll(gdx_path, .readvar, name = "p30_pebiolc_pricemag", asList = FALSE)
+  pri_mag <- readAll(gdx_path, func = function(gdx) {gdx2::readGDX(gdx, "p30_pebiolc_pricemag")}, asList = FALSE)
 
   dem_mag <- add_dimension(dem_mag, dim = 3.2, add = "sample", nm = "1")
   dem_mag <- add_dimension(dem_mag, dim = 3.3, add = "variable", nm = "x")
