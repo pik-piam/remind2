@@ -25,6 +25,7 @@ checkVsCalibData <- function(gdx, outputDir = getwd(), outputFile = "Check_vs_Ca
     system.file("markdown", "checkVsCalibrationData.Rmd", package = "remind2"),
     output_dir = outputDir,
     output_file = outputFile,
+    intermediates_dir = outputDir,
     output_format = "pdf_document",
     params = yamlParams
   )
