@@ -11,10 +11,9 @@
 #' @seealso \code{\link[remulator]{emulator}}, \code{\link[remulator]{calc_supplycurve}}
 #' @export
 readSupplycurveBio <- function(outputdirs,
-                               userfun = function(param, x) {
-                                 return(param[[1]] + param[[2]] * x)
-                               },
+                               userfun = function(param, x) {return(param[[1]] + param[[2]] * x)},
                                mult_on = "all") {
+
   rlang::check_installed("remulator")
 
   #########################################################################
