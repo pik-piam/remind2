@@ -22,3 +22,68 @@ for (mv in magiccvar) {
   }
 }
 ```
+
+## Internal parameterization vs. MAGICC7 AR6 600-member ensemble
+```{r 07_climate/internal_vs_magicc}
+percentiles <- c(5, 10, 33, 50, 67, 90, 95)
+percentileVars <- paste0("MAGICC7 AR6|Surface Temperature (GSAT)|", sprintf("%.1fth", percentiles), " Percentile")
+mainVar <- "Temperature|Global Mean"
+
+# Observed warming relative to 1850-1900 (low/high = very likely range)
+references <- tribble(
+  ~label,                           ~start, ~end, ~value, ~low, ~high,
+  "HADCRU4 SR1.5 ref. (2006-2015)",      2006, 2015,   0.97,   NA,    NA,
+  "Forster et al. 2025 (2015-2024)",      2015, 2024,   1.24, 1.11,  1.35
+)
+
+# GAMS switches of one scenario as a named character vector
+getCfgGms <- function(scen) {
+  id <- fileReference$fileid[fileReference$newScenarioName == scen]
+  cfgGms |> filter(fileid == id) |> select(name, value) |> mutate(value = as.character(value)) |> deframe()
+}
+
+
+plotTemperature <- function(scen) {
+  scenData <- data |> filter(scenario == scen, region == "World")
+  scenColor <- scenarioColors[[match(scen, fileReference$newScenarioName)]]
+
+  internal <- scenData |> filter(variable == mainVar)
+  magicc <- scenData |>
+    filter(variable %in% percentileVars) |>
+    mutate(label = str_extract(variable, "[0-9.]+th"))
+
+  lastYear <- max(magicc$period)
+
+  ggplot(mapping = aes(period, value)) +
+    geom_line(data = magicc, aes(group = variable), colour = "grey60") +
+    geom_line(data = internal, colour = scenColor, linewidth = 1.2) +
+    # observational references: range as a box, central value as a segment, label in the space on the right
+    geom_rect(data = filter(references, !is.na(low)), aes(xmin = start, xmax = end, ymin = low, ymax = high),
+              inherit.aes = FALSE, fill = "forestgreen", alpha = 0.25) +
+    geom_segment(data = references, aes(x = end, xend = lastYear, y = value, yend = value),
+                 inherit.aes = FALSE, colour = "forestgreen", linetype = "dotted", alpha = 0.6) +
+    geom_segment(data = references, aes(x = start, xend = end, y = value, yend = value),
+                 inherit.aes = FALSE, colour = "forestgreen", linewidth = 1.2) +
+    geom_text(data = references, aes(x = lastYear + 1, y = value, label = label),
+              inherit.aes = FALSE, colour = "forestgreen", size = 3, hjust = 0) +
+    geom_text(data = filter(magicc, period == lastYear), aes(label = sprintf("%s: %.1f K", label, value)),
+              colour = "grey40", size = 3, hjust = 0, nudge_x = 1) +
+    annotate("text", x = max(internal$period) + 1, y = last(internal$value),
+             label = sprintf("Internal par.: %.1f K", last(internal$value)),
+             colour = scenColor, size = 3.5, fontface = "bold", hjust = 0) +
+    scale_x_continuous(
+      breaks = seq(2020, 2100, 20), minor_breaks = seq(2010, 2100, 10),
+      expand = expansion(mult = c(0.02, 0.4))) + # room on the right for labels
+    scale_y_continuous(breaks = seq(0, 10, 0.5), minor_breaks = seq(0, 10, 0.1)) +
+    coord_cartesian(clip = "off") +
+    labs(title = scen, x = NULL, y = "Global mean temperature (K)") +
+    theme_minimal()
+}
+
+
+for (s in fileReference$newScenarioName) {
+  print(plotTemperature(s))
+  print(paste0("climate module realization: ", getCfgGms(s)["climate"]))
+  print(paste0("cm_magicc_calibrateTemperature2000: ", getCfgGms(s)["cm_magicc_calibrateTemperature2000"]))
+}
+```
