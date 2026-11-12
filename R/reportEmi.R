@@ -125,7 +125,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   # emissions from MAC curves (non-energy emissions)
   vm_emiMacSector <- gdx2::readGDX(gdx, "vm_emiMacSector", select = list("_field" = "level"),
                                    restoreZeros = FALSE)[, t, ]
-  p_co2lucSub <- gdx2::readGDX(gdx, "p_co2lucSub", restoreZeros = TRUE, react = "silent")[, t, ]
+  p_co2lucSub <- gdx2::readGDX(gdx, c("p10_co2lucSub", "p_co2lucSub"), format = "first_found", restoreZeros = TRUE, react = "silent")[, t, ]
 
   # F-Gases
   vm_emiFgas <- gdx2::readGDX(gdx, "vm_emiFgas", select = list("_field" = "level"),
@@ -135,14 +135,15 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
                                    restoreZeros = FALSE)
 
   # energy extraction energy-related CO2 emissions
-  v_emiEnFuelEx <- gdx2::readGDX(gdx, "v_emiEnFuelEx", select = list("_field" = "level"),
-                                 restoreZeros = FALSE)
+  v_emiEnFuelEx <- gdx2::readGDX(gdx, c("v10_emiEnFuelEx", "v_emiEnFuelEx"), format = "first_found",
+                                 select = list("_field" = "level"), restoreZeros = FALSE)
 
   ### for emissions of energy system technologies
   # emission factors of technologies
   pm_emifac <- gdx2::readGDX(gdx, "pm_emifac", restoreZeros = FALSE, uniqueStyle = "classic")[, t, ]
   # emissions factors of non-energy use
-  pm_emifacNonEnergy <- gdx2::readGDX(gdx, "pm_emifacNonEnergy", restoreZeros = FALSE, react = "silent")[, t, ]
+  pm_emifacNonEnergy <- gdx2::readGDX(gdx, c("p37_emifacNonEnergy", "pm_emifacNonEnergy"),
+                                      restoreZeros = FALSE, react = "silent", format = "first_found")[, t, ]
   # primary energy demand (pe2se emissions factors applied to)
   vm_demPE <- gdx2::readGDX(gdx, "vm_demPE", select = list("_field" = "level"), restoreZeros = FALSE)[, t, ]
   # final energy demand (se2fe emissions factors applied to)
@@ -172,7 +173,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   pm_prodCouple <- gdx2::readGDX(gdx, "pm_prodCouple", restoreZeros = FALSE, uniqueStyle = "classic")
 
   ### Carbon management variables
-  vm_emiCdrTeDetail <- gdx2::readGDX(gdx, c("vm_emiCdrTeDetail", "v33_emi"), select = list("_field" = "level"), restoreZeros = FALSE, react = "silent")[, t, ]
+  vm_emiCdrTeDetail <- gdx2::readGDX(gdx, c("vm_emiCdrTeDetail", "v33_emi"), select = list("_field" = "level"), restoreZeros = FALSE, react = "silent", format = "first_found")[, t, ]
 
   if (!"oae_ng" %in% getItems(vm_emiCdrTeDetail, dim = 3)) {
     emiOAE <- new.magpie(getItems(vm_emiCdrTeDetail, "all_regi"),
@@ -191,7 +192,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
                                  restoreZeros = FALSE)[, t, ]
   vm_co2capture <- dimSums(vm_co2capture) # backwards-comp: previously had multiple (irrelevant) dimensions in the third dimension with only one value
 
-  vm_co2emi_cdrFE_beforeCapture <- gdx2::readGDX(gdx, c("vm_co2emi_cdrFE_beforeCapture", "v33_co2emi_non_atm_gas"), select = list("_field" = "level"), restoreZeros = FALSE, react = "silent")[, t, ]
+  vm_co2emi_cdrFE_beforeCapture <- gdx2::readGDX(gdx, c("vm_co2emi_cdrFE_beforeCapture", "v33_co2emi_non_atm_gas"), select = list("_field" = "level"), restoreZeros = FALSE, react = "silent", format = "first_found")[, t, ]
   v33_co2emi_non_atm_calcination <- gdx2::readGDX(gdx, "v33_co2emi_non_atm_calcination", select = list("_field" = "level"), restoreZeros = FALSE, react = "silent")[, t, ]
   if (is.null(vm_co2emi_cdrFE_beforeCapture)) {
     # set energy related co2 capture in CDR sector to 0
@@ -210,7 +211,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     )
   }
 
-  sm_capture_rate_cdrmodule <- gdx2::readGDX(gdx, c("sm_capture_rate_cdrmodule", "s33_capture_rate"), react = "silent")
+  sm_capture_rate_cdrmodule <- gdx2::readGDX(gdx, c("sm_capture_rate_cdrmodule", "s33_capture_rate"), react = "silent", format = "first_found")
   te_oae33 <- gdx2::readGDX(gdx, "te_oae33", react = "silent")
   if (is.null(sm_capture_rate_cdrmodule)) {
     sm_capture_rate_cdrmodule <- 0.9
@@ -227,7 +228,8 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   # CO2 released by CCU
   vm_co2CCUshort <- gdx2::readGDX(gdx, "vm_co2CCUshort", select = list("_field" = "level"), restoreZeros = FALSE)[, t, ]
   # variable to release captured CO2 when no CCU capacities are standing anymore vent captured CO2
-  v_co2capturevalve <- gdx2::readGDX(gdx, "v_co2capturevalve", select = list("_field" = "level"), restoreZeros = FALSE)[, t, ]
+  v_co2capturevalve <- gdx2::readGDX(gdx, c("vm_co2capturevalve", "v_co2capturevalve"), format = "first_found",
+                                     select = list("_field" = "level"), restoreZeros = FALSE)[, t, ]
 
   # maximum annual CO2 storage potential assumed
   # collapseDim removes 'cco2', 'ico2', and 'rlf' dimensions and keeps only 'ccsinjeon/ccsinjeoff'
@@ -358,7 +360,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
 
   vm_incinerationEmi <- gdx2::readGDX(gdx, c("vm_incinerationEmi", "v37_incinerationEmi"),
     select = list("_field" = "level"), restoreZeros = FALSE, spatial = 2, react = "silent",
-    uniqueStyle = "classic")[, t, ]
+    uniqueStyle = "classic", format = "first_found")[, t, ]
 
   vm_incinerationEmi <- magclass::matchDim(vm_incinerationEmi, v37_plasticsCarbon, fill = 0)
 
@@ -382,8 +384,8 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     spatial = 2, react = "silent", uniqueStyle = "classic"
   )[, t, ]
 
-  pm_incinerationRate <- gdx2::readGDX(gdx, "pm_incinerationRate",
-    restoreZeros = FALSE, spatial = 2, react = "silent")[, t, ]
+  pm_incinerationRate <- gdx2::readGDX(gdx, c("p37_incinerationRate", "pm_incinerationRate"),
+    restoreZeros = FALSE, spatial = 2, react = "silent", format = "first_found")[, t, ]
 
   # replace NA by 0
   pm_incinerationRate[is.na(pm_incinerationRate)] <- 0
@@ -2301,11 +2303,11 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     out <- mbind(
       out,
       setNames(
-        max_geolStorage[, , "ccsinjeon"] * GtC_2_MtCO2,
+        dimSums(max_geolStorage[, , "ccsinjeon"], dim = 3) * GtC_2_MtCO2,
         "Carbon Management|Storage|Maximum annual CO2 storage potential|Onshore (Mt CO2/yr)"
       ),
       setNames(
-        max_geolStorage[, , "ccsinjeoff"] * GtC_2_MtCO2,
+        dimSums(max_geolStorage[, , "ccsinjeoff"], dim = 3) * GtC_2_MtCO2,
         "Carbon Management|Storage|Maximum annual CO2 storage potential|Offshore (Mt CO2/yr)"
       )
     )
@@ -2325,12 +2327,12 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
     out <- mbind(
       out,
       setNames(
-        dimSums(vm_co2CCS[, , "ccsinjeon"], dim = 3, na.rm = TRUE) / max_geolStorage[, , "ccsinjeon"] * 100,
+        dimSums(vm_co2CCS[, , "ccsinjeon"], dim = 3, na.rm = TRUE) / dimSums(max_geolStorage[, , "ccsinjeon"], dim = 3) * 100,
         "Carbon Management|Storage|Share of annual potential used|Onshore (%)"
       ) %>%
         ifelse(is.finite(.), ., 0),
       setNames(
-        dimSums(vm_co2CCS[, , "ccsinjeoff"], dim = 3, na.rm = TRUE) / max_geolStorage[, , "ccsinjeoff"] * 100,
+        dimSums(vm_co2CCS[, , "ccsinjeoff"], dim = 3, na.rm = TRUE) / dimSums(max_geolStorage[, , "ccsinjeoff"], dim = 3) * 100,
         "Carbon Management|Storage|Share of annual potential used|Offshore (%)"
       ) %>%
         ifelse(is.finite(.), ., 0)
@@ -3615,7 +3617,7 @@ reportEmi <- function(gdx, output = NULL, regionSubsetList = NULL,
   # emissions national LULUCF accounting
   # (including carbon sink from existing forests calculated by difference between historic Magpie and UNFCCC data)
 
-  pm_emiLULUCF_GrassiShift <- gdx2::readGDX(gdx, c("pm_emiLULUCF_GrassiShift", "p47_LULUCFEmi_GrassiShift"), restoreZeros = TRUE, react = "silent")[getItems(out, dim = 1), getYears(out), ]
+  pm_emiLULUCF_GrassiShift <- gdx2::readGDX(gdx, c("pm_emiLULUCF_GrassiShift", "p47_LULUCFEmi_GrassiShift"), restoreZeros = TRUE, react = "silent", format = "first_found")[getItems(out, dim = 1), getYears(out), ]
 
   if (!is.null(pm_emiLULUCF_GrassiShift)) {
     # variables of which version with national LULUCF accounting should be added
