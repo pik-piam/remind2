@@ -64,8 +64,8 @@ reportExtraction <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060,
     mappegrad <- paste(mappegrad$all_enty, mappegrad$rlf, sep = ".")
   }
 
-  fuelex_bio <- fuelex[, t, c("pebiolc", "pebios", "pebioil")]
-  fuelex <- fuelex[, t, mappegrad]
+  fuelex_bio <- fuelex[, t, c("pebiolc", "pebios", "pebioil","pebiogas")]
+  fuelex     <- fuelex[, t, mappegrad]
   fuelex_cum <- fuelex_cum[, , mappegrad]
   if (!is.null(grades)) {
     grades <- grades[, t, mappegrad[which(mappegrad != "peur.1")]]
@@ -242,8 +242,9 @@ reportExtraction <- function(gdx, regionSubsetList = NULL, t = c(seq(2005, 2060,
     setNames(dimSums(fuelex_bio[, , "pebiolc.1"], dim = 3) * TWa_2_EJ, "PE|Production|Biomass|Lignocellulosic|+|Energy Crops (EJ/yr)"),
     setNames(dimSums(fuelex_bio[, , "pebiolc.2"], dim = 3) * TWa_2_EJ, "PE|Production|Biomass|Lignocellulosic|+|Residues (EJ/yr)"),
     setNames(dimSums(fuelex_bio[, , c("pebios", "pebioil")], dim = 3) * TWa_2_EJ, "PE|Production|Biomass|+|1st Generation (EJ/yr)"),
-    setNames(dimSums(fuelex_bio[, , "pebios"], dim = 3) * TWa_2_EJ, "PE|Production|Biomass|1st Generation|+|SugarAndStarch (EJ/yr)"),
-    setNames(dimSums(fuelex_bio[, , "pebioil"], dim = 3) * TWa_2_EJ, "PE|Production|Biomass|1st Generation|+|Sunflowers_PalmOil_others (EJ/yr)")
+    setNames(dimSums(fuelex_bio[, , "pebiogas"],            dim = 3) * TWa_2_EJ, "PE|Production|Biomass|+|Biogas (EJ/yr)"),
+    setNames(dimSums(fuelex_bio[, , "pebios"],              dim = 3) * TWa_2_EJ, "PE|Production|Biomass|1st Generation|+|SugarAndStarch (EJ/yr)"),
+    setNames(dimSums(fuelex_bio[, , "pebioil"],             dim = 3) * TWa_2_EJ, "PE|Production|Biomass|1st Generation|+|Sunflowers_PalmOil_others (EJ/yr)")
   )
 
   # Biomass prod. (Energy crops - MAgPIE)
