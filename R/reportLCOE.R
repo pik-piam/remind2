@@ -88,11 +88,11 @@ reportLCOE <- function(gdx, output.type = "both") {
   ttot_from2005 <- paste0("y", ttot[which(ttot >= 2005)])
   te <- gdx2::readGDX(gdx, "te")
   te <- te[!te %in% c("lng_liq", "gas_pipe", "lng_gas", "lng_ves", "coal_ves", "pipe_gas", "termX_lng", "termM_lng", "vess_lng", "biocharuse")]
-  p_priceCO2 <- gdx2::readGDX(gdx, name = c("p_priceCO2", "pm_priceCO2"), format = "first_found") # co2 price
+  p_priceCO2 <- gdx2::readGDX(gdx, name = c("p10_priceCO2", "p_priceCO2", "pm_priceCO2"), format = "first_found") # co2 price
 
 
   ## equations
-  qm_pebal <- gdx2::readGDX(gdx, name = "q_balPe", select = list("_field" = "marginal"))
+  qm_pebal <- gdx2::readGDX(gdx, name = c("qm_balPe", "q_balPe"), select = list("_field" = "marginal"), format = "first_found")
   qm_budget <- gdx2::readGDX(gdx, name = "qm_budget", select = list("_field" = "marginal"))
 
   ## variables
@@ -171,7 +171,7 @@ reportLCOE <- function(gdx, output.type = "both") {
                                   format = "first_found")
     vm_emiCdrTeDetail <- gdx2::readGDX(gdx, c("vm_emiCdrTeDetail", "v33_emi"),
                                        select = list("_field" = "level"), restoreZeros = FALSE,
-                                       react = "silent")[, ttot_from2005, teCDR]
+                                       react = "silent", format = "first_found")[, ttot_from2005, teCDR]
     if (is.null(vm_emiCdrTeDetail)) { # compatibility with the CDR module before the portfolio was added
       # captured CO2 by DAC
       v33_emiDAC <- gdx2::readGDX(gdx, "v33_emiDAC", select = list("_field" = "level"),
@@ -1130,7 +1130,7 @@ reportLCOE <- function(gdx, output.type = "both") {
       ungroup()
 
     ### Read carbon price ----
-    p_priceCO2 <- gdx2::readGDX(gdx, name = c("p_priceCO2", "pm_priceCO2"),
+    p_priceCO2 <- gdx2::readGDX(gdx, name = c("p10_priceCO2", "p_priceCO2", "pm_priceCO2"),
                                 format = "first_found") # co2 price
 
     # carbon price for the time period for which LCOE are calculated
